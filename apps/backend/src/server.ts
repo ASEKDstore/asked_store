@@ -4,6 +4,7 @@ import ordersRouter from './routes/orders.js'
 import promosRouter from './routes/promos.js'
 import settingsRouter from './routes/settings.js'
 import telegramRouter from './routes/telegram.js'
+import authRouter from './routes/auth.js'
 import publicLabRouter from './routes/publicLabRoutes.js'
 import { requireAdmin } from './middleware/requireAdmin.js'
 import adminOrdersRouter from './routes/admin/orders.js'
@@ -72,6 +73,7 @@ app.use('/api/orders', ordersRouter)
 app.use('/api/promos', promosRouter)
 app.use('/api/settings', settingsRouter)
 app.use('/api/telegram', telegramRouter)
+app.use('/api/auth', authRouter)
 app.use('/api/lab', publicLabRouter)
 
 // Admin APIs (protected)

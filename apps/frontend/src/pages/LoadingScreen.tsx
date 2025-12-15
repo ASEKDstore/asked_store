@@ -2,47 +2,89 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
-import { useTelegramAuth } from '../hooks/useTelegramAuth'
+import { apiUrl } from '../utils/api'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { user } = useUser()
+  const { user, refresh } = useUser()
   const navigate = useNavigate()
-  const { handleLogin, isAuthenticating } = useTelegramAuth()
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'not_telegram'>('checking')
+  const [authMessage, setAuthMessage] = useState<string>('')
   
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
-    user ? 'authenticated' : (isAuthenticating ? 'authenticating' : 'unauthenticated')
+    user ? 'authenticated' : (authStatus === 'checking' ? 'authenticating' : 'unauthenticated')
   
   const progress = useLoadingProgress(authState)
-  const [showAuthMessage, setShowAuthMessage] = useState(false)
 
-  // Show auth message when progress stops for unauthenticated users
+  // Auto-login via Telegram WebApp
   useEffect(() => {
-    if (authState === 'unauthenticated' && progress >= 35) {
-      const timer = setTimeout(() => setShowAuthMessage(true), 500)
-      return () => clearTimeout(timer)
+    const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
+    
+    if (!tg) {
+      // Not in Telegram WebApp
+      setAuthStatus('not_telegram')
+      setAuthMessage('Откройте приложение через Telegram-бота')
+      return
     }
-  }, [authState, progress])
 
-  // Navigate to /app when progress reaches 100%
+    // Initialize Telegram WebApp
+    tg.ready()
+
+    // Check if we have initData (user is authenticated via Telegram)
+    const initData = tg.initData
+    const hasInitData = !!initData
+
+    if (hasInitData) {
+      // Auto-authenticate
+      setAuthStatus('checking')
+      setAuthMessage('Вы вошли через Telegram')
+
+      // Send initData to backend for verification
+      const authenticate = async () => {
+        try {
+          const response = await fetch(apiUrl('/api/auth/telegram'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData }),
+          })
+
+          if (response.ok) {
+            // Refresh user data from Telegram WebApp
+            refresh()
+            setAuthStatus('authenticated')
+          } else {
+            console.error('Auth failed:', await response.text())
+            setAuthStatus('not_telegram')
+            setAuthMessage('Ошибка авторизации. Откройте приложение через Telegram-бота')
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          // Even if backend fails, we can still use Telegram WebApp data
+          refresh()
+          setAuthStatus('authenticated')
+          setAuthMessage('Вы вошли через Telegram')
+        }
+      }
+
+      authenticate()
+    } else {
+      // No initData - not in Telegram WebApp or not authenticated
+      setAuthStatus('not_telegram')
+      setAuthMessage('Откройте приложение через Telegram-бота')
+    }
+  }, [refresh])
+
+  // Navigate to /app when authenticated and progress reaches 100%
   useEffect(() => {
-    if (progress >= 100) {
+    if (user && progress >= 100) {
       const timer = setTimeout(() => {
         navigate('/app')
       }, 600)
       return () => clearTimeout(timer)
     }
-  }, [progress, navigate])
+  }, [user, progress, navigate])
 
-  const handleTelegramLogin = async () => {
-    try {
-      await handleLogin()
-    } catch (error) {
-      console.error('Login failed:', error)
-    }
-  }
-
-  const userName = user?.first_name || 'ASKED'
+  const userName = user?.first_name || user?.firstName || 'ASKED'
   const displayName = user ? userName : 'ASKED'
 
   return (
@@ -71,31 +113,15 @@ export function LoadingScreen() {
           />
         </div>
 
-        {/* Сообщение об авторизации */}
-        {showAuthMessage && !user && (
+        {/* Статус авторизации (текстовый, без кнопок) */}
+        {authMessage && (
           <div className="ls-auth-message">
-            Для продолжения войдите через Telegram
+            {authStatus === 'authenticated' ? (
+              <span>✅ {authMessage}</span>
+            ) : (
+              <span>ℹ️ {authMessage}</span>
+            )}
           </div>
-        )}
-
-        {/* Кнопка Telegram */}
-        {(!user || showAuthMessage) && (
-          <button 
-            className="ls-telegram-button"
-            onClick={handleTelegramLogin}
-            disabled={isAuthenticating}
-          >
-            <svg 
-              className="ls-telegram-icon" 
-              width="14" 
-              height="14" 
-              viewBox="0 0 24 24" 
-              fill="currentColor"
-            >
-              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.87 8.8c-.135.608-.479.758-.97.472l-2.68-1.97-1.29 1.24c-.147.147-.27.27-.553.27l.198-2.79 4.94-4.46c.216-.19-.047-.297-.333-.11l-6.1 3.84-2.63-.82c-.574-.18-.59-.574.11-.88l10.26-3.95c.47-.18.88.11.73.68z"/>
-            </svg>
-            <span>{isAuthenticating ? 'Вход...' : 'Продолжить через Telegram'}</span>
-          </button>
         )}
 
         {/* Низовая мета */}
