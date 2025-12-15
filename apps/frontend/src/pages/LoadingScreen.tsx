@@ -28,10 +28,10 @@ export function LoadingScreen() {
     }
 
     // Initialize Telegram WebApp
-    tg.ready()
+    tg?.ready?.()
 
     // Check if we have initData (user is authenticated via Telegram)
-    const initData = tg.initData
+    const initData = tg?.initData
     const hasInitData = !!initData
 
     if (hasInitData) {
