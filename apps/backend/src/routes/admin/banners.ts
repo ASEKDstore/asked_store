@@ -36,8 +36,20 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const raw = req.body
+    
+    // Validate required fields
+    if (!raw.title || typeof raw.title !== 'string' || raw.title.trim().length === 0) {
+      return res.status(400).json({ error: 'title is required and must be a non-empty string' })
+    }
+    if (!raw.description || typeof raw.description !== 'string' || raw.description.trim().length === 0) {
+      return res.status(400).json({ error: 'description is required and must be a non-empty string' })
+    }
+    if (!raw.image && !raw.imageUrl) {
+      return res.status(400).json({ error: 'image or imageUrl is required' })
+    }
+    
     const data = CreateBannerSchema.parse({
-      title: raw.title ?? raw.title,
+      title: raw.title,
       subtitle: raw.subtitle,
       description: raw.description,
       image: raw.image ?? raw.imageUrl,
@@ -48,7 +60,16 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     
     const banner = await prisma.banner.create({
-      data,
+      data: {
+        title: data.title,
+        subtitle: data.subtitle,
+        description: data.description,
+        image: data.image,
+        detailsImage: data.detailsImage,
+        ctaText: data.ctaText,
+        order: data.order,
+        isActive: data.isActive,
+      },
     })
     
     res.status(201).json(banner)

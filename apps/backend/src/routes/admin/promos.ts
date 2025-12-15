@@ -32,13 +32,27 @@ router.get('/', async (req, res) => {
 // POST /api/admin/promos
 router.post('/', async (req, res) => {
   try {
+    const raw = req.body
+    
+    // Validate required fields
+    if (!raw.code || typeof raw.code !== 'string' || raw.code.trim().length === 0) {
+      return res.status(400).json({ error: 'code is required and must be a non-empty string' })
+    }
+    if (raw.discountPercent === undefined || typeof raw.discountPercent !== 'number' || !Number.isInteger(raw.discountPercent) || raw.discountPercent < 0 || raw.discountPercent > 100) {
+      return res.status(400).json({ error: 'discountPercent is required and must be an integer between 0 and 100' })
+    }
+    
     const data = CreatePromoSchema.parse({
       ...req.body,
-      code: req.body.code?.toUpperCase(),
+      code: req.body.code.toUpperCase(),
     })
     
     const promo = await prisma.promo.create({
-      data,
+      data: {
+        code: data.code,
+        discountPercent: data.discountPercent,
+        isActive: data.isActive,
+      },
     })
     
     res.status(201).json(promo)

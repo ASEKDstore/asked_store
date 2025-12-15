@@ -53,10 +53,31 @@ router.get('/', async (req, res) => {
 // POST /api/admin/products
 router.post('/', async (req, res) => {
   try {
+    const raw = req.body
+    
+    // Validate required fields
+    if (!raw.title || typeof raw.title !== 'string' || raw.title.trim().length === 0) {
+      return res.status(400).json({ error: 'title is required and must be a non-empty string' })
+    }
+    if (raw.description === undefined || typeof raw.description !== 'string') {
+      return res.status(400).json({ error: 'description is required' })
+    }
+    if (raw.price === undefined || typeof raw.price !== 'number' || !Number.isInteger(raw.price) || raw.price <= 0) {
+      return res.status(400).json({ error: 'price is required and must be a positive integer' })
+    }
+    
     const data = CreateProductSchema.parse(req.body)
     
     const product = await prisma.product.create({
-      data,
+      data: {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        images: data.images,
+        sku: data.sku,
+        article: data.article,
+        isActive: data.isActive,
+      },
     })
     
     res.status(201).json(product)

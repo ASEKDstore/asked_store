@@ -37,19 +37,45 @@ router.post('/', async (req, res) => {
 
     totalPrice = Math.max(0, totalPrice - discount)
 
+    // Convert OrderItem[] to JSON-safe plain objects
+    const itemsJson = data.items.map(item => ({
+      productId: item.productId ?? null,
+      labProductId: item.labProductId ?? null,
+      type: item.type ?? null,
+      title: item.title,
+      article: item.article,
+      price: item.price,
+      qty: item.qty,
+      size: item.size ?? null,
+      artistName: item.artistName ?? null,
+    }))
+
+    // Create JSON-safe order data
+    const orderDataJson = {
+      user: {
+        tgId: data.user.tgId,
+        name: data.user.name,
+        username: data.user.username ?? null,
+        photo_url: data.user.photo_url ?? null,
+      },
+      items: itemsJson,
+      delivery: {
+        fullName: data.delivery.fullName,
+        phone: data.delivery.phone,
+        address: data.delivery.address,
+        method: data.delivery.method,
+      },
+      comment: data.comment ?? null,
+      promoCode: promoCode ?? null,
+      discount: discount > 0 ? discount : null,
+    }
+
     // Create order
     const tgIdBigInt = BigInt(data.user.tgId)
     const order = await prisma.order.create({
       data: {
         id: uuidv4(),
-        items: {
-          user: data.user,
-          items: data.items,
-          delivery: data.delivery,
-          comment: data.comment,
-          promoCode,
-          discount: discount > 0 ? discount : undefined,
-        },
+        items: orderDataJson as any,
         total: totalPrice,
         status: 'new',
         tgId: tgIdBigInt,
