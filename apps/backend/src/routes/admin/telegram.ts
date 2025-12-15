@@ -157,8 +157,10 @@ router.post('/post', async (req: Request, res: ExpressResponse, next: NextFuncti
 
     // Рассылка подписчикам
     if (mode === 'broadcast' || mode === 'both') {
-      const subscribers = await readJson<Subscriber[]>('telegram_subscribers', [])
-      const activeSubscribers = subscribers.filter(s => s.enabled)
+      const subscribers = await prisma.telegramSubscriber.findMany({
+        where: { isActive: true },
+      })
+      const activeSubscribers = subscribers
 
       console.log(`[TELEGRAM BROADCAST] Starting to ${activeSubscribers.length} subscribers`)
 

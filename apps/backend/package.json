@@ -7,7 +7,6 @@
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && prisma migrate deploy && tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "postinstall": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy"
   },
@@ -26,9 +25,6 @@
   "devDependencies": {
     "tsx": "^4.7.0",
     "prisma": "^5.19.0"
-  },
-  "devDependencies": {
-    "tsx": "^4.7.0"
   }
 }
 
