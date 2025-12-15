@@ -1,7 +1,6 @@
 import { Router } from 'express'
-import { readJson, writeJson } from '../store/jsonDb.js'
+import { prisma } from '../db/prisma.js'
 import { updateOrderNotification } from '../services/telegramNotify.js'
-import type { Order } from '../types/order.js'
 
 const router = Router()
 
@@ -12,7 +11,7 @@ router.post('/webhook', async (req, res) => {
     
     // Handle callback query (inline button clicks)
     if (update.callback_query) {
-      const { data, message, from } = update.callback_query
+      const { data, message } = update.callback_query
       
       // Parse callback data: order_action:orderId:status
       if (data && data.startsWith('order_action:')) {
@@ -29,22 +28,29 @@ router.post('/webhook', async (req, res) => {
         }
         
         // Update order status
-        const orders = await readJson<Order[]>('orders') || []
-        const orderIndex = orders.findIndex(o => o.id === orderId)
+        const order = await prisma.order.findUnique({
+          where: { id: orderId },
+        })
         
-        if (orderIndex === -1) {
+        if (!order) {
           return res.json({ ok: true })
         }
         
-        orders[orderIndex].status = newStatus as Order['status']
-        orders[orderIndex].updatedAt = new Date().toISOString()
-        
-        await writeJson('orders', orders)
+        const updatedOrder = await prisma.order.update({
+          where: { id: orderId },
+          data: { status: newStatus },
+        })
         
         // Update message in Telegram
         if (message && message.chat && message.message_id) {
+          const orderForNotification = {
+            ...updatedOrder,
+            items: updatedOrder.items as any,
+            createdAt: updatedOrder.createdAt.toISOString(),
+            updatedAt: updatedOrder.updatedAt.toISOString(),
+          }
           await updateOrderNotification(
-            orders[orderIndex],
+            orderForNotification as any,
             message.chat.id,
             message.message_id
           )
@@ -73,6 +79,3 @@ router.post('/webhook', async (req, res) => {
 })
 
 export default router
-
-
-

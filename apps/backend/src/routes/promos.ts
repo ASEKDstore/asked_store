@@ -1,45 +1,31 @@
 import { Router } from 'express'
-import { readJson, writeJson } from '../store/jsonDb.js'
-import type { Promo, ApplyPromoRequest } from '../types/promo.js'
+import { prisma } from '../db/prisma.js'
 
 const router = Router()
 
 // POST /api/promos/apply
 router.post('/apply', async (req, res) => {
   try {
-    const { code, cartTotal }: ApplyPromoRequest = req.body
+    const { code, cartTotal } = req.body
     
     if (!code || cartTotal === undefined) {
       return res.status(400).json({ error: 'Missing code or cartTotal' })
     }
     
-    const promos = await readJson<Promo[]>('promos') || []
-    const promo = promos.find(p => p.code.toUpperCase() === code.toUpperCase())
+    const promo = await prisma.promo.findUnique({
+      where: { code: code.toUpperCase() },
+    })
     
     if (!promo) {
       return res.status(400).json({ ok: false, error: 'Promo code not found' })
     }
     
-    if (!promo.active) {
+    if (!promo.isActive) {
       return res.status(400).json({ ok: false, error: 'Promo code is inactive' })
     }
     
-    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
-      return res.status(400).json({ ok: false, error: 'Promo code expired' })
-    }
-    
-    if (promo.usageLimit !== null && promo.usedCount >= promo.usageLimit) {
-      return res.status(400).json({ ok: false, error: 'Promo code usage limit reached' })
-    }
-    
     // Calculate discount
-    let discount = 0
-    if (promo.type === 'percent') {
-      discount = Math.round((cartTotal * promo.value) / 100)
-    } else {
-      discount = promo.value
-    }
-    
+    const discount = Math.round((cartTotal * promo.discountPercent) / 100)
     const totalAfter = Math.max(0, cartTotal - discount)
     
     res.json({
@@ -56,6 +42,3 @@ router.post('/apply', async (req, res) => {
 })
 
 export default router
-
-
-

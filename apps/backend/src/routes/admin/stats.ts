@@ -1,7 +1,5 @@
 import { Router } from 'express'
-import { readJson } from '../../store/jsonDb.js'
-import type { Order } from '../../types/order.js'
-import type { Promo } from '../../types/promo.js'
+import { prisma } from '../../db/prisma.js'
 
 const router = Router()
 
@@ -10,53 +8,53 @@ router.get('/', async (req, res) => {
   try {
     const { from, to } = req.query
     
-    const orders = await readJson<Order[]>('orders') || []
-    const promos = await readJson<Promo[]>('promos') || []
-    
-    let filteredOrders = orders
+    const where: any = {}
     
     // Filter by date range
     if (from && typeof from === 'string') {
-      const fromDate = new Date(from)
-      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) >= fromDate)
+      where.createdAt = { ...where.createdAt, gte: new Date(from) }
     }
     
     if (to && typeof to === 'string') {
       const toDate = new Date(to)
       toDate.setHours(23, 59, 59, 999)
-      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) <= toDate)
+      where.createdAt = { ...where.createdAt, lte: toDate }
     }
     
+    const orders = await prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
+    
     // Calculate stats
-    const ordersCount = filteredOrders.length
-    const revenue = filteredOrders.reduce((sum, o) => {
-      const total = o.totalPrice - (o.discount || 0)
-      return sum + total
-    }, 0)
+    const ordersCount = orders.length
+    const revenue = orders.reduce((sum, o) => sum + o.total, 0)
     const avgCheck = ordersCount > 0 ? revenue / ordersCount : 0
     
     // Status breakdown
     const statusBreakdown = {
-      new: filteredOrders.filter(o => o.status === 'new').length,
-      in_progress: filteredOrders.filter(o => o.status === 'in_progress').length,
-      done: filteredOrders.filter(o => o.status === 'done').length,
-      canceled: filteredOrders.filter(o => o.status === 'canceled').length,
+      new: orders.filter(o => o.status === 'new').length,
+      in_progress: orders.filter(o => o.status === 'in_progress').length,
+      done: orders.filter(o => o.status === 'done').length,
+      canceled: orders.filter(o => o.status === 'canceled').length,
     }
     
     // Top products
     const productMap = new Map<string, { productId: string; title: string; qty: number; revenue: number }>()
     
-    filteredOrders.forEach(order => {
-      order.items.forEach(item => {
-        const existing = productMap.get(item.productId) || {
-          productId: item.productId,
-          title: item.title,
+    orders.forEach(order => {
+      const items = (order.items as any)?.items || []
+      items.forEach((item: any) => {
+        const productId = item.productId || item.labProductId || 'unknown'
+        const existing = productMap.get(productId) || {
+          productId,
+          title: item.title || 'Unknown',
           qty: 0,
           revenue: 0,
         }
-        existing.qty += item.qty
-        existing.revenue += item.price * item.qty
-        productMap.set(item.productId, existing)
+        existing.qty += item.qty || 0
+        existing.revenue += (item.price || 0) * (item.qty || 0)
+        productMap.set(productId, existing)
       })
     })
     
@@ -64,14 +62,15 @@ router.get('/', async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10)
     
-    // Promo usage
-    const promoUsage = promos
-      .filter(p => p.usedCount > 0)
-      .map(p => ({
-        code: p.code,
-        usedCount: p.usedCount,
-      }))
-      .sort((a, b) => b.usedCount - a.usedCount)
+    // Promo usage (simplified - promos don't track usage in current schema)
+    const promos = await prisma.promo.findMany({
+      where: { isActive: true },
+    })
+    
+    const promoUsage = promos.map(p => ({
+      code: p.code,
+      usedCount: 0, // Would need to track this separately
+    }))
     
     res.json({
       ordersCount,
@@ -88,6 +87,3 @@ router.get('/', async (req, res) => {
 })
 
 export default router
-
-
-

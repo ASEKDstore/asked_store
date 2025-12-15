@@ -1,19 +1,29 @@
 import { Router } from 'express'
-import { readJson, writeJson } from '../store/jsonDb.js'
-import type { Settings } from '../types/settings.js'
+import { prisma } from '../db/prisma.js'
 
 const router = Router()
+
+const DEFAULT_SETTINGS = {
+  maintenanceMode: false,
+}
 
 // GET /api/settings
 router.get('/', async (req, res) => {
   try {
-    const settings = await readJson<Settings>('settings')
+    let settings = await prisma.setting.findUnique({
+      where: { key: 'main' },
+    })
+    
     if (!settings) {
-      const defaultSettings: Settings = { maintenanceMode: false }
-      await writeJson('settings', defaultSettings)
-      return res.json(defaultSettings)
+      settings = await prisma.setting.create({
+        data: {
+          key: 'main',
+          value: DEFAULT_SETTINGS,
+        },
+      })
     }
-    res.json(settings)
+    
+    res.json(settings.value)
   } catch (error: any) {
     console.error('Error fetching settings:', error)
     res.status(500).json({ error: 'Failed to fetch settings' })
@@ -21,6 +31,3 @@ router.get('/', async (req, res) => {
 })
 
 export default router
-
-
-

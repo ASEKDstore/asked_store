@@ -1,10 +1,8 @@
 import { Router } from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import { saveOrder, getOrdersByTgId, updateOrderStatus } from '../services/orderStorage.js'
+import { prisma } from '../db/prisma.js'
 import { notifyAdminsAboutOrder } from '../services/telegramNotify.js'
-import { readJson, writeJson } from '../store/jsonDb.js'
 import type { CreateOrderRequest, OrderStatus } from '../types/order.js'
-import type { Promo } from '../types/promo.js'
 
 const router = Router()
 
@@ -19,32 +17,19 @@ router.post('/', async (req, res) => {
     }
 
     // Calculate total price
-    let totalPrice = data.items.reduce((sum, item) => sum + item.price * item.qty, 0)
+    let totalPrice = data.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
     let discount = 0
     let promoCode = data.promoCode
 
     // Apply promo if provided
     if (promoCode) {
-      const promos = await readJson<Promo[]>('promos') || []
-      const promo = promos.find(p => p.code.toUpperCase() === promoCode.toUpperCase())
+      const promo = await prisma.promo.findUnique({
+        where: { code: promoCode.toUpperCase() },
+      })
       
-      if (promo && promo.active) {
-        const isExpired = promo.expiresAt && new Date(promo.expiresAt) < new Date()
-        const isLimitReached = promo.usageLimit !== null && promo.usedCount >= promo.usageLimit
-        
-        if (!isExpired && !isLimitReached) {
-          if (promo.type === 'percent') {
-            discount = Math.round((totalPrice * promo.value) / 100)
-          } else {
-            discount = promo.value
-          }
-          
-          // Update promo usedCount
-          promo.usedCount++
-          await writeJson('promos', promos)
-        } else {
-          promoCode = undefined
-        }
+      if (promo && promo.isActive) {
+        discount = Math.round((totalPrice * promo.discountPercent) / 100)
+        // Note: In production, you might want to track promo usage
       } else {
         promoCode = undefined
       }
@@ -53,31 +38,44 @@ router.post('/', async (req, res) => {
     totalPrice = Math.max(0, totalPrice - discount)
 
     // Create order
-    const order = {
-      id: uuidv4(),
-      createdAt: new Date().toISOString(),
-      user: data.user,
-      items: data.items,
-      totalPrice,
-      status: 'new' as OrderStatus,
-      delivery: data.delivery,
-      comment: data.comment,
-      promoCode,
-      discount: discount > 0 ? discount : undefined,
-    }
-
-    // Save order
-    const savedOrder = await saveOrder(order)
+    const tgIdBigInt = BigInt(data.user.tgId)
+    const order = await prisma.order.create({
+      data: {
+        id: uuidv4(),
+        items: {
+          user: data.user,
+          items: data.items,
+          delivery: data.delivery,
+          comment: data.comment,
+          promoCode,
+          discount: discount > 0 ? discount : undefined,
+        },
+        total: totalPrice,
+        status: 'new',
+        tgId: tgIdBigInt,
+      },
+    })
 
     // Notify admins
     try {
-      await notifyAdminsAboutOrder(savedOrder)
+      const orderForNotification = {
+        ...order,
+        items: order.items as any,
+        createdAt: order.createdAt.toISOString(),
+        updatedAt: order.updatedAt.toISOString(),
+      }
+      await notifyAdminsAboutOrder(orderForNotification as any)
     } catch (error) {
       console.error('Failed to notify admins:', error)
       // Don't fail the request if notification fails
     }
 
-    res.status(201).json(savedOrder)
+    res.status(201).json({
+      ...order,
+      items: order.items as any,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    })
   } catch (error: any) {
     console.error('Error creating order:', error)
     res.status(500).json({ error: 'Failed to create order' })
@@ -87,14 +85,23 @@ router.post('/', async (req, res) => {
 // GET /api/orders?tgId=... - Get orders by Telegram ID
 router.get('/', async (req, res) => {
   try {
-    const tgId = req.query.tgId ? parseInt(req.query.tgId as string, 10) : null
+    const tgId = req.query.tgId ? BigInt(String(req.query.tgId)) : null
 
-    if (!tgId || isNaN(tgId)) {
+    if (!tgId) {
       return res.status(400).json({ error: 'tgId is required' })
     }
 
-    const orders = await getOrdersByTgId(tgId)
-    res.json(orders)
+    const orders = await prisma.order.findMany({
+      where: { tgId },
+      orderBy: { createdAt: 'desc' },
+    })
+    
+    res.json(orders.map(o => ({
+      ...o,
+      items: o.items as any,
+      createdAt: o.createdAt.toISOString(),
+      updatedAt: o.updatedAt.toISOString(),
+    })))
   } catch (error: any) {
     console.error('Error fetching orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })
@@ -111,18 +118,24 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' })
     }
 
-    const order = await updateOrderStatus(id, status as OrderStatus)
+    const order = await prisma.order.update({
+      where: { id },
+      data: { status },
+    })
 
-    if (!order) {
+    res.json({
+      ...order,
+      items: order.items as any,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    })
+  } catch (error: any) {
+    if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Order not found' })
     }
-
-    res.json(order)
-  } catch (error: any) {
     console.error('Error updating order:', error)
     res.status(500).json({ error: 'Failed to update order' })
   }
 })
 
 export default router
-

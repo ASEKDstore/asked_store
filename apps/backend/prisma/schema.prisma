@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  tgId      BigInt   @id @db.BigInt
+  name      String?
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
+
+model Banner {
+  id           String   @id @default(uuid())
+  title        String
+  subtitle     String?
+  description  String
+  image        String
+  detailsImage String?
+  ctaText      String?
+  order        Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("banners")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  price       Int
+  images      String[] @default([])
+  sku         String?
+  article     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Promo {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  discountPercent Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("promos")
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  items     Json
+  total     Int
+  status    String
+  tgId      BigInt?  @db.BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  tgId      BigInt?  @db.BigInt
+  rating    Int
+  text      String?
+  media     Json?    @default("[]")
+  reactions Json?    @default("{}")
+  replies   Json?    @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model TelegramSubscriber {
+  tgId      BigInt   @id @db.BigInt
+  username  String?
+  firstName String?
+  lastName  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("telegram_subscribers")
+}
+
+model BotFlow {
+  id        String      @id @default(uuid())
+  key       String      @unique
+  name      String
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  steps     BotFlowStep[]
+
+  @@map("bot_flows")
+}
+
+model BotFlowStep {
+  id        String   @id @default(uuid())
+  flowId    String
+  order     Int
+  type      String   // TEXT, PHOTO, MEDIA, BUTTONS
+  payload   Json
+  createdAt DateTime @default(now())
+  flow      BotFlow  @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@map("bot_flow_steps")
+  @@index([flowId])
+}
+

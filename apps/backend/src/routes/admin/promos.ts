@@ -1,14 +1,27 @@
 import { Router } from 'express'
-import { v4 as uuidv4 } from 'uuid'
-import { readJson, writeJson } from '../../store/jsonDb.js'
-import type { Promo, CreatePromoRequest, GeneratePromosRequest } from '../../types/promo.js'
+import { prisma } from '../../db/prisma.js'
+import { z } from 'zod'
 
 const router = Router()
+
+const CreatePromoSchema = z.object({
+  code: z.string().min(1),
+  discountPercent: z.number().int().min(0).max(100),
+  isActive: z.boolean().default(true),
+})
+
+const GeneratePromosSchema = z.object({
+  count: z.number().int().positive(),
+  discountPercent: z.number().int().min(0).max(100),
+  prefix: z.string().optional().default('ASK'),
+})
 
 // GET /api/admin/promos
 router.get('/', async (req, res) => {
   try {
-    const promos = await readJson<Promo[]>('promos') || []
+    const promos = await prisma.promo.findMany({
+      orderBy: { createdAt: 'desc' },
+    })
     res.json(promos)
   } catch (error: any) {
     console.error('Error fetching promos:', error)
@@ -19,36 +32,23 @@ router.get('/', async (req, res) => {
 // POST /api/admin/promos
 router.post('/', async (req, res) => {
   try {
-    const data: CreatePromoRequest = req.body
+    const data = CreatePromoSchema.parse({
+      ...req.body,
+      code: req.body.code?.toUpperCase(),
+    })
     
-    if (!data.code || !data.type || data.value === undefined) {
-      return res.status(400).json({ error: 'Missing required fields' })
-    }
-    
-    const promos = await readJson<Promo[]>('promos') || []
-    
-    // Check if code already exists
-    if (promos.some(p => p.code === data.code)) {
-      return res.status(400).json({ error: 'Promo code already exists' })
-    }
-    
-    const promo: Promo = {
-      id: uuidv4(),
-      code: data.code.toUpperCase(),
-      type: data.type,
-      value: data.value,
-      active: data.active ?? true,
-      usageLimit: data.usageLimit ?? null,
-      usedCount: 0,
-      expiresAt: data.expiresAt || null,
-      createdAt: new Date().toISOString(),
-    }
-    
-    promos.push(promo)
-    await writeJson('promos', promos)
+    const promo = await prisma.promo.create({
+      data,
+    })
     
     res.status(201).json(promo)
   } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'Promo code already exists' })
+    }
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors })
+    }
     console.error('Error creating promo:', error)
     res.status(500).json({ error: 'Failed to create promo' })
   }
@@ -57,39 +57,32 @@ router.post('/', async (req, res) => {
 // POST /api/admin/promos/generate
 router.post('/generate', async (req, res) => {
   try {
-    const data: GeneratePromosRequest = req.body
-    
-    if (!data.count || !data.type || data.value === undefined) {
-      return res.status(400).json({ error: 'Missing required fields' })
-    }
-    
-    const promos = await readJson<Promo[]>('promos') || []
-    const prefix = data.prefix || 'ASK'
-    const generated: Promo[] = []
+    const data = GeneratePromosSchema.parse(req.body)
+    const generated = []
     
     for (let i = 0; i < data.count; i++) {
-      const code = `${prefix}${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+      const code = `${data.prefix}${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`
       
-      const promo: Promo = {
-        id: uuidv4(),
-        code,
-        type: data.type,
-        value: data.value,
-        active: true,
-        usageLimit: data.usageLimit ?? null,
-        usedCount: 0,
-        expiresAt: data.expiresAt || null,
-        createdAt: new Date().toISOString(),
+      try {
+        const promo = await prisma.promo.create({
+          data: {
+            code,
+            discountPercent: data.discountPercent,
+            isActive: true,
+          },
+        })
+        generated.push(promo)
+      } catch (err: any) {
+        // Skip duplicates
+        if (err.code !== 'P2002') throw err
       }
-      
-      promos.push(promo)
-      generated.push(promo)
     }
-    
-    await writeJson('promos', promos)
     
     res.status(201).json(generated)
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors })
+    }
     console.error('Error generating promos:', error)
     res.status(500).json({ error: 'Failed to generate promos' })
   }
@@ -99,23 +92,20 @@ router.post('/generate', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { active, usageLimit, expiresAt } = req.body
+    const { isActive } = req.body
     
-    const promos = await readJson<Promo[]>('promos') || []
-    const index = promos.findIndex(p => p.id === id)
+    const promo = await prisma.promo.update({
+      where: { id },
+      data: {
+        isActive: isActive !== undefined ? isActive : undefined,
+      },
+    })
     
-    if (index === -1) {
+    res.json(promo)
+  } catch (error: any) {
+    if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Promo not found' })
     }
-    
-    if (active !== undefined) promos[index].active = active
-    if (usageLimit !== undefined) promos[index].usageLimit = usageLimit
-    if (expiresAt !== undefined) promos[index].expiresAt = expiresAt
-    
-    await writeJson('promos', promos)
-    
-    res.json(promos[index])
-  } catch (error: any) {
     console.error('Error updating promo:', error)
     res.status(500).json({ error: 'Failed to update promo' })
   }
@@ -126,23 +116,18 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params
     
-    const promos = await readJson<Promo[]>('promos') || []
-    const filtered = promos.filter(p => p.id !== id)
-    
-    if (filtered.length === promos.length) {
-      return res.status(404).json({ error: 'Promo not found' })
-    }
-    
-    await writeJson('promos', filtered)
+    await prisma.promo.delete({
+      where: { id },
+    })
     
     res.json({ success: true })
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Promo not found' })
+    }
     console.error('Error deleting promo:', error)
     res.status(500).json({ error: 'Failed to delete promo' })
   }
 })
 
 export default router
-
-
-

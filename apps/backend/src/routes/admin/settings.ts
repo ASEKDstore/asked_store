@@ -1,34 +1,44 @@
 import { Router } from 'express'
-import { readJson, writeJson } from '../../store/jsonDb.js'
-import type { Settings } from '../../types/settings.js'
+import { prisma } from '../../db/prisma.js'
 
 const router = Router()
+
+const DEFAULT_SETTINGS = {
+  maintenanceMode: false,
+  home: {
+    showBanners: true,
+    showTiles: true,
+    showLab: true,
+  },
+}
 
 // GET /api/admin/settings
 router.get('/', async (req, res) => {
   try {
-    const settings = await readJson<Settings>('settings')
+    let settings = await prisma.setting.findUnique({
+      where: { key: 'main' },
+    })
+    
     if (!settings) {
-      const defaultSettings: Settings = {
-        maintenanceMode: false,
-        home: {
-          showBanners: true,
-          showTiles: true,
-          showLab: true,
+      settings = await prisma.setting.create({
+        data: {
+          key: 'main',
+          value: DEFAULT_SETTINGS,
         },
-      }
-      await writeJson('settings', defaultSettings)
-      return res.json(defaultSettings)
+      })
     }
-    // Убеждаемся, что home настройки есть
-    if (!settings.home) {
-      settings.home = {
-        showBanners: true,
-        showTiles: true,
-        showLab: true,
-      }
+    
+    // Ensure home settings exist
+    const value = settings.value as any
+    if (!value.home) {
+      value.home = DEFAULT_SETTINGS.home
+      settings = await prisma.setting.update({
+        where: { key: 'main' },
+        data: { value },
+      })
     }
-    res.json(settings)
+    
+    res.json(settings.value)
   } catch (error: any) {
     console.error('Error fetching settings:', error)
     res.status(500).json({ error: 'Failed to fetch settings' })
@@ -40,42 +50,39 @@ router.patch('/', async (req, res) => {
   try {
     const { maintenanceMode, home } = req.body
     
-    // Читаем текущие настройки
-    const currentSettings = await readJson<Settings>('settings') || {
-      maintenanceMode: false,
-      home: {
-        showBanners: true,
-        showTiles: true,
-        showLab: true,
-      },
-    }
+    let settings = await prisma.setting.findUnique({
+      where: { key: 'main' },
+    })
     
-    // Обновляем maintenanceMode, если передан
+    const currentValue = settings?.value as any || DEFAULT_SETTINGS
+    const updatedValue = { ...currentValue }
+    
     if (typeof maintenanceMode === 'boolean') {
-      currentSettings.maintenanceMode = maintenanceMode
+      updatedValue.maintenanceMode = maintenanceMode
     }
     
-    // Обновляем home настройки, если передан объект
     if (home && typeof home === 'object') {
-      currentSettings.home = {
-        showBanners: typeof home.showBanners === 'boolean' ? home.showBanners : (currentSettings.home?.showBanners ?? true),
-        showTiles: typeof home.showTiles === 'boolean' ? home.showTiles : (currentSettings.home?.showTiles ?? true),
-        showLab: typeof home.showLab === 'boolean' ? home.showLab : (currentSettings.home?.showLab ?? true),
+      updatedValue.home = {
+        showBanners: typeof home.showBanners === 'boolean' ? home.showBanners : (currentValue.home?.showBanners ?? true),
+        showTiles: typeof home.showTiles === 'boolean' ? home.showTiles : (currentValue.home?.showTiles ?? true),
+        showLab: typeof home.showLab === 'boolean' ? home.showLab : (currentValue.home?.showLab ?? true),
       }
     }
     
-    // Если home не был передан, но его нет в текущих настройках, добавляем дефолтные
-    if (!currentSettings.home) {
-      currentSettings.home = {
-        showBanners: true,
-        showTiles: true,
-        showLab: true,
-      }
+    if (!updatedValue.home) {
+      updatedValue.home = DEFAULT_SETTINGS.home
     }
     
-    await writeJson('settings', currentSettings)
+    settings = await prisma.setting.upsert({
+      where: { key: 'main' },
+      update: { value: updatedValue },
+      create: {
+        key: 'main',
+        value: updatedValue,
+      },
+    })
     
-    res.json(currentSettings)
+    res.json(settings.value)
   } catch (error: any) {
     console.error('Error updating settings:', error)
     res.status(500).json({ error: 'Failed to update settings' })
@@ -83,4 +90,3 @@ router.patch('/', async (req, res) => {
 })
 
 export default router
-

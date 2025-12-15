@@ -1,6 +1,5 @@
 import { Router, Request, Response as ExpressResponse, NextFunction } from 'express'
-import { readJson, writeJson } from '../../store/jsonDb.js'
-import type { Subscriber } from './telegramSubscribers.js'
+import { prisma } from '../../db/prisma.js'
 
 const router = Router()
 
@@ -172,12 +171,11 @@ router.post('/post', async (req: Request, res: ExpressResponse, next: NextFuncti
         
         await Promise.all(
           batch.map(async (subscriber) => {
-            const result = await sendTelegramMessage(subscriber.tgId, text, sendOptions)
+            const tgIdNum = Number(subscriber.tgId)
+            const result = await sendTelegramMessage(tgIdNum, text, sendOptions)
             
             if (result.ok) {
               broadcastResult.sent++
-              // Обновляем lastSentAt
-              subscriber.lastSentAt = new Date().toISOString()
             } else {
               // Проверяем, заблокирован ли бот (403, "bot was blocked by the user", "chat not found")
               const errorText = result.error?.toLowerCase() || ''
@@ -187,7 +185,10 @@ router.post('/post', async (req: Request, res: ExpressResponse, next: NextFuncti
                 errorText.includes('chat not found') ||
                 errorText.includes('forbidden')
               ) {
-                subscriber.enabled = false
+                await prisma.telegramSubscriber.update({
+                  where: { tgId: subscriber.tgId },
+                  data: { isActive: false },
+                })
                 broadcastResult.disabled++
                 console.log(`[TELEGRAM BROADCAST] User ${subscriber.tgId} blocked bot or chat not found, disabled`)
               } else {
@@ -204,10 +205,7 @@ router.post('/post', async (req: Request, res: ExpressResponse, next: NextFuncti
         }
       }
 
-      // Сохраняем обновлённых подписчиков
-      if (broadcastResult.disabled > 0) {
-        await writeJson('telegram_subscribers', subscribers)
-      }
+      // Subscribers already updated in database above
     }
 
     const response: any = { ok: true }

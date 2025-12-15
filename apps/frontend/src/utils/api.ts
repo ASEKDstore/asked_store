@@ -2,9 +2,9 @@
  * Unified API base URL utility
  * 
  * In development: uses Vite proxy (API_BASE = "")
- * In production: uses VITE_API_BASE env variable
+ * In production: uses VITE_API_URL or VITE_API_BASE env variable
  */
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? ''
+const API_BASE = (import.meta as any).env?.VITE_API_URL ?? (import.meta as any).env?.VITE_API_BASE ?? ''
 
 /**
  * Constructs full API URL
@@ -16,8 +16,12 @@ export const apiUrl = (path: string): string => {
   if (!API_BASE) {
     return path
   }
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  // Remove trailing slash from API_BASE if present
+  const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE
   // In production, prepend API_BASE
-  return `${API_BASE}${path}`
+  return `${base}${normalizedPath}`
 }
 
 export default apiUrl

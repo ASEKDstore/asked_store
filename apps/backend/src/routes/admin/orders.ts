@@ -1,7 +1,5 @@
 import { Router } from 'express'
-import { readJson } from '../../store/jsonDb.js'
-import { updateOrderStatus, getOrderById } from '../../services/orderStorage.js'
-import type { Order, OrderStatus } from '../../types/order.js'
+import { prisma } from '../../db/prisma.js'
 
 const router = Router()
 
@@ -10,40 +8,43 @@ router.get('/', async (req, res) => {
   try {
     const { status, q, from, to } = req.query
     
-    const orders = await readJson<Order[]>('orders') || []
+    const where: any = {}
     
-    let filtered = orders
-    
-    // Filter by status
     if (status && typeof status === 'string') {
-      filtered = filtered.filter(o => o.status === status)
+      where.status = status
     }
     
-    // Search by id, username, phone
-    if (q && typeof q === 'string') {
-      const query = q.toLowerCase()
-      filtered = filtered.filter(o => 
-        o.id.toLowerCase().includes(query) ||
-        o.user.username?.toLowerCase().includes(query) ||
-        o.user.name.toLowerCase().includes(query) ||
-        o.delivery.phone.includes(query)
-      )
-    }
-    
-    // Filter by date range
     if (from && typeof from === 'string') {
-      const fromDate = new Date(from)
-      filtered = filtered.filter(o => new Date(o.createdAt) >= fromDate)
+      where.createdAt = { ...where.createdAt, gte: new Date(from) }
     }
     
     if (to && typeof to === 'string') {
       const toDate = new Date(to)
       toDate.setHours(23, 59, 59, 999)
-      filtered = filtered.filter(o => new Date(o.createdAt) <= toDate)
+      where.createdAt = { ...where.createdAt, lte: toDate }
     }
     
-    // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const orders = await prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
+    
+    // Search filter (can be optimized with Prisma full-text search)
+    let filtered = orders
+    if (q && typeof q === 'string') {
+      const query = q.toLowerCase()
+      filtered = filtered.filter(o => {
+        const orderData = o.items as any
+        const user = orderData?.user || {}
+        const delivery = orderData?.delivery || {}
+        return (
+          o.id.toLowerCase().includes(query) ||
+          user.username?.toLowerCase().includes(query) ||
+          user.name?.toLowerCase().includes(query) ||
+          delivery.phone?.includes(query)
+        )
+      })
+    }
     
     res.json(filtered)
   } catch (error: any) {
@@ -56,7 +57,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const order = await getOrderById(id)
+    const order = await prisma.order.findUnique({
+      where: { id },
+    })
     
     if (!order) {
       return res.status(404).json({ error: 'Order not found' })
@@ -79,20 +82,19 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' })
     }
     
-    const order = await updateOrderStatus(id, status as OrderStatus)
-    
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' })
-    }
+    const order = await prisma.order.update({
+      where: { id },
+      data: { status },
+    })
     
     res.json(order)
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Order not found' })
+    }
     console.error('Error updating order:', error)
     res.status(500).json({ error: 'Failed to update order' })
   }
 })
 
 export default router
-
-
-

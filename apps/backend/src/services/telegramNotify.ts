@@ -1,5 +1,5 @@
 import type { Order } from '../types/order.js'
-import { listAdmins } from '../store/adminsStore.js'
+import { prisma } from '../db/prisma.js'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -139,12 +139,14 @@ ${order.comment ? `💬 <b>Комментарий:</b>\n${order.comment}\n` : ''
 
 export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
   try {
-    const adminIds = await listAdmins()
+    const admins = await prisma.admin.findMany()
     
-    if (adminIds.length === 0) {
+    if (admins.length === 0) {
       console.warn('No admin IDs configured, skipping notification')
       return
     }
+    
+    const adminIds = admins.map(a => Number(a.tgId))
 
     const message = formatOrderMessage(order)
     
