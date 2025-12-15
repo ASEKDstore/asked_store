@@ -1,4 +1,4 @@
-import type { Order } from '../types/order'
+import type { Order } from '../types/order.js'
 import { listAdmins } from '../store/adminsStore.js'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN

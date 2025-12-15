@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import type { Order } from '../types/order'
+import type { Order } from '../types/order.js'
 
 const DATA_DIR = join(process.cwd(), 'data')
 const ORDERS_FILE = join(DATA_DIR, 'orders.json')

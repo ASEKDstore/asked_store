@@ -255,6 +255,39 @@ export async function deleteLabProduct(id: string): Promise<void> {
   await writeJson('lab', data)
 }
 
+// ========== ALIASES FOR ROUTES ==========
+
+export async function getArtists(): Promise<LabArtist[]> {
+  return listArtists()
+}
+
+export async function addArtist(payload: {
+  name: string
+  avatar?: string
+  bio?: string
+  links?: Array<{ title: string; url: string }>
+  currentWork?: string
+  active?: boolean
+}): Promise<LabArtist> {
+  return createArtist(payload)
+}
+
+export async function getLabProducts(artistId?: string): Promise<LabProduct[]> {
+  return listLabProducts(artistId ? { artistId } : {})
+}
+
+export async function addLabProduct(payload: {
+  artistId: string
+  title: string
+  description?: string
+  price: number
+  images?: string[]
+  tags?: string[]
+  available?: boolean
+}): Promise<LabProduct> {
+  return createLabProduct(payload)
+}
+
 // ========== SEED ==========
 
 export async function seedIfEmpty(): Promise<void> {

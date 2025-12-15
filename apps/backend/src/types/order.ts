@@ -24,6 +24,7 @@ export interface OrderDelivery {
 export interface Order {
   id: string
   createdAt: string
+  updatedAt?: string
   user: {
     tgId: number
     name: string
