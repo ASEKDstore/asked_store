@@ -4,42 +4,49 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { MenuActions } from './menu.js'
 import { config } from '../config.js'
-import { status } from '../ui/statusMessages.js'
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 /**
- * Save user data (TODO: integrate with backend API)
+ * Save user data to backend
  */
-import { addSubscriber } from "./subscribe.js"; export function saveUser(user: {
+async function saveUser(user: {
   id: number
   username?: string
   first_name?: string
   last_name?: string
 }) {
-  // TODO: Send user data to backend API
-  console.log('?? User registered/updated:', {
-    id: user.id,
-    username: user.username,
-    name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-  })
+  try {
+    const backendUrl = config.backendUrl
+    if (!backendUrl) {
+      console.warn('Backend URL not configured, skipping user save')
+      return
+    }
+
+    await fetch(`${backendUrl}/api/telegram/subscribers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tgId: user.id,
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: true,
+      }),
+    })
+  } catch (error) {
+    console.error('Failed to save user to backend:', error)
+  }
 }
 
 /**
- * Get welcome caption text
+ * Get welcome caption text (will be replaced by BotFlows)
  */
 export function getWelcomeCaption(user?: { first_name?: string }): string {
-  const name = user?.first_name ? `, ${user.first_name}` : ''
-  return `����� ���������� � ASKED Store${name} ??
-
-����� �� ������:
-� �������� ����� � �������
-� ���������� ���� � ��������� ����
-� ������� �� ��������� ASKED LAB
-
-������� �������� ���� � �������� ??`
+  // Placeholder - will be replaced by BotFlows from database
+  return 'Добро пожаловать!'
 }
 
 /**
@@ -50,25 +57,25 @@ export function getMainMenuKeyboard(): InlineKeyboardMarkup {
     inline_keyboard: [
       [
         {
-          text: '?? ��������� ����������',
+          text: '📱 Открыть приложение',
           callback_data: MenuActions.OPEN_APP,
         },
       ],
       [
         {
-          text: '?? ��� ������',
+          text: '📦 Мои заказы',
           callback_data: MenuActions.MY_ORDERS,
         },
       ],
       [
         {
-          text: '?? ASKED LAB',
+          text: '🎨 ASKED LAB',
           callback_data: MenuActions.ASKED_LAB,
         },
       ],
       [
         {
-          text: '?? ��� ��������-�����',
+          text: '📢 Наш канал',
           url: config.telegramChannelUrl || 'https://t.me/asked_store',
         },
       ],
@@ -81,27 +88,23 @@ export function getMainMenuKeyboard(): InlineKeyboardMarkup {
  * Can be local file path or URL
  */
 export function getWelcomeVideoSource(): string | undefined {
-  // ���������� ��������� ���� �� ����� assets
-  // ���������� ���� � �����
   const videoPath = join(__dirname, '../../assets/welcom.mp4')
   return videoPath
-  
-  // ���� ����� ������������ URL �� �������, ����������������:
-  // return config.welcomeVideoUrl
 }
 
 /**
  * Handle /start command
+ * Messages will be managed through BotFlows API
  */
 export async function handleStart(ctx: Context) {
   try {
     const user = ctx.from
     if (!user) {
-      return ctx.reply('������: �� ������� �������� ������ ������������')
+      return ctx.reply('Ошибка: не удалось получить данные пользователя')
     }
 
-    // Register/update user
-    saveUser({
+    // Register/update user in backend
+    await saveUser({
       id: user.id,
       username: user.username,
       first_name: user.first_name,
@@ -123,10 +126,17 @@ export async function handleStart(ctx: Context) {
         })
       } else {
         // If it's a local file path, use source
-        await ctx.replyWithVideo({ source: videoSource }, {
-          caption,
-          reply_markup: keyboard,
-        })
+        try {
+          await ctx.replyWithVideo({ source: videoSource }, {
+            caption,
+            reply_markup: keyboard,
+          })
+        } catch (error) {
+          // Fallback if video file not found
+          await ctx.reply(caption, {
+            reply_markup: keyboard,
+          })
+        }
       }
     } else {
       // Fallback: send text message if no video
@@ -134,23 +144,8 @@ export async function handleStart(ctx: Context) {
         reply_markup: keyboard,
       })
     }
-
-    // Demo: �������� ��������� ��������� � ���������� ������
-    try {
-      await status.appStarting(ctx.telegram, ctx.chat.id)
-      await status.labStarting(ctx.telegram, ctx.chat.id)
-      await status.checkPayment(ctx.telegram, ctx.chat.id)
-      await status.paymentOk(ctx.telegram, ctx.chat.id)
-    } catch (error) {
-      console.error('? Error sending status messages:', error)
-      // �� ��������� ����������, ���� ������ � ����-����������
-    }
   } catch (error) {
-    console.error('? Error in handleStart:', error)
-    await ctx.reply('��������� ������ ��� ��������� �������. ���������� �����.')
+    console.error('❌ Error in handleStart:', error)
+    await ctx.reply('Произошла ошибка при обработке команды. Попробуйте позже.')
   }
 }
-
-
-
-

@@ -1,5 +1,11 @@
 /**
- * Шаблоны статусных сообщений с кастомными эмодзи
+ * Status messages templates
+ * 
+ * NOTE: These are placeholders. All bot messages should be managed
+ * through BotFlows API in the admin panel.
+ * 
+ * This file is kept for backward compatibility but should not be used
+ * for new messages. Use BotFlows instead.
  */
 
 import { sendWithEmoji } from './sendWithCustomEmoji.js'
@@ -13,42 +19,34 @@ type TelegramApi = {
 
 export const status = {
   /**
-   * Приложение запускается
+   * Placeholder - use BotFlows instead
    */
   async appStarting(api: TelegramApi, chatId: number | string): Promise<void> {
-    await sendWithEmoji(api, chatId, 'Приложение запускается {gear}')
+    // Deprecated - use BotFlows API
+    console.warn('status.appStarting is deprecated, use BotFlows API instead')
   },
 
   /**
-   * Запускаю ASKED LAB
+   * Placeholder - use BotFlows instead
    */
   async labStarting(api: TelegramApi, chatId: number | string): Promise<void> {
-    await sendWithEmoji(api, chatId, 'Запускаю ASKED LAB {green}')
+    // Deprecated - use BotFlows API
+    console.warn('status.labStarting is deprecated, use BotFlows API instead')
   },
 
   /**
-   * Проверяем статус оплаты
+   * Placeholder - use BotFlows instead
    */
   async checkPayment(api: TelegramApi, chatId: number | string): Promise<void> {
-    await sendWithEmoji(
-      api,
-      chatId,
-      'Проверяем статус оплаты, обычно это занимает не более 5 минут {dots}'
-    )
+    // Deprecated - use BotFlows API
+    console.warn('status.checkPayment is deprecated, use BotFlows API instead')
   },
 
   /**
-   * Оплата принята
+   * Placeholder - use BotFlows instead
    */
   async paymentOk(api: TelegramApi, chatId: number | string): Promise<void> {
-    await sendWithEmoji(
-      api,
-      chatId,
-      'Оплата принята! {ok}\nСпасибо за покупку {heart}'
-    )
+    // Deprecated - use BotFlows API
+    console.warn('status.paymentOk is deprecated, use BotFlows API instead')
   },
 }
-
-
-
-
