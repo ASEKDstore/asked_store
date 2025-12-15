@@ -1,0 +1,502 @@
+/* Страница лаборатории */
+.lab-root {
+  min-height: 100vh;
+  padding: 72px 16px 28px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  color: #f5f5f5;
+  max-width: 1400px;
+  margin: 0 auto;
+  /* full-page background */
+  background: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.92)),
+    url('/assets/lab-calligraphy-bg.jpg') center / cover no-repeat fixed;
+  z-index: 0;
+}
+
+.lab-root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.65) 90%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px);
+  opacity: 0.32;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lab-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lab-root.is-mounted {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Блок "Сейчас в работе" */
+.lab-current-work {
+  margin-bottom: 24px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.lab-current-work-content {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  padding: 20px 24px;
+  color: #000;
+}
+
+.lab-current-work-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.lab-current-work-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #000;
+}
+
+/* Герой секция */
+.lab-hero {
+  position: relative;
+  border-radius: 28px;
+  padding: 18px;
+  overflow: visible;
+  margin-bottom: 32px;
+}
+
+/* Стеклянная подложка для всей области героя - витринное стекло */
+.lab-hero::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 30px;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.03) 100%),
+    rgba(20, 20, 25, 0.25);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Дополнительный слой для реалистичности витрины */
+.lab-hero::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 30px;
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Плавающие элементы */
+.lab-float {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lab-float::before,
+.lab-float::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 60%);
+  filter: blur(6px);
+  opacity: 0.55;
+  animation: floaty 7s ease-in-out infinite;
+}
+
+.lab-float::before {
+  left: -40px;
+  top: 10px;
+}
+
+.lab-float::after {
+  right: -60px;
+  bottom: -30px;
+  animation-duration: 9s;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(18px, -14px);
+  }
+}
+
+/* Персонаж художника */
+.lab-artist-figure {
+  position: absolute;
+  right: -120px;
+  top: -220px;
+  width: 1800px;
+  z-index: 4;
+  pointer-events: none;
+  filter: drop-shadow(0 30px 90px rgba(0, 0, 0, 0.75));
+}
+
+.lab-artist-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: translateY(8px);
+  animation: artistFloat 6s ease-in-out infinite;
+}
+
+@keyframes artistFloat {
+  0%,
+  100% {
+    transform: translateY(8px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Карточка */
+.lab-card {
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
+  max-width: 62%;
+  border-radius: 26px;
+  padding: 18px;
+  background: rgba(25, 25, 25, 0.75);
+  backdrop-filter: blur(22px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 30px 120px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.lab-card.glow {
+  animation: glowBorder 3.6s ease-in-out infinite;
+}
+
+@keyframes glowBorder {
+  0%,
+  100% {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+}
+
+/* Информация о художнике */
+.lab-artist {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.lab-avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.lab-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.02) brightness(0.92);
+}
+
+.lab-artist-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lab-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f5f5f5;
+}
+
+.lab-role {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.72;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f5f5f5;
+}
+
+.lab-bio {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.88;
+  line-height: 1.45;
+  color: #f5f5f5;
+}
+
+.lab-bio ul {
+  margin: 0;
+  padding-left: 18px;
+  opacity: 0.85;
+}
+
+.lab-bio li {
+  margin-bottom: 6px;
+}
+
+.lab-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.lab-link {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f5f5f5;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.lab-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.lab-cta {
+  margin-top: 12px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+  font-size: 14px;
+}
+
+.lab-cta:hover {
+  transform: translateY(-1px);
+}
+
+.lab-cta:active {
+  transform: scale(0.99);
+}
+
+/* Секция работ */
+.lab-works-section {
+  margin-top: 40px;
+  margin-bottom: 32px;
+}
+
+.lab-works-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #f5f5f5;
+  text-align: center;
+}
+
+.lab-works-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.lab-works-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.lab-works-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lab-works-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.lab-work-card {
+  flex: 0 0 auto;
+  width: 280px;
+  scroll-snap-align: start;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+
+.lab-work-card:hover {
+  transform: translateY(-4px);
+  filter: contrast(1.1);
+}
+
+.lab-work-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.lab-work-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.lab-work-card:hover .lab-work-image img {
+  transform: scale(1.05);
+}
+
+.lab-work-card-reviews-count {
+  margin-top: 8px;
+  padding: 0 14px 12px;
+  font-size: 12px;
+  opacity: 0.7;
+  color: #e0e0e0;
+}
+
+.lab-work-title {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f5f5f5;
+}
+
+.lab-work-tags {
+  padding: 0 14px 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lab-work-tag {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* CTA полоска */
+.lab-cta-bar {
+  margin-top: 40px;
+  padding: 20px;
+  text-align: center;
+}
+
+.lab-cta-bar-btn {
+  padding: 14px 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+  font-size: 14px;
+}
+
+.lab-cta-bar-btn:hover {
+  transform: translateY(-1px);
+}
+
+.lab-cta-bar-btn:active {
+  transform: scale(0.99);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .lab-card {
+    max-width: 100%;
+  }
+
+  .lab-artist-figure {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 220px;
+    margin: 0 auto -24px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .lab-root {
+    padding: 60px 12px 20px;
+  }
+
+  .lab-artist {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .lab-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .lab-work-card {
+    width: 240px;
+  }
+
+  .lab-artist-figure {
+    width: 300px;
+    right: -16px;
+    top: -20px;
+  }
+}
+

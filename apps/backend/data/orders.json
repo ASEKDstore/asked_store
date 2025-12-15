@@ -1,0 +1,34 @@
+[
+  {
+    "id": "e30abd50-ad4c-4b4a-82cc-a20cc9709a1e",
+    "createdAt": "2025-12-14T22:08:14.427Z",
+    "user": {
+      "tgId": 930749603,
+      "name": "ASKED Admin",
+      "username": "asked_admin",
+      "photo_url": ""
+    },
+    "items": [
+      {
+        "type": "product",
+        "productId": "p-001",
+        "title": "ASKED Hoodie Black",
+        "article": "ASK-001-BLK",
+        "price": 8990,
+        "qty": 1,
+        "size": "L"
+      }
+    ],
+    "totalPrice": 6742,
+    "status": "done",
+    "delivery": {
+      "fullName": "4цуцк укцпцукп цукпцу п",
+      "phone": "234214213132",
+      "address": "цуйцкйцкйц",
+      "method": "cdek"
+    },
+    "comment": "уцйук",
+    "promoCode": "ASK1765748525576957EDT",
+    "discount": 2248
+  }
+]

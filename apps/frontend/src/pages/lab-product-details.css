@@ -1,0 +1,240 @@
+/* LAB Product Details Page */
+.lab-product-details-root {
+  min-height: 100vh;
+  padding: 72px 16px 28px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  color: #f5f5f5;
+  max-width: 1400px;
+  margin: 0 auto;
+  /* LAB mode background */
+  background: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.92)),
+    url('/assets/lab-calligraphy-bg.jpg') center / cover no-repeat fixed;
+  z-index: 0;
+}
+
+.lab-product-details-root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.65) 90%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px);
+  opacity: 0.32;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lab-product-details-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lab-product-details-root.is-mounted {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lab-product-details-container {
+  position: relative;
+}
+
+.lab-product-back-btn {
+  margin-bottom: 24px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #f5f5f5;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.lab-product-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.lab-product-details-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 32px;
+}
+
+@media (max-width: 768px) {
+  .lab-product-details-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
+  }
+}
+
+/* Gallery */
+.lab-product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lab-product-main-image {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lab-product-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lab-product-thumbnails {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.lab-product-thumb {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.lab-product-thumb:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.lab-product-thumb.is-active {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.lab-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Info */
+.lab-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.lab-product-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lab-product-title {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0;
+  color: #f5f5f5;
+  line-height: 1.2;
+}
+
+.lab-product-artist {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.lab-product-artist strong {
+  color: #f5f5f5;
+  font-weight: 600;
+}
+
+.lab-product-price {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f5f5f5;
+}
+
+.lab-product-description {
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lab-product-description h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: #f5f5f5;
+}
+
+.lab-product-description p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+.lab-product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lab-product-tag {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lab-product-actions {
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lab-product-cta {
+  width: 100%;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  color: #f5f5f5;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.lab-product-cta:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.lab-product-cta:active {
+  transform: translateY(0);
+}
+
+
+

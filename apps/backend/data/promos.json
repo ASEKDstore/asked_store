@@ -1,0 +1,222 @@
+[
+  {
+    "id": "03fea938-70a5-4e26-bd4b-33a9ada47126",
+    "code": "ASK1765748525576957EDT",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 1,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "da66902e-a164-41a2-9f84-a9724d7d84bc",
+    "code": "ASK17657485255760EB77A",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "7c09f0ae-1aaf-449b-a853-4c9b0cfc626b",
+    "code": "ASK17657485255769YSI9D",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "bfcd2027-da76-4eb1-879b-a219d1b52522",
+    "code": "ASK1765748525576CNJPPK",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "18055a10-f42a-43d4-a35f-6898bdc861d7",
+    "code": "ASK1765748525576DRZ62Z",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "c462d65d-c1cb-44e8-957c-f6e49ab2ed28",
+    "code": "ASK17657485255765UJ5YD",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "806cfd57-5421-4de2-a4f1-354d8df7dca8",
+    "code": "ASK1765748525576GT55LS",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "7acacf2a-83bf-4728-977a-1b518be20138",
+    "code": "ASK17657485255764XAF1O",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "550ae8c5-c8d7-4e26-9eb0-d8047ccc5402",
+    "code": "ASK1765748525576OTIP9F",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "ff8006ed-fa65-433d-bc0b-8c7633d44449",
+    "code": "ASK1765748525576QILILL",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "7d2083be-b101-4458-a890-427450762555",
+    "code": "ASK1765748525576RRCHXJ",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "7776afe1-3b1c-491b-b0d0-244f30b7578d",
+    "code": "ASK1765748525576AXWTFK",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "c09eedf1-e28d-4e31-9737-1aee9aa728e9",
+    "code": "ASK1765748525576TZMKZT",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "8b7e7a69-1300-4bdc-8baa-c527cf42bc0b",
+    "code": "ASK17657485255768U2I27",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "20d48982-65dc-4eae-bbb2-d41d9169fe03",
+    "code": "ASK1765748525576A6LY0F",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "8716f952-2667-42c1-acbb-19646ee9d74e",
+    "code": "ASK1765748525576K5JTYB",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "e888a590-f02e-4d59-9bde-183614d20f56",
+    "code": "ASK1765748525576PLJL4V",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "37d03872-ebdf-4790-85eb-ec253f975a97",
+    "code": "ASK1765748525576IZ83FS",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "a9f6c583-4d8c-4be3-a4d0-7847858b5f5f",
+    "code": "ASK1765748525576XMLAJ3",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  },
+  {
+    "id": "07fd102a-5f6c-4133-9b55-99b9a3177cb3",
+    "code": "ASK176574852557639GKZT",
+    "type": "percent",
+    "value": 25,
+    "active": true,
+    "usageLimit": 1,
+    "usedCount": 0,
+    "expiresAt": "2025-12-24",
+    "createdAt": "2025-12-14T21:42:05.576Z"
+  }
+]

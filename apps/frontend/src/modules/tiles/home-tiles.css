@@ -1,0 +1,191 @@
+/* Branch Section */
+.home-branch {
+  margin: 10px auto 18px;
+  padding: 0 16px;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.home-branch.is-mounted {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (min-width: 860px) {
+  .home-branch {
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+  
+  .home-branch .home-divider {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Branch Card */
+.branch-card {
+  position: relative;
+  border-radius: 22px;
+  padding: 16px 16px 14px;
+  background: rgba(10, 10, 10, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  overflow: hidden;
+  
+  transform: translateY(0);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.branch-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.10), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.06), transparent 50%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.branch-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.branch-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.70);
+}
+
+.branch-card:hover::after {
+  opacity: 1;
+}
+
+.branch-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+.branch-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.25);
+  outline-offset: 2px;
+}
+
+/* Branch Top */
+.branch-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.branch-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f5f5f5;
+}
+
+.branch-arrow {
+  font-size: 18px;
+  opacity: 0.7;
+  transform: translateX(0);
+  transition: transform 180ms ease, opacity 180ms ease;
+  color: #f5f5f5;
+}
+
+.branch-card:hover .branch-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+/* Branch Sub */
+.branch-sub {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.78;
+  color: #f5f5f5;
+}
+
+/* Branch Chips */
+.branch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  font-size: 12px;
+  opacity: 0.85;
+  color: #f5f5f5;
+}
+
+/* LAB variant — чуть более "экспериментальная" подсветка */
+.branch-card-lab {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.branch-card-lab::before {
+  opacity: 0.55;
+}
+
+/* Home Divider (если используется внутри branch) */
+.home-branch .home-divider {
+  margin-top: 16px;
+}
+
+/* Адаптивность */
+@media (max-width: 859px) {
+  .home-branch {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-branch {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .branch-card {
+    padding: 14px 14px 12px;
+    border-radius: 18px;
+  }
+
+  .branch-title {
+    font-size: 13px;
+  }
+
+  .branch-sub {
+    font-size: 12px;
+  }
+
+  .chip {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+}

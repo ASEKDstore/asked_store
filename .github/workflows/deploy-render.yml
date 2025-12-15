@@ -1,0 +1,22 @@
+name: Deploy to Render
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  call-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Render deploy hook
+        run: |
+          curl "$RENDER_DEPLOY_HOOK_URL"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+
+
+
+
+

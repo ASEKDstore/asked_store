@@ -1,0 +1,48 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build
+dist/
+build/
+.cache/
+.temp/
+
+# Vite
+.vite/
+*.local
+
+# TS
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+*.log.*
+*.out
+*.err
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Backend uploads (file manager)
+apps/backend/uploads/
+
+# Misc
+*.swp
+*.swo

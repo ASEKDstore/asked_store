@@ -1,0 +1,458 @@
+/* Telegram-style Sheet Overlay */
+.tg-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none; /* КРИТИЧНО: не блокируем клики когда закрыт */
+}
+
+.tg-sheet-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto; /* Разрешаем клики только когда открыт */
+}
+
+/* Telegram-style Sheet */
+.tg-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 90vh;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(18px);
+  opacity: 0;
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1), opacity 240ms ease;
+  z-index: 1001;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.tg-sheet.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.tg-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+}
+
+.tg-titlebar {
+  padding: 0 20px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.tg-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin: 0;
+  text-align: center;
+}
+
+.tg-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scrollbar */
+.tg-sheet-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tg-sheet-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tg-sheet-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.tg-sheet-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Media */
+.tg-media {
+  margin-bottom: 20px;
+}
+
+/* Profile Head (как в профиле) */
+.tg-profile-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 0;
+  margin-bottom: 20px;
+}
+
+.tg-hero-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin: 0;
+  text-align: center;
+}
+
+.tg-hero-sub {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  text-align: center;
+}
+
+.tg-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.tg-price {
+  font-size: 20px;
+  font-weight: 900;
+  color: #f5f5f5;
+}
+
+.tg-oldprice {
+  font-size: 13px;
+  opacity: 0.55;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Card (как в профиле) */
+.tg-card {
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(18px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tg-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Row (как в профиле) */
+.tg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tg-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tg-row-key {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.tg-row-val {
+  font-size: 15px;
+  color: #f5f5f5;
+  font-weight: 500;
+}
+
+/* Sizes */
+.tg-sizes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tg-size-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 44px;
+  font-family: inherit;
+}
+
+.tg-size-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.tg-size-pill.is-active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
+.tg-size-pill.is-error {
+  border-color: rgba(255, 100, 100, 0.6);
+  background: rgba(255, 100, 100, 0.1);
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.tg-size-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 100, 100, 0.9);
+  text-align: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Actions */
+.tg-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tg-btn {
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.tg-btn-primary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f5f5;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tg-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.tg-btn-primary:active {
+  transform: translateY(0);
+}
+
+.tg-btn-secondary {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.tg-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tg-btn-ghost {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.tg-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Text */
+.tg-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+/* Toast */
+.tg-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(18px);
+  color: #f5f5f5;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1002;
+  animation: toastSlideUp 0.3s ease;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .tg-sheet {
+    max-height: 95vh;
+  }
+
+  .tg-sheet-body {
+    padding: 16px;
+  }
+
+  .tg-card {
+    padding: 16px;
+  }
+
+  .tg-hero-title {
+    font-size: 22px;
+  }
+
+  .related-card {
+    min-width: 140px;
+  }
+
+  .related-img {
+    height: 100px;
+  }
+}
+
+/* Related Products */
+.related-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 2px 2px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.related-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.related-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.related-row::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.related-card {
+  min-width: 160px;
+  scroll-snap-align: start;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease;
+  font-family: inherit;
+  outline: none;
+}
+
+.related-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.related-card:active {
+  transform: translateY(0);
+}
+
+.related-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.25);
+  outline-offset: 2px;
+}
+
+.related-img {
+  height: 110px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+}
+
+.related-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.related-meta {
+  margin-top: 8px;
+}
+
+.related-title {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.9;
+  color: #f5f5f5;
+  line-height: 1.3;
+}
+
+.related-price {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.8);
+}
+

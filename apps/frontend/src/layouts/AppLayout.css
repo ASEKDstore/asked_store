@@ -1,0 +1,75 @@
+.app-layout {
+  min-height: 100vh;
+  position: relative;
+  color: #f5f5f5;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+    'Inter', sans-serif;
+  
+  /* Глобальный фон ASKED */
+  background:
+    /* Виньетка */
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(0, 0, 0, 0.85) 65%
+    ),
+    /* Каллиграфический паттерн */
+    url('/assets/lab-calligraphy-bg.jpg'),
+    /* Базовый цвет */
+    linear-gradient(
+      to bottom,
+      #0b0b0c,
+      #060607
+    );
+  
+  background-size:
+    cover,
+    1600px,
+    cover;
+  
+  background-position:
+    center,
+    center 20%,
+    center;
+  
+  background-repeat: no-repeat;
+}
+
+/* Grain эффект */
+.app-layout::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url('/assets/noise.png');
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+.app-layout-main {
+  padding-top: 64px;
+  min-height: calc(100vh - 64px);
+  position: relative;
+  z-index: 2;
+}
+
+/* .app-scroll теперь содержит .app-layout-main */
+.app-scroll {
+  position: relative;
+}
+
+/* Admin shell - fullscreen mode */
+.app-layout.admin-shell {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout-main.admin-main-wrapper {
+  padding-top: 0 !important;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
