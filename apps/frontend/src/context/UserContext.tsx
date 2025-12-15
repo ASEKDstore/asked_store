@@ -37,6 +37,9 @@ declare global {
           }
         }
         ready?: () => void
+        expand?: () => void
+        platform?: string
+        version?: string
       }
     }
   }

@@ -60,9 +60,29 @@ export async function handleStartWithFlow(ctx: Context) {
       }
     }
     
-    // Fallback: старый обработчик /start
-    // (можно оставить или убрать)
-    await ctx.reply('Добро пожаловать! Используйте /help для справки.')
+    // Fallback: показываем приветствие с кнопкой web_app
+    const { config } = await import('../config.js')
+    const webappUrl = config.webappUrl
+
+    if (webappUrl) {
+      await ctx.reply(
+        'Добро пожаловать в ASKED Store! 👋\n\nНажмите кнопку ниже, чтобы открыть магазин:',
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '🛍 ASKED Store',
+                  web_app: { url: webappUrl },
+                },
+              ],
+            ],
+          },
+        }
+      )
+    } else {
+      await ctx.reply('Добро пожаловать! Используйте /help для справки.')
+    }
   } catch (error) {
     console.error('❌ Error in handleStartWithFlow:', error)
     await ctx.reply('Произошла ошибка. Попробуйте позже.')

@@ -24,6 +24,7 @@ export const config = {
   botToken: BOT_TOKEN,
   telegramChannelUrl: process.env.TELEGRAM_CHANNEL_URL || 'https://t.me/asked_store',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:4000',
+  webappUrl: process.env.WEBAPP_URL || process.env.FRONTEND_URL || '',
 }
 
 

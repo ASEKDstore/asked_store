@@ -5,84 +5,119 @@ import { useLoadingProgress } from '../hooks/useLoadingProgress'
 import { apiUrl } from '../utils/api'
 import './LoadingScreen.css'
 
+type DiagnosticInfo = {
+  hasTelegram: boolean
+  hasWebApp: boolean
+  initDataLen: number
+  platform?: string
+  version?: string
+  userId?: number
+}
+
 export function LoadingScreen() {
   const { user, refresh } = useUser()
   const navigate = useNavigate()
-  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'not_telegram'>('checking')
   const [authMessage, setAuthMessage] = useState<string>('')
+  const [diagnostics, setDiagnostics] = useState<DiagnosticInfo | null>(null)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
   
+  // Determine if we're in WebApp
+  const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
+  const isWebApp = !!tg
+  
+  // Auth state: if WebApp exists, we're authenticated (even as guest)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
-    user ? 'authenticated' : (authStatus === 'checking' ? 'authenticating' : 'unauthenticated')
+    isWebApp ? 'authenticated' : (user ? 'authenticated' : 'unauthenticated')
   
   const progress = useLoadingProgress(authState)
 
-  // Auto-login via Telegram WebApp
+  // Initialize Telegram WebApp
   useEffect(() => {
-    const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
-    
+    // Collect diagnostic info
+    const diag: DiagnosticInfo = {
+      hasTelegram: typeof window !== 'undefined' && !!window.Telegram,
+      hasWebApp: !!tg,
+      initDataLen: tg?.initData?.length || 0,
+      platform: tg?.platform,
+      version: tg?.version,
+      userId: tg?.initDataUnsafe?.user?.id,
+    }
+    setDiagnostics(diag)
+
     if (!tg) {
       // Not in Telegram WebApp
-      setAuthStatus('not_telegram')
-      setAuthMessage('Откройте приложение через Telegram-бота')
+      setAuthMessage('ℹ️ Откройте приложение через Telegram-бота')
       return
     }
 
-    // Initialize Telegram WebApp
+    // Initialize Telegram WebApp (always, if WebApp exists)
     tg?.ready?.()
+    tg?.expand?.()
 
-    // Check if we have initData (user is authenticated via Telegram)
+    // Try to get user data from WebApp
+    refresh()
+
+    // Try to authenticate with backend if initData is available (non-blocking)
     const initData = tg?.initData
-    const hasInitData = !!initData
-
-    if (hasInitData) {
-      // Auto-authenticate
-      setAuthStatus('checking')
-      setAuthMessage('Вы вошли через Telegram')
-
-      // Send initData to backend for verification
+    if (initData && initData.length > 0) {
+      // Authenticate in background, don't block UI
       const authenticate = async () => {
         try {
-          const response = await fetch(apiUrl('/api/auth/telegram'), {
+          const apiEndpoint = apiUrl('/api/auth/telegram')
+          if (!apiEndpoint) {
+            console.warn('API URL is not configured, skipping backend auth')
+            return
+          }
+
+          const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData }),
           })
 
           if (response.ok) {
-            // Refresh user data from Telegram WebApp
+            // Refresh user data from backend
             refresh()
-            setAuthStatus('authenticated')
+            setAuthMessage('✅ Вход через Telegram выполнен')
           } else {
-            console.error('Auth failed:', await response.text())
-            setAuthStatus('not_telegram')
-            setAuthMessage('Ошибка авторизации. Откройте приложение через Telegram-бота')
+            // Silent fail - user can still use the app as guest
+            console.warn('Backend auth failed, continuing as guest')
+            setAuthMessage('') // Don't show error message
           }
         } catch (error) {
-          console.error('Auth error:', error)
-          // Even if backend fails, we can still use Telegram WebApp data
-          refresh()
-          setAuthStatus('authenticated')
-          setAuthMessage('Вы вошли через Telegram')
+          // Silent fail - user can still use the app as guest
+          console.warn('Backend auth error, continuing as guest:', error)
+          setAuthMessage('') // Don't show error message
         }
       }
 
       authenticate()
     } else {
-      // No initData - not in Telegram WebApp or not authenticated
-      setAuthStatus('not_telegram')
-      setAuthMessage('Откройте приложение через Telegram-бота')
+      // No initData - user is guest, but can still use the app
+      // Don't show message, just allow access
+      setAuthMessage('')
     }
-  }, [refresh])
+  }, [refresh, tg])
 
-  // Navigate to /app when authenticated and progress reaches 100%
+  // Navigate to /app when WebApp is detected and progress reaches 100%
+  // Don't wait for user - allow guest access
   useEffect(() => {
-    if (user && progress >= 100) {
+    const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
+    const isWebApp = !!tg
+
+    // If not in WebApp, don't navigate
+    if (!isWebApp) {
+      return
+    }
+
+    // Navigate when progress reaches 100% (regardless of user)
+    if (progress >= 100) {
       const timer = setTimeout(() => {
         navigate('/app')
       }, 600)
       return () => clearTimeout(timer)
     }
-  }, [user, progress, navigate])
+  }, [progress, navigate])
 
   const userName = user?.first_name || user?.firstName || 'ASKED'
   const displayName = user ? userName : 'ASKED'
@@ -114,12 +149,36 @@ export function LoadingScreen() {
         </div>
 
         {/* Статус авторизации (текстовый, без кнопок) */}
-        {authMessage && (
+        {/* Show message only if not in WebApp, or if auth succeeded */}
+        {(authMessage || (!isWebApp && diagnostics)) && (
           <div className="ls-auth-message">
-            {authStatus === 'authenticated' ? (
-              <span>✅ {authMessage}</span>
-            ) : (
-              <span>ℹ️ {authMessage}</span>
+            {authMessage && <div>{authMessage}</div>}
+            {diagnostics && (
+              <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.7 }}>
+                <button
+                  onClick={() => setShowDiagnostics(!showDiagnostics)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '11px',
+                  }}
+                >
+                  {showDiagnostics ? 'Скрыть' : 'Показать'} диагностику
+                </button>
+                {showDiagnostics && (
+                  <div style={{ marginTop: '4px', fontFamily: 'monospace', fontSize: '10px' }}>
+                    <div>hasTelegram: {diagnostics.hasTelegram ? '✅' : '❌'}</div>
+                    <div>hasWebApp: {diagnostics.hasWebApp ? '✅' : '❌'}</div>
+                    <div>initDataLen: {diagnostics.initDataLen}</div>
+                    {diagnostics.platform && <div>platform: {diagnostics.platform}</div>}
+                    {diagnostics.version && <div>version: {diagnostics.version}</div>}
+                    {diagnostics.userId && <div>userId: {diagnostics.userId}</div>}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

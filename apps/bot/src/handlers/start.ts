@@ -50,36 +50,77 @@ export function getWelcomeCaption(user?: { first_name?: string }): string {
 }
 
 /**
- * Get main menu keyboard
+ * Get main menu keyboard with web_app button
  */
 export function getMainMenuKeyboard(): InlineKeyboardMarkup {
+  const webappUrl = config.webappUrl
+  const inlineKeyboard: any[] = []
+
+  // Add web_app button if URL is configured
+  if (webappUrl) {
+    inlineKeyboard.push([
+      {
+        text: '🛍 ASKED Store',
+        web_app: { url: webappUrl },
+      },
+    ])
+  } else {
+    // Fallback to callback if webapp URL not configured
+    inlineKeyboard.push([
+      {
+        text: '📱 Открыть приложение',
+        callback_data: MenuActions.OPEN_APP,
+      },
+    ])
+  }
+
+  // Add other menu items
+  inlineKeyboard.push(
+    [
+      {
+        text: '📦 Мои заказы',
+        callback_data: MenuActions.MY_ORDERS,
+      },
+    ],
+    [
+      {
+        text: '🎨 ASKED LAB',
+        callback_data: MenuActions.ASKED_LAB,
+      },
+    ],
+    [
+      {
+        text: '📢 Наш канал',
+        url: config.telegramChannelUrl || 'https://t.me/asked_store',
+      },
+    ]
+  )
+
   return {
-    inline_keyboard: [
+    inline_keyboard: inlineKeyboard,
+  }
+}
+
+/**
+ * Get ReplyKeyboard with web_app button (for persistent menu)
+ */
+export function getReplyKeyboard() {
+  const webappUrl = config.webappUrl
+  if (!webappUrl) {
+    return undefined
+  }
+
+  return {
+    keyboard: [
       [
         {
-          text: '📱 Открыть приложение',
-          callback_data: MenuActions.OPEN_APP,
-        },
-      ],
-      [
-        {
-          text: '📦 Мои заказы',
-          callback_data: MenuActions.MY_ORDERS,
-        },
-      ],
-      [
-        {
-          text: '🎨 ASKED LAB',
-          callback_data: MenuActions.ASKED_LAB,
-        },
-      ],
-      [
-        {
-          text: '📢 Наш канал',
-          url: config.telegramChannelUrl || 'https://t.me/asked_store',
+          text: '🛍 ASKED Store',
+          web_app: { url: webappUrl },
         },
       ],
     ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   }
 }
 
@@ -116,32 +157,35 @@ export async function handleStart(ctx: Context) {
     const caption = getWelcomeCaption(user)
     const keyboard = getMainMenuKeyboard()
 
+    // Get ReplyKeyboard for persistent menu
+    const replyKeyboard = getReplyKeyboard()
+
     // Send video with caption and keyboard
     if (videoSource) {
       // If it's a URL, use it directly
       if (videoSource.startsWith('http://') || videoSource.startsWith('https://')) {
         await ctx.replyWithVideo(videoSource, {
           caption,
-          reply_markup: keyboard,
+          reply_markup: replyKeyboard || keyboard,
         })
       } else {
         // If it's a local file path, use source
         try {
           await ctx.replyWithVideo({ source: videoSource }, {
             caption,
-            reply_markup: keyboard,
+            reply_markup: replyKeyboard || keyboard,
           })
         } catch (error) {
           // Fallback if video file not found
           await ctx.reply(caption, {
-            reply_markup: keyboard,
+            reply_markup: replyKeyboard || keyboard,
           })
         }
       }
     } else {
       // Fallback: send text message if no video
       await ctx.reply(caption, {
-        reply_markup: keyboard,
+        reply_markup: replyKeyboard || keyboard,
       })
     }
   } catch (error) {
