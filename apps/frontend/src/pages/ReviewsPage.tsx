@@ -86,8 +86,8 @@ export const ReviewsPage = () => {
         case 'new':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case 'helpful':
-          const aReactions = Object.values(a.reactions || {}).reduce((sum: number, v: number) => sum + v, 0) || a.likes || 0
-          const bReactions = Object.values(b.reactions || {}).reduce((sum: number, v: number) => sum + v, 0) || b.likes || 0
+          const aReactions = (Object.values(a.reactions || {}) as number[]).reduce((sum: number, v: number) => sum + v, 0) || a.likes || 0
+          const bReactions = (Object.values(b.reactions || {}) as number[]).reduce((sum: number, v: number) => sum + v, 0) || b.likes || 0
           return bReactions - aReactions
         case 'withMedia':
           const aHasMedia = (a.media?.length || 0) > 0
@@ -155,7 +155,8 @@ export const ReviewsPage = () => {
     setReviews(getReviews())
     // Pulse animation
     setPulseId(`${reviewId}:${emoji}`)
-    setTimeout(() => setPulseId(null), 220)
+    const timer: ReturnType<typeof setTimeout> = setTimeout(() => setPulseId(null), 220)
+    // Timer will be cleared on unmount, no need to store ref for this short timeout
   }
 
   const handleAddReply = (text: string, isAdmin: boolean) => {

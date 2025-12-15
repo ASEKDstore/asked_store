@@ -17,7 +17,7 @@ export const HomeAdminPage: React.FC = () => {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const data = await api.getSettings()
+      const data = await api.getSettings() as { home?: { showBanners?: boolean; showTiles?: boolean; showLab?: boolean } }
       if (data.home) {
         setShowBanners(data.home.showBanners ?? true)
         setShowTiles(data.home.showTiles ?? true)

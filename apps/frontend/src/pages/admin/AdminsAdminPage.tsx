@@ -16,7 +16,7 @@ export const AdminsAdminPage: React.FC = () => {
   const loadAdmins = async () => {
     try {
       setLoading(true)
-      const data = await api.getAdmins()
+      const data = await api.getAdmins() as number[]
       setAdmins(data)
     } catch (error: any) {
       console.error('Failed to load admins:', error)

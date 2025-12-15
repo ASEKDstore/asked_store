@@ -1,5 +1,8 @@
 import type { Review, ReactionKey, ReviewReply } from '../types/review'
 
+// Re-export Review type for use in other files
+export type { Review }
+
 const STORAGE_KEY = 'asked_reviews_v1'
 
 // Миграция старых данных (likes -> reactions)

@@ -31,7 +31,7 @@ export const BannersAdminPage: React.FC = () => {
   const loadBanners = async () => {
     try {
       setLoading(true)
-      const data = await api.getBanners()
+      const data = await api.getBanners() as Banner[]
       setBanners(data)
     } catch (error: any) {
       console.error('Failed to load banners:', error)

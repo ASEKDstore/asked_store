@@ -28,7 +28,7 @@ export const StatsAdminPage: React.FC = () => {
       const data = await api.getStats({
         from: from || undefined,
         to: to || undefined,
-      })
+      }) as Stats | null
       setStats(data)
     } catch (error: any) {
       console.error('Failed to load stats:', error)

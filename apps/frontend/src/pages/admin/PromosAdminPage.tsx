@@ -27,7 +27,7 @@ export const PromosAdminPage: React.FC = () => {
   const loadPromos = async () => {
     try {
       setLoading(true)
-      const data = await api.getPromos()
+      const data = await api.getPromos() as Promo[]
       setPromos(data)
     } catch (error: any) {
       console.error('Failed to load promos:', error)
@@ -68,7 +68,7 @@ export const PromosAdminPage: React.FC = () => {
     }
 
     try {
-      const generated = await api.generatePromos(data)
+      const generated = await api.generatePromos(data) as Promo[]
       setGeneratedCodes(generated.map((p: Promo) => p.code))
       setShowGenerator(false)
       loadPromos()

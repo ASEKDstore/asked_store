@@ -18,7 +18,7 @@ export const LabLoadingScreen = ({ loading, subtitle = 'Готовим каст�
       setProgress(1)
       
       // Плавно скрываем через 300мс
-      const hideTimer = setTimeout(() => {
+      const hideTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
         setIsVisible(false)
       }, 300)
       

@@ -21,7 +21,7 @@ export const OrdersAdminPage: React.FC = () => {
       const data = await api.getOrders({
         status: statusFilter || undefined,
         q: searchQuery || undefined,
-      })
+      }) as Order[]
       setOrders(data)
     } catch (error: any) {
       console.error('Failed to load orders:', error)

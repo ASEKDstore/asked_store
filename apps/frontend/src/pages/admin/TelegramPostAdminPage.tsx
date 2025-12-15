@@ -48,7 +48,7 @@ export const TelegramPostAdminPage: React.FC = () => {
   const loadSubscribers = async () => {
     setLoadingSubscribers(true)
     try {
-      const data = await api.getTelegramSubscribers()
+      const data = await api.getTelegramSubscribers() as Subscriber[]
       setSubscribers(data || [])
     } catch (err: any) {
       console.error('Failed to load subscribers:', err)
@@ -101,7 +101,7 @@ export const TelegramPostAdminPage: React.FC = () => {
     try {
       const result = await api.sendTelegramPost({
         mode,
-        channelChatId: channelChatIdEditable ? (channelChatId.trim() || '@asked_store') : undefined,
+        channelChatId: channelChatIdEditable ? (channelChatId.trim() || '@asked_store') : (channelChatId.trim() || '@asked_store'),
         text: text.trim(),
         imageUrl: imageUrl.trim() || undefined,
         buttons: buttons.length > 0 ? buttons : undefined,

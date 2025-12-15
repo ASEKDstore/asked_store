@@ -58,7 +58,7 @@ export const BotFlowsAdminPage: React.FC = () => {
   const loadFlows = async () => {
     setLoading(true)
     try {
-      const data = await api.getBotFlows()
+      const data = await api.getBotFlows() as Omit<BotFlow, 'steps'>[]
       setFlows(data || [])
     } catch (err: any) {
       setError(err.message || 'Ошибка при загрузке')
@@ -70,7 +70,7 @@ export const BotFlowsAdminPage: React.FC = () => {
   const loadFlow = async (id: string) => {
     setLoading(true)
     try {
-      const data = await api.getBotFlow(id)
+      const data = await api.getBotFlow(id) as BotFlow | null
       setCurrentFlow(data)
       setSelectedStepId(data.startStepId)
       setViewMode('edit')
@@ -353,8 +353,10 @@ export const BotFlowsAdminPage: React.FC = () => {
                       checked={flow.enabled}
                       onChange={async () => {
                         // Toggle enabled
-                        const fullFlow = await api.getBotFlow(flow.id)
-                        await api.updateBotFlow(flow.id, { ...fullFlow, enabled: !fullFlow.enabled })
+                        const fullFlow = await api.getBotFlow(flow.id) as BotFlow | null
+                        if (fullFlow) {
+                          await api.updateBotFlow(flow.id, { ...fullFlow, enabled: !fullFlow.enabled })
+                        }
                         await loadFlows()
                       }}
                     />

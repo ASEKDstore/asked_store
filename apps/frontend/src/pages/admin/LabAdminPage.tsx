@@ -47,13 +47,13 @@ export const LabAdminPage: React.FC = () => {
     try {
       setLoading(true)
       // Always load artists (needed for product editor)
-      const artistsData = await api.getLabArtists()
+      const artistsData = await api.getLabArtists() as LabArtist[]
       setArtists(artistsData)
       
       if (activeTab === 'artists') {
         // Artists already loaded
       } else {
-        const productsData = await api.getLabProducts()
+        const productsData = await api.getLabProducts() as LabProduct[]
         setProducts(productsData)
       }
     } catch (error: any) {
