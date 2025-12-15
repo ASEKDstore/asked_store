@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express'
+import { Router, Request, Response as ExpressResponse, NextFunction } from 'express'
 import { readJson, writeJson } from '../../store/jsonDb.js'
 import type { Subscriber } from './telegramSubscribers.js'
 
@@ -36,7 +36,7 @@ async function sendTelegramMessage(
   const { imageUrl, replyMarkup, parseMode = 'HTML', disableWebPagePreview = false } = options
 
   try {
-    let tgResponse: Response
+    let tgResponse: globalThis.Response
     let result: any
 
     if (imageUrl) {
@@ -81,7 +81,7 @@ async function sendTelegramMessage(
 
 // POST /api/admin/telegram/post
 // requireAdmin применяется в server.ts
-router.post('/post', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/post', async (req: Request, res: ExpressResponse, next: NextFunction) => {
   try {
     if (!BOT_TOKEN) {
       return res.status(500).json({ error: 'TELEGRAM_BOT_TOKEN not configured' })
