@@ -15,8 +15,8 @@ export const SettingsAdminPage: React.FC = () => {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const data = await api.getSettings()
-      setMaintenanceMode(data.maintenanceMode)
+      const data = await api.getSettings() as { maintenanceMode?: boolean }
+      setMaintenanceMode(data.maintenanceMode ?? false)
     } catch (error: any) {
       console.error('Failed to load settings:', error)
     } finally {

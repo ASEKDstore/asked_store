@@ -1,19 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 type AuthState = 'authenticated' | 'unauthenticated' | 'authenticating'
 
 export function useLoadingProgress(authState: AuthState) {
   const [progress, setProgress] = useState(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    let interval: ReturnType<typeof window.setInterval> | null = null
+    // Clear previous interval if exists
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
 
     if (authState === 'authenticated') {
       // If authenticated, progress goes to 100%
-      interval = window.setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) {
-            if (interval !== null) window.clearInterval(interval)
+            if (intervalRef.current !== null) {
+              clearInterval(intervalRef.current)
+              intervalRef.current = null
+            }
             return 100
           }
           return Math.min(prev + 2, 100)
@@ -21,10 +29,13 @@ export function useLoadingProgress(authState: AuthState) {
       }, 50)
     } else if (authState === 'unauthenticated') {
       // If not authenticated, progress stops at 30-40%
-      interval = window.setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setProgress(prev => {
           if (prev >= 35) {
-            if (interval !== null) window.clearInterval(interval)
+            if (intervalRef.current !== null) {
+              clearInterval(intervalRef.current)
+              intervalRef.current = null
+            }
             return 35
           }
           return prev + 1
@@ -32,10 +43,13 @@ export function useLoadingProgress(authState: AuthState) {
       }, 80)
     } else if (authState === 'authenticating') {
       // If authenticating, continue progress
-      interval = window.setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) {
-            if (interval !== null) window.clearInterval(interval)
+            if (intervalRef.current !== null) {
+              clearInterval(intervalRef.current)
+              intervalRef.current = null
+            }
             return 100
           }
           return Math.min(prev + 3, 100)
@@ -44,7 +58,10 @@ export function useLoadingProgress(authState: AuthState) {
     }
 
     return () => {
-      if (interval !== null) window.clearInterval(interval)
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
   }, [authState])
 

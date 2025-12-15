@@ -71,6 +71,12 @@ export const BotFlowsAdminPage: React.FC = () => {
     setLoading(true)
     try {
       const data = await api.getBotFlow(id) as BotFlow | null
+      if (!data) {
+        setCurrentFlow(null)
+        setSelectedStepId(null)
+        setError('Flow not found')
+        return
+      }
       setCurrentFlow(data)
       setSelectedStepId(data.startStepId)
       setViewMode('edit')

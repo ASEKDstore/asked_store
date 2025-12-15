@@ -9,20 +9,30 @@ interface LabLoadingScreenProps {
 export const LabLoadingScreen = ({ loading, subtitle = 'Готовим кастом...' }: LabLoadingScreenProps) => {
   const [progress, setProgress] = useState(0)
   const [isVisible, setIsVisible] = useState(true)
-  const progressIntervalRef = useRef<ReturnType<typeof window.setInterval> | null>(null)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
+    // Clear previous timers
+    if (progressIntervalRef.current !== null) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
+    }
+    if (hideTimerRef.current !== null) {
+      clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
+
     if (!loading) {
       // Когда загрузка завершена, быстро доходим до 100%
       setProgress(1)
       
       // Плавно скрываем через 300мс
-      const hideTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
+      hideTimerRef.current = setTimeout(() => {
         setIsVisible(false)
+        hideTimerRef.current = null
       }, 300)
-      
-      return () => clearTimeout(hideTimer)
     } else {
       // Показываем loader при начале загрузки
       setIsVisible(true)
@@ -30,7 +40,7 @@ export const LabLoadingScreen = ({ loading, subtitle = 'Готовим каст�
       
       // Плавно увеличиваем прогресс до 90% пока loading=true
       if (!prefersReducedMotion) {
-        progressIntervalRef.current = window.setInterval(() => {
+        progressIntervalRef.current = setInterval(() => {
           setProgress((prev) => {
             // Плавный рост, но не выше 0.9
             const increment = Math.random() * 0.02 + 0.01
@@ -45,7 +55,12 @@ export const LabLoadingScreen = ({ loading, subtitle = 'Готовим каст�
 
     return () => {
       if (progressIntervalRef.current !== null) {
-        window.clearInterval(progressIntervalRef.current)
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+      if (hideTimerRef.current !== null) {
+        clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = null
       }
     }
   }, [loading, prefersReducedMotion])
