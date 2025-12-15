@@ -14,9 +14,16 @@ const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '../.env') })
 
 const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
+const WEBAPP_URL = process.env.WEBAPP_URL || process.env.FRONTEND_URL
 
 if (!BOT_TOKEN) {
   console.error('❌ BOT_TOKEN or TELEGRAM_BOT_TOKEN is not set in environment variables')
+  process.exit(1)
+}
+
+if (!WEBAPP_URL) {
+  console.error('❌ WEBAPP_URL is not set in environment variables')
+  console.error('❌ Mini App requires WEBAPP_URL to work correctly')
   process.exit(1)
 }
 
@@ -24,7 +31,7 @@ export const config = {
   botToken: BOT_TOKEN,
   telegramChannelUrl: process.env.TELEGRAM_CHANNEL_URL || 'https://t.me/asked_store',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:4000',
-  webappUrl: process.env.WEBAPP_URL || process.env.FRONTEND_URL || '',
+  webappUrl: WEBAPP_URL,
 }
 
 

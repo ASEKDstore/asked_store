@@ -1,6 +1,6 @@
 import { Telegraf } from 'telegraf'
 import { config } from './config.js'
-import { handleStart } from './handlers/start.js'
+import { handleStart, handleStore } from './handlers/start.js'
 import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp } from './handlers/menu.js'
 import { emojiCaptureMiddleware } from './tools/emojiCapture.js'
 
@@ -13,10 +13,13 @@ if (process.env.EMOJI_CAPTURE === '1') {
   console.log('📸 Emoji capture mode enabled')
 }
 
-// Register /start command handler
+// Register /start command handler (always sends web_app button)
 bot.start(handleStart)
 
-// Register menu action handlers
+// Register /store command handler (sends web_app button if user lost it)
+bot.command('store', handleStore)
+
+// Register menu action handlers (legacy, for backward compatibility)
 bot.action(MenuActions.MY_ORDERS, handleMyOrders)
 bot.action(MenuActions.ASKED_LAB, handleAskedLab)
 bot.action(MenuActions.OPEN_APP, handleOpenApp)
@@ -25,7 +28,8 @@ bot.action(MenuActions.OPEN_APP, handleOpenApp)
 bot.launch().then(() => {
   console.log('🤖 ASKED Store Bot is running')
   console.log('📱 Bot is ready to receive messages')
-  console.log('✅ Version: v0.2.1')
+  console.log(`🌐 WebApp URL: ${config.webappUrl}`)
+  console.log('✅ Version: v0.3.0')
 })
 
 // Enable graceful stop

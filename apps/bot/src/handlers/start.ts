@@ -1,13 +1,5 @@
 import { Context } from 'telegraf'
-import { InlineKeyboardMarkup } from 'telegraf/types'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-import { MenuActions } from './menu.js'
 import { config } from '../config.js'
-
-// Get the directory of the current module
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 /**
  * Save user data to backend
@@ -42,100 +34,31 @@ async function saveUser(user: {
 }
 
 /**
- * Get welcome caption text (will be replaced by BotFlows)
+ * Get ReplyKeyboard with web_app button
+ * This ensures Mini App opens in WebApp mode, not in browser
  */
-export function getWelcomeCaption(user?: { first_name?: string }): string {
-  // Placeholder - will be replaced by BotFlows from database
-  return 'Добро пожаловать!'
-}
-
-/**
- * Get main menu keyboard with web_app button
- */
-export function getMainMenuKeyboard(): InlineKeyboardMarkup {
-  const webappUrl = config.webappUrl
-  const inlineKeyboard: any[] = []
-
-  // Add web_app button if URL is configured
-  if (webappUrl) {
-    inlineKeyboard.push([
-      {
-        text: '🛍 ASKED Store',
-        web_app: { url: webappUrl },
-      },
-    ])
-  } else {
-    // Fallback to callback if webapp URL not configured
-    inlineKeyboard.push([
-      {
-        text: '📱 Открыть приложение',
-        callback_data: MenuActions.OPEN_APP,
-      },
-    ])
-  }
-
-  // Add other menu items
-  inlineKeyboard.push(
-    [
-      {
-        text: '📦 Мои заказы',
-        callback_data: MenuActions.MY_ORDERS,
-      },
-    ],
-    [
-      {
-        text: '🎨 ASKED LAB',
-        callback_data: MenuActions.ASKED_LAB,
-      },
-    ],
-    [
-      {
-        text: '📢 Наш канал',
-        url: config.telegramChannelUrl || 'https://t.me/asked_store',
-      },
-    ]
-  )
-
+export function getWebAppKeyboard() {
   return {
-    inline_keyboard: inlineKeyboard,
-  }
-}
-
-/**
- * Get ReplyKeyboard with web_app button (for persistent menu)
- */
-export function getReplyKeyboard() {
-  const webappUrl = config.webappUrl
-  if (!webappUrl) {
-    return undefined
-  }
-
-  return {
-    keyboard: [
-      [
-        {
-          text: '🛍 ASKED Store',
-          web_app: { url: webappUrl },
-        },
+    reply_markup: {
+      keyboard: [
+        [
+          {
+            text: '🛍 Открыть ASKED Store',
+            web_app: {
+              url: config.webappUrl,
+            },
+          },
+        ],
       ],
-    ],
-    resize_keyboard: true,
-    one_time_keyboard: false,
+      resize_keyboard: true,
+      one_time_keyboard: false,
+    },
   }
-}
-
-/**
- * Get welcome video source
- * Can be local file path or URL
- */
-export function getWelcomeVideoSource(): string | undefined {
-  const videoPath = join(__dirname, '../../assets/welcom.mp4')
-  return videoPath
 }
 
 /**
  * Handle /start command
- * Messages will be managed through BotFlows API
+ * Always sends reply keyboard with web_app button
  */
 export async function handleStart(ctx: Context) {
   try {
@@ -152,44 +75,25 @@ export async function handleStart(ctx: Context) {
       last_name: user.last_name,
     })
 
-    // Get video source
-    const videoSource = getWelcomeVideoSource()
-    const caption = getWelcomeCaption(user)
-    const keyboard = getMainMenuKeyboard()
-
-    // Get ReplyKeyboard for persistent menu
-    const replyKeyboard = getReplyKeyboard()
-
-    // Send video with caption and keyboard
-    if (videoSource) {
-      // If it's a URL, use it directly
-      if (videoSource.startsWith('http://') || videoSource.startsWith('https://')) {
-        await ctx.replyWithVideo(videoSource, {
-          caption,
-          reply_markup: replyKeyboard || keyboard,
-        })
-      } else {
-        // If it's a local file path, use source
-        try {
-          await ctx.replyWithVideo({ source: videoSource }, {
-            caption,
-            reply_markup: replyKeyboard || keyboard,
-          })
-        } catch (error) {
-          // Fallback if video file not found
-          await ctx.reply(caption, {
-            reply_markup: replyKeyboard || keyboard,
-          })
-        }
-      }
-    } else {
-      // Fallback: send text message if no video
-      await ctx.reply(caption, {
-        reply_markup: replyKeyboard || keyboard,
-      })
-    }
+    // Send welcome message with web_app button
+    const welcomeText = 'Добро пожаловать в ASKED 🖤\n\nОткрывай магазин кнопкой ниже — так Telegram корректно передаст WebApp-контекст.'
+    
+    await ctx.reply(welcomeText, getWebAppKeyboard())
   } catch (error) {
     console.error('❌ Error in handleStart:', error)
     await ctx.reply('Произошла ошибка при обработке команды. Попробуйте позже.')
+  }
+}
+
+/**
+ * Handle /store command
+ * Sends web_app button if user lost it
+ */
+export async function handleStore(ctx: Context) {
+  try {
+    await ctx.reply('Жми кнопку ниже 👇', getWebAppKeyboard())
+  } catch (error) {
+    console.error('❌ Error in handleStore:', error)
+    await ctx.reply('Произошла ошибка. Попробуйте позже.')
   }
 }
