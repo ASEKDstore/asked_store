@@ -22,7 +22,7 @@ bot.start(async (ctx) => {
     await ctx.reply(
       'Добро пожаловать в ASKED 🖤\n\nОткрывай магазин кнопкой ниже — так Telegram корректно передаст WebApp-контекст.',
       Markup.keyboard([
-        [Markup.button.webApp('🛍 Открыть ASKED Store', process.env.WEBAPP_URL || config.webappUrl)],
+        [Markup.button.webApp('🛍 Открыть ASKED Store', config.webappUrl)],
       ]).resize()
     )
   } catch (error) {
@@ -37,7 +37,7 @@ bot.command('store', async (ctx) => {
     await ctx.reply(
       'Жми кнопку ниже 👇',
       Markup.keyboard([
-        [Markup.button.webApp('🛍 Открыть ASKED Store', process.env.WEBAPP_URL || config.webappUrl)],
+        [Markup.button.webApp('🛍 Открыть ASKED Store', config.webappUrl)],
       ]).resize()
     )
   } catch (error) {
