@@ -3,11 +3,13 @@ import { getTelegramUser, type TgUser } from '../utils/telegram'
 
 export type User = {
   id: number
+  tgId?: number
   firstName?: string
   lastName?: string
   username?: string
   photo_url?: string
   photoUrl?: string
+  avatar?: string
   first_name?: string
   last_name?: string
   language_code?: string
@@ -62,6 +64,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: tgUser.username,
         photo_url: tgUser.photoUrl,
         photoUrl: tgUser.photoUrl,
+        avatar: tgUser.photoUrl,
       }
     }
     return null
@@ -70,16 +73,36 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refresh = useCallback(() => {
     const tgUser = getTelegramUser()
     if (tgUser) {
-      setUser({
-        id: tgUser.tgId,
-        tgId: tgUser.tgId,
-        first_name: tgUser.firstName,
-        last_name: tgUser.lastName,
-        firstName: tgUser.firstName,
-        lastName: tgUser.lastName,
-        username: tgUser.username,
-        photo_url: tgUser.photoUrl,
-        photoUrl: tgUser.photoUrl,
+      setUser((prevState) => {
+        // If prevState is null, create new User object
+        if (prevState === null) {
+          return {
+            id: tgUser.tgId,
+            tgId: tgUser.tgId,
+            first_name: tgUser.firstName,
+            last_name: tgUser.lastName,
+            firstName: tgUser.firstName,
+            lastName: tgUser.lastName,
+            username: tgUser.username,
+            photo_url: tgUser.photoUrl,
+            photoUrl: tgUser.photoUrl,
+            avatar: tgUser.photoUrl,
+          }
+        }
+        // Otherwise, merge with existing state
+        return {
+          ...prevState,
+          id: tgUser.tgId,
+          tgId: tgUser.tgId,
+          first_name: tgUser.firstName,
+          last_name: tgUser.lastName,
+          firstName: tgUser.firstName,
+          lastName: tgUser.lastName,
+          username: tgUser.username,
+          photo_url: tgUser.photoUrl,
+          photoUrl: tgUser.photoUrl,
+          avatar: tgUser.photoUrl,
+        }
       })
     } else {
       setUser(null)
