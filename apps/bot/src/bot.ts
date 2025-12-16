@@ -105,23 +105,25 @@ void bootstrap().catch((err: unknown) => {
 // Enable graceful stop
 process.once('SIGINT', () => {
   console.log('🛑 Received SIGINT, stopping bot...')
-  void bot.stop('SIGINT').then(() => {
+  try {
+    bot.stop('SIGINT')
     console.log('✅ Bot stopped gracefully')
     process.exit(0)
-  }).catch((err: unknown) => {
+  } catch (err: unknown) {
     console.error('❌ Error stopping bot:', err)
     process.exit(1)
-  })
+  }
 })
 
 process.once('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, stopping bot...')
-  void bot.stop('SIGTERM').then(() => {
+  try {
+    bot.stop('SIGTERM')
     console.log('✅ Bot stopped gracefully')
     process.exit(0)
-  }).catch((err: unknown) => {
+  } catch (err: unknown) {
     console.error('❌ Error stopping bot:', err)
     process.exit(1)
-  })
+  }
 })
 
