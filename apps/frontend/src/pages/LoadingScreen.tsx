@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
+import { initTelegramWebApp } from '../lib/telegram'
 import './LoadingScreen.css'
 
 type DiagnosticInfo = {
@@ -14,13 +15,10 @@ type DiagnosticInfo = {
 }
 
 export function LoadingScreen() {
-  const { user } = useUser()
+  const { user, setTelegramUser } = useUser()
   const navigate = useNavigate()
   const [diagnostics, setDiagnostics] = useState<DiagnosticInfo | null>(null)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
-  
-  // Determine if we're in WebApp (for diagnostics only)
-  const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
   
   // Auth state: always allow progress (guest mode supported)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
@@ -28,26 +26,37 @@ export function LoadingScreen() {
   
   const progress = useLoadingProgress(authState)
 
-  // Collect diagnostic info (optional, for debugging)
+  // Initialize Telegram WebApp and sync user data on mount
   useEffect(() => {
+    const result = initTelegramWebApp()
+    
+    // Set user data if available
+    if (result.user) {
+      setTelegramUser(result.user)
+    }
+
+    // Collect diagnostic info
+    const tg = typeof window !== 'undefined' ? (window as any).Telegram : undefined
+    const wa = tg?.WebApp
+    
     const diag: DiagnosticInfo = {
-      hasTelegram: typeof window !== 'undefined' && !!window.Telegram,
-      hasWebApp: !!tg,
-      initDataLen: tg?.initData?.length || 0,
-      platform: tg?.platform,
-      version: tg?.version,
-      userId: tg?.initDataUnsafe?.user?.id,
+      hasTelegram: !!tg,
+      hasWebApp: !!wa,
+      initDataLen: result.initDataLen,
+      platform: wa?.platform,
+      version: wa?.version,
+      userId: result.user?.id,
     }
     setDiagnostics(diag)
-  }, [tg])
+  }, [setTelegramUser])
 
-  // Navigate to /app when progress reaches 100%
-  // Always navigate, regardless of Telegram WebApp presence (guest mode supported)
+  // Navigate to /app after short delay (always, regardless of Telegram)
   useEffect(() => {
+    // Wait for progress to complete, then navigate
     if (progress >= 100) {
       const timer = setTimeout(() => {
         navigate('/app')
-      }, 600)
+      }, 800)
       return () => clearTimeout(timer)
     }
   }, [progress, navigate])
@@ -83,7 +92,12 @@ export function LoadingScreen() {
 
         {/* Диагностика (опционально, для отладки) */}
         {diagnostics && (
-          <div className="ls-auth-message" style={{ opacity: 0.5 }}>
+          <div className="ls-auth-message" style={{ opacity: 0.5, fontSize: '11px' }}>
+            {!diagnostics.hasTelegram && (
+              <div style={{ marginBottom: '4px', opacity: 0.7 }}>
+                ℹ️ Откройте приложение через Telegram-бота для полного функционала
+              </div>
+            )}
             <button
               onClick={() => setShowDiagnostics(!showDiagnostics)}
               style={{

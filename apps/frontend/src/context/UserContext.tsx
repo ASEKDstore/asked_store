@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import { getTelegramUser, type TgUser } from '../utils/telegram'
+import type { TelegramUser } from '../lib/telegram'
 
 export type User = {
   id: number
@@ -21,6 +21,7 @@ type UserContextValue = {
   initials: string
   isTelegram: boolean
   refresh: () => void
+  setTelegramUser: (user: TelegramUser | null) => void
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
@@ -50,64 +51,63 @@ declare global {
 }
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    // Try to get user from Telegram WebApp on mount
-    const tgUser = getTelegramUser()
-    if (tgUser) {
-      return {
-        id: tgUser.tgId,
-        tgId: tgUser.tgId,
-        first_name: tgUser.firstName,
-        last_name: tgUser.lastName,
-        firstName: tgUser.firstName,
-        lastName: tgUser.lastName,
-        username: tgUser.username,
-        photo_url: tgUser.photoUrl,
-        photoUrl: tgUser.photoUrl,
-        avatar: tgUser.photoUrl,
-      }
+  const [user, setUser] = useState<User | null>(null)
+
+  const setTelegramUser = useCallback((tgUser: TelegramUser | null) => {
+    if (!tgUser) {
+      // If user is null, don't break existing state - leave current user or null
+      return
     }
-    return null
-  })
+
+    setUser((prevState) => {
+      // Create new User object from TelegramUser
+      const newUser: User = {
+        id: tgUser.id,
+        tgId: tgUser.id,
+        first_name: tgUser.first_name,
+        last_name: tgUser.last_name,
+        firstName: tgUser.first_name,
+        lastName: tgUser.last_name,
+        username: tgUser.username,
+        photo_url: tgUser.photo_url,
+        photoUrl: tgUser.photo_url,
+        avatar: tgUser.photo_url,
+      }
+
+      // If prevState is null, return new user
+      if (prevState === null) {
+        return newUser
+      }
+
+      // Otherwise, merge with existing state
+      return {
+        ...prevState,
+        ...newUser,
+      }
+    })
+  }, [])
 
   const refresh = useCallback(() => {
-    const tgUser = getTelegramUser()
-    if (tgUser) {
-      setUser((prevState) => {
-        // If prevState is null, create new User object
-        if (prevState === null) {
-          return {
-            id: tgUser.tgId,
-            tgId: tgUser.tgId,
-            first_name: tgUser.firstName,
-            last_name: tgUser.lastName,
-            firstName: tgUser.firstName,
-            lastName: tgUser.lastName,
-            username: tgUser.username,
-            photo_url: tgUser.photoUrl,
-            photoUrl: tgUser.photoUrl,
-            avatar: tgUser.photoUrl,
-          }
-        }
-        // Otherwise, merge with existing state
-        return {
-          ...prevState,
-          id: tgUser.tgId,
-          tgId: tgUser.tgId,
-          first_name: tgUser.firstName,
-          last_name: tgUser.lastName,
-          firstName: tgUser.firstName,
-          lastName: tgUser.lastName,
+    // Refresh is kept for backward compatibility
+    // Actual user sync is done via setTelegramUser in LoadingScreen
+    // This method can be called to re-read Telegram user data
+    if (typeof window !== 'undefined') {
+      const wa = (window as any).Telegram?.WebApp
+      const tgUser = wa?.initDataUnsafe?.user
+      if (tgUser) {
+        setTelegramUser({
+          id: tgUser.id,
           username: tgUser.username,
-          photo_url: tgUser.photoUrl,
-          photoUrl: tgUser.photoUrl,
-          avatar: tgUser.photoUrl,
-        }
-      })
-    } else {
-      setUser(null)
+          first_name: tgUser.first_name,
+          last_name: tgUser.last_name,
+          photo_url: tgUser.photo_url,
+        })
+      } else {
+        // Don't clear user on refresh if Telegram is not available
+        // This allows guest mode to persist
+      }
     }
-  }, [])
+  }, [setTelegramUser])
 
   // User data is synced via useTelegramUser hook in LoadingScreen/App
   // This effect is kept for backward compatibility but refresh is called from useTelegramUser
@@ -143,6 +143,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initials,
     isTelegram,
     refresh,
+    setTelegramUser,
   }
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>

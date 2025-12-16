@@ -1,39 +1,33 @@
 import { useEffect } from 'react'
-import { getTelegramUser } from '../utils/telegram'
+import { initTelegramWebApp, getTelegramWebApp } from '../lib/telegram'
 import { useUser } from '../context/UserContext'
 import { apiUrl } from '../utils/api'
 
 /**
  * Hook to initialize Telegram WebApp and sync user data
  * - Calls tg.ready() and tg.expand() if available
- * - Reads Telegram user data and saves to UserContext
+ * - Reads Telegram user data and saves to UserContext via setTelegramUser
  * - Tries to authenticate with backend if initData is available (non-blocking)
  * - Works in guest mode if Telegram is not available
+ * 
+ * Note: This hook is kept for backward compatibility.
+ * Main initialization happens in LoadingScreen.tsx
  */
 export function useTelegramUser() {
-  const { refresh } = useUser()
+  const { setTelegramUser } = useUser()
 
   useEffect(() => {
-    const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
-
-    if (!tg) {
-      // Not in Telegram WebApp - guest mode
-      return
-    }
-
     // Initialize Telegram WebApp
-    tg?.ready?.()
-    tg?.expand?.()
-
-    // Sync user data from Telegram
-    const tgUser = getTelegramUser()
-    if (tgUser) {
-      // Refresh user context with Telegram data
-      refresh()
+    const result = initTelegramWebApp()
+    
+    // Set user data if available
+    if (result.user) {
+      setTelegramUser(result.user)
     }
 
     // Try to authenticate with backend if initData is available (non-blocking)
-    const initData = tg?.initData
+    const wa = getTelegramWebApp()
+    const initData = wa?.initData
     if (initData && initData.length > 0) {
       // Authenticate in background, don't block UI
       const authenticate = async () => {
@@ -50,9 +44,9 @@ export function useTelegramUser() {
             body: JSON.stringify({ initData }),
           })
 
-          if (response.ok) {
-            // Refresh user data from backend
-            refresh()
+          if (response.ok && result.user) {
+            // Refresh user data from backend (re-set Telegram user)
+            setTelegramUser(result.user)
           }
           // Silent fail - user can still use the app as guest
         } catch (error) {
@@ -63,6 +57,6 @@ export function useTelegramUser() {
 
       authenticate()
     }
-  }, [refresh])
+  }, [setTelegramUser])
 }
 
