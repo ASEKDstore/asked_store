@@ -13,6 +13,7 @@ const EMOJI_CAPTURE_ENABLED = process.env.EMOJI_CAPTURE === '1'
 
 /**
  * Обработчик для захвата custom_emoji_id из сообщений
+ * Работает только с text messages
  */
 export function captureCustomEmojis(ctx: Context) {
   if (!EMOJI_CAPTURE_ENABLED) {
@@ -20,24 +21,24 @@ export function captureCustomEmojis(ctx: Context) {
   }
 
   const message = ctx.message
-  if (!message || !('text' in message || 'caption' in message)) {
+  // Работаем только с text messages
+  if (!message || !('text' in message)) {
     return
   }
 
-  const text = 'text' in message ? message.text : message.caption
+  const text = message.text
   if (!text) {
     return
   }
 
-  // Проверяем entities в тексте сообщения
-  const entities = message.entities || []
-  // Проверяем entities в подписи (для медиа)
-  const captionEntities = 'caption_entities' in message ? message.caption_entities : []
-  
-  const allEntities = [...entities, ...captionEntities]
+  // Проверяем наличие entities (может быть undefined)
+  const entities = message.entities
+  if (!entities || entities.length === 0) {
+    return
+  }
 
   // Ищем custom_emoji
-  const customEmojis = allEntities.filter(
+  const customEmojis = entities.filter(
     (entity): entity is typeof entity & { type: 'custom_emoji' } =>
       entity.type === 'custom_emoji'
   )

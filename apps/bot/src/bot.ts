@@ -18,11 +18,6 @@ bot.use(async (ctx, next) => {
 // This ensures /start is always handled first
 bot.start(async (ctx) => {
   try {
-    // Leave any active scene if exists
-    if (ctx.scene && typeof ctx.scene.leave === 'function') {
-      await ctx.scene.leave()
-    }
-
     // Reply with ReplyKeyboard containing web_app button
     await ctx.reply(
       'Добро пожаловать в ASKED 🖤\n\nОткрывай магазин кнопкой ниже — так Telegram корректно передаст WebApp-контекст.',
