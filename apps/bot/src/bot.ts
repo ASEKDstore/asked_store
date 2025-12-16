@@ -60,65 +60,67 @@ bot.action(MenuActions.OPEN_APP, handleOpenApp)
 /**
  * Bootstrap function to start the bot
  * Handles webhook cleanup and error handling
+ * @returns Promise<void>
  */
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
+  console.log('🚀 Starting ASKED Store Bot...')
+  
+  // Delete webhook to prevent 409 Conflict errors
+  // This ensures we use polling instead of webhook mode
   try {
-    console.log('🚀 Starting ASKED Store Bot...')
-    
-    // Delete webhook to prevent 409 Conflict errors
-    // This ensures we use polling instead of webhook mode
-    try {
-      await bot.telegram.deleteWebhook({ drop_pending_updates: true })
-      console.log('✅ Webhook deleted successfully')
-    } catch (error: any) {
-      // Ignore errors if webhook doesn't exist
-      if (error.response?.error_code !== 404) {
-        console.warn('⚠️ Warning: Failed to delete webhook:', error.message)
-      }
+    await bot.telegram.deleteWebhook({ drop_pending_updates: true })
+    console.log('✅ Webhook deleted successfully')
+  } catch (error: unknown) {
+    // Ignore errors if webhook doesn't exist
+    const err = error as { response?: { error_code?: number }; message?: string }
+    if (err.response?.error_code !== 404) {
+      console.warn('⚠️ Warning: Failed to delete webhook:', err.message || String(error))
     }
-
-    // Launch bot with polling
-    await bot.launch({
-      dropPendingUpdates: true,
-    })
-
-    console.log('🤖 ASKED Store Bot is running')
-    console.log('📱 Bot is ready to receive messages')
-    console.log(`🌐 WebApp URL: ${config.webappUrl}`)
-    console.log('✅ Version: v0.3.0')
-    console.log('✅ Bot started successfully')
-  } catch (error: any) {
-    console.error('❌ Failed to start bot:', error)
-    console.error('❌ Error details:', error.message)
-    if (error.stack) {
-      console.error('❌ Stack trace:', error.stack)
-    }
-    process.exit(1)
   }
+
+  // Launch bot with polling
+  await bot.launch({
+    dropPendingUpdates: true,
+  })
+
+  console.log('🤖 ASKED Store Bot is running')
+  console.log('📱 Bot is ready to receive messages')
+  console.log(`🌐 WebApp URL: ${config.webappUrl}`)
+  console.log('✅ Version: v0.3.0')
+  console.log('✅ Bot started successfully')
 }
 
 // Start the bot
-bootstrap()
+void bootstrap().catch((err: unknown) => {
+  console.error('❌ Failed to start bot:', err)
+  if (err instanceof Error) {
+    console.error('❌ Error details:', err.message)
+    if (err.stack) {
+      console.error('❌ Stack trace:', err.stack)
+    }
+  }
+  process.exit(1)
+})
 
 // Enable graceful stop
 process.once('SIGINT', () => {
   console.log('🛑 Received SIGINT, stopping bot...')
-  bot.stop('SIGINT').then(() => {
+  void bot.stop('SIGINT').then(() => {
     console.log('✅ Bot stopped gracefully')
     process.exit(0)
-  }).catch((error) => {
-    console.error('❌ Error stopping bot:', error)
+  }).catch((err: unknown) => {
+    console.error('❌ Error stopping bot:', err)
     process.exit(1)
   })
 })
 
 process.once('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, stopping bot...')
-  bot.stop('SIGTERM').then(() => {
+  void bot.stop('SIGTERM').then(() => {
     console.log('✅ Bot stopped gracefully')
     process.exit(0)
-  }).catch((error) => {
-    console.error('❌ Error stopping bot:', error)
+  }).catch((err: unknown) => {
+    console.error('❌ Error stopping bot:', err)
     process.exit(1)
   })
 })
