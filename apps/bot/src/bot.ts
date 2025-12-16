@@ -70,6 +70,10 @@ async function bootstrap(): Promise<void> {
   try {
     await bot.telegram.deleteWebhook({ drop_pending_updates: true })
     console.log('✅ Webhook deleted successfully')
+    
+    // Wait a bit to ensure webhook is fully removed
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('⏳ Waiting for webhook cleanup...')
   } catch (error: unknown) {
     // Ignore errors if webhook doesn't exist
     const err = error as { response?: { error_code?: number }; message?: string }
@@ -78,16 +82,55 @@ async function bootstrap(): Promise<void> {
     }
   }
 
-  // Launch bot with polling
-  await bot.launch({
-    dropPendingUpdates: true,
-  })
+  // Retry logic for bot launch (in case of 409 Conflict)
+  let retries = 3
+  let lastError: unknown = null
+  
+  while (retries > 0) {
+    try {
+      console.log(`🔄 Attempting to launch bot (${4 - retries}/3)...`)
+      
+      // Launch bot with polling
+      await bot.launch({
+        dropPendingUpdates: true,
+        allowedUpdates: [], // Allow all update types
+      })
 
-  console.log('🤖 ASKED Store Bot is running')
-  console.log('📱 Bot is ready to receive messages')
-  console.log(`🌐 WebApp URL: ${config.webappUrl}`)
-  console.log('✅ Version: v0.3.0')
-  console.log('✅ Bot started successfully')
+      console.log('🤖 ASKED Store Bot is running')
+      console.log('📱 Bot is ready to receive messages')
+      console.log(`🌐 WebApp URL: ${config.webappUrl}`)
+      console.log('✅ Version: v0.3.0')
+      console.log('✅ Bot started successfully')
+      return // Success, exit function
+    } catch (error: unknown) {
+      lastError = error
+      const err = error as { response?: { error_code?: number }; description?: string }
+      
+      // If it's a 409 Conflict, retry after delay
+      if (err.response?.error_code === 409) {
+        retries--
+        if (retries > 0) {
+          const delay = (4 - retries) * 2000 // 2s, 4s, 6s
+          console.warn(`⚠️ 409 Conflict detected. Retrying in ${delay}ms... (${retries} attempts left)`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          
+          // Try to delete webhook again before retry
+          try {
+            await bot.telegram.deleteWebhook({ drop_pending_updates: true })
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          } catch {
+            // Ignore errors
+          }
+        }
+      } else {
+        // Not a 409 error, throw immediately
+        throw error
+      }
+    }
+  }
+  
+  // All retries exhausted
+  throw lastError
 }
 
 // Start the bot
