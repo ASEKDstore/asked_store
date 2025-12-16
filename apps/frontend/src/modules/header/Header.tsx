@@ -46,9 +46,9 @@ export const Header: React.FC = () => {
         </button>
 
         <button className="header-profile-btn" onClick={goProfile} aria-label="Профиль">
-          {user?.photo_url ? (
+          {user?.photoUrl || user?.photo_url ? (
             <img
-              src={user.photo_url}
+              src={user.photoUrl || user.photo_url || ''}
               alt={displayName}
               className="header-profile-img"
             />

@@ -120,9 +120,9 @@ export const ProfileContent: React.FC = () => {
       {/* Hero Section */}
       <div className="profile-hero">
         <div className="profile-avatar-wrapper">
-          {user?.photo_url ? (
+          {user?.photoUrl || user?.photo_url ? (
             <img
-              src={user.photo_url}
+              src={user.photoUrl || user.photo_url || ''}
               alt={displayName}
               className="profile-avatar"
             />

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
+import { getTelegramUser, type TgUser } from '../utils/telegram'
 
 export type User = {
   id: number
@@ -6,6 +7,7 @@ export type User = {
   lastName?: string
   username?: string
   photo_url?: string
+  photoUrl?: string
   first_name?: string
   last_name?: string
   language_code?: string
@@ -48,45 +50,44 @@ declare global {
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     // Try to get user from Telegram WebApp on mount
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-      const tgUser = window.Telegram.WebApp.initDataUnsafe.user
+    const tgUser = getTelegramUser()
+    if (tgUser) {
       return {
-        id: tgUser.id,
-        first_name: tgUser.first_name,
-        last_name: tgUser.last_name,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
+        id: tgUser.tgId,
+        tgId: tgUser.tgId,
+        first_name: tgUser.firstName,
+        last_name: tgUser.lastName,
+        firstName: tgUser.firstName,
+        lastName: tgUser.lastName,
         username: tgUser.username,
-        photo_url: tgUser.photo_url,
+        photo_url: tgUser.photoUrl,
+        photoUrl: tgUser.photoUrl,
       }
     }
     return null
   })
 
   const refresh = useCallback(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-      const tgUser = window.Telegram.WebApp.initDataUnsafe.user
+    const tgUser = getTelegramUser()
+    if (tgUser) {
       setUser({
-        id: tgUser.id,
-        first_name: tgUser.first_name,
-        last_name: tgUser.last_name,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
+        id: tgUser.tgId,
+        tgId: tgUser.tgId,
+        first_name: tgUser.firstName,
+        last_name: tgUser.lastName,
+        firstName: tgUser.firstName,
+        lastName: tgUser.lastName,
         username: tgUser.username,
-        photo_url: tgUser.photo_url,
+        photo_url: tgUser.photoUrl,
+        photoUrl: tgUser.photoUrl,
       })
     } else {
       setUser(null)
     }
   }, [])
 
-  useEffect(() => {
-    // Initialize Telegram WebApp if available
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready?.()
-      refresh()
-    }
-  }, [refresh])
+  // User data is synced via useTelegramUser hook in LoadingScreen/App
+  // This effect is kept for backward compatibility but refresh is called from useTelegramUser
 
   const displayName = useMemo(() => {
     if (!user) return 'ASKED'
