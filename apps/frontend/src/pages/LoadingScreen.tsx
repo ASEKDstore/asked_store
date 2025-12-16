@@ -1,24 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
-import { initTelegramWebApp } from '../lib/telegram'
 import './LoadingScreen.css'
-
-type DiagnosticInfo = {
-  hasTelegram: boolean
-  hasWebApp: boolean
-  initDataLen: number
-  platform?: string
-  version?: string
-  userId?: number
-}
 
 export function LoadingScreen() {
   const { user, setTelegramUser } = useUser()
   const navigate = useNavigate()
-  const [diagnostics, setDiagnostics] = useState<DiagnosticInfo | null>(null)
-  const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const hasNavigatedRef = useRef(false)
   
   // Auth state: always allow progress (guest mode supported)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
@@ -26,40 +15,62 @@ export function LoadingScreen() {
   
   const progress = useLoadingProgress(authState)
 
-  // Initialize Telegram WebApp and sync user data on mount
+  // Initialize Telegram WebApp and sync user data on mount (non-blocking)
   useEffect(() => {
-    const result = initTelegramWebApp()
+    // Safely get Telegram WebApp
+    const wa = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : undefined
     
-    // Set user data if available
-    if (result.user) {
-      setTelegramUser(result.user)
-    }
+    if (wa) {
+      // Initialize Telegram WebApp
+      try {
+        wa.ready?.()
+        wa.expand?.()
+      } catch (error) {
+        console.warn('Failed to initialize Telegram WebApp:', error)
+      }
 
-    // Collect diagnostic info
-    const tg = typeof window !== 'undefined' ? (window as any).Telegram : undefined
-    const wa = tg?.WebApp
-    
-    const diag: DiagnosticInfo = {
-      hasTelegram: !!tg,
-      hasWebApp: !!wa,
-      initDataLen: result.initDataLen,
-      platform: wa?.platform,
-      version: wa?.version,
-      userId: result.user?.id,
+      // Get user data if available
+      const tgUser = wa.initDataUnsafe?.user
+      if (tgUser) {
+        setTelegramUser({
+          id: tgUser.id,
+          username: tgUser.username,
+          first_name: tgUser.first_name,
+          last_name: tgUser.last_name,
+          photo_url: tgUser.photo_url,
+        })
+      }
     }
-    setDiagnostics(diag)
   }, [setTelegramUser])
 
-  // Navigate to /app after short delay (always, regardless of Telegram)
+  // Navigate to /app after progress completes OR timeout (always, regardless of Telegram)
   useEffect(() => {
-    // Wait for progress to complete, then navigate
+    // Prevent double navigation
+    if (hasNavigatedRef.current) return
+
+    // Navigate when progress reaches 100%
     if (progress >= 100) {
+      hasNavigatedRef.current = true
       const timer = setTimeout(() => {
         navigate('/app')
-      }, 800)
+      }, 300)
       return () => clearTimeout(timer)
     }
   }, [progress, navigate])
+
+  // Safety timeout: always navigate after 2 seconds maximum
+  useEffect(() => {
+    if (hasNavigatedRef.current) return
+
+    const safetyTimer = setTimeout(() => {
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true
+        navigate('/app')
+      }
+    }, 2000)
+
+    return () => clearTimeout(safetyTimer)
+  }, [navigate])
 
   const userName = user?.first_name || user?.firstName || 'ASKED'
   const displayName = user ? userName : 'ASKED'
@@ -89,40 +100,6 @@ export function LoadingScreen() {
             }}
           />
         </div>
-
-        {/* Диагностика (опционально, для отладки) */}
-        {diagnostics && (
-          <div className="ls-auth-message" style={{ opacity: 0.5, fontSize: '11px' }}>
-            {!diagnostics.hasTelegram && (
-              <div style={{ marginBottom: '4px', opacity: 0.7 }}>
-                ℹ️ Откройте приложение через Telegram-бота для полного функционала
-              </div>
-            )}
-            <button
-              onClick={() => setShowDiagnostics(!showDiagnostics)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontSize: '11px',
-              }}
-            >
-              {showDiagnostics ? 'Скрыть' : 'Показать'} диагностику
-            </button>
-            {showDiagnostics && (
-              <div style={{ marginTop: '4px', fontFamily: 'monospace', fontSize: '10px' }}>
-                <div>hasTelegram: {diagnostics.hasTelegram ? '✅' : '❌'}</div>
-                <div>hasWebApp: {diagnostics.hasWebApp ? '✅' : '❌'}</div>
-                <div>initDataLen: {diagnostics.initDataLen}</div>
-                {diagnostics.platform && <div>platform: {diagnostics.platform}</div>}
-                {diagnostics.version && <div>version: {diagnostics.version}</div>}
-                {diagnostics.userId && <div>userId: {diagnostics.userId}</div>}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Низовая мета */}
         <div className="ls-meta">
