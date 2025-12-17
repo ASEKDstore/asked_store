@@ -56,16 +56,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
 
   const setTelegramUser = useCallback((tgUser: TelegramUser | null) => {
+    // If tgUser is null, don't change user (guest mode = user remains null)
     if (!tgUser) {
-      // If user is null, set guest mode
-      setUser((prev: User | null) => prev ?? { source: 'guest' })
       return
     }
 
-    // Set user from Telegram
+    // Set user from Telegram with required id field
     setUser({
+      id: tgUser.id, // Required field
       tgId: tgUser.id,
-      id: tgUser.id,
       username: tgUser.username,
       firstName: tgUser.first_name,
       lastName: tgUser.last_name,
@@ -135,11 +134,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = await response.json()
             if (data.user) {
               // Update user with backend data if available
-              setUser((prevState) => ({
-                ...prevState,
-                ...data.user,
-                source: 'telegram',
-              }))
+              setUser((prevState: User | null) => {
+                if (!prevState) {
+                  // If no previous state, create new user from backend data
+                  return {
+                    id: data.user.id || tgUser.id, // Ensure id is always present
+                    ...data.user,
+                    source: 'telegram',
+                  }
+                }
+                return {
+                  ...prevState,
+                  ...data.user,
+                  source: 'telegram',
+                }
+              })
             }
           }
         }
