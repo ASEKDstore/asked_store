@@ -1,0 +1,47 @@
+.background-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  
+  /* Глобальный фон ASKED */
+  background:
+    /* Виньетка */
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(0, 0, 0, 0.85) 65%
+    ),
+    /* Каллиграфический паттерн */
+    url('/assets/lab-calligraphy-bg.jpg'),
+    /* Базовый цвет */
+    linear-gradient(
+      to bottom,
+      #0b0b0c,
+      #060607
+    );
+  
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Dark overlay for better text readability */
+.background-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Grain эффект */
+.background-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/assets/noise.png');
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+

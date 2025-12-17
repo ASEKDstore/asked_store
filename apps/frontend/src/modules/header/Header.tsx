@@ -22,15 +22,20 @@ export const Header: React.FC = () => {
     setOpen(false)
   }
 
-  // Блокируем скролл body при открытом меню
+  // Блокируем скролл .app-scroll при открытом меню
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
+    const scrollElement = document.querySelector('.app-scroll') as HTMLElement | null
+    if (scrollElement) {
+      if (open) {
+        scrollElement.classList.add('scroll-lock')
+      } else {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
     return () => {
-      document.body.style.overflow = ''
+      if (scrollElement) {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
   }, [open])
 
