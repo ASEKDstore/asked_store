@@ -18,9 +18,8 @@ export const Header: React.FC = () => {
     .map((s: string) => Number(s.trim()))
     .filter((n: number) => Number.isFinite(n) && n > 0)
 
-  // Check if user is admin by tgId (preferred) or id (fallback)
-  const userId = user?.tgId ?? user?.id
-  const isAdmin = Boolean(userId && typeof userId === 'number' && adminIds.includes(userId))
+  // Check if user is admin by telegramId
+  const isAdmin = Boolean(user?.telegramId && typeof user.telegramId === 'number' && adminIds.includes(user.telegramId))
 
   const toggleMenu = () => setOpen((v) => !v)
 
@@ -58,9 +57,9 @@ export const Header: React.FC = () => {
         </button>
 
         <button className="header-profile-btn" onClick={goProfile} aria-label="Профиль">
-          {user?.photoUrl || user?.photo_url ? (
+          {user?.avatar ? (
             <img
-              src={user.photoUrl || user.photo_url || ''}
+              src={user.avatar}
               alt={displayName}
               className="header-profile-img"
             />

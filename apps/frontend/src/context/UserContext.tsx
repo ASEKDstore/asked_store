@@ -1,29 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import type { TelegramUser } from '../lib/telegram'
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react'
 
 export type User = {
-  id: number
-  tgId?: number
-  firstName?: string
-  lastName?: string
+  telegramId: number // Required: Telegram ID
+  name?: string // first_name + last_name combined
   username?: string
-  photo_url?: string
-  photoUrl?: string
-  avatar?: string
-  first_name?: string
-  last_name?: string
-  language_code?: string
-  source?: 'telegram' | 'guest'
+  avatar?: string // photo_url
+  source: 'telegram' // Required
 }
 
 type UserContextValue = {
-  user: User | null
+  user: User | null // null = guest mode
   displayName: string
   initials: string
   isTelegram: boolean
+  browserMode: boolean // true if opened as regular URL (not WebApp)
   refresh: () => void
-  setTelegramUser: (user: TelegramUser | null) => void
-  setFromTelegram: (user: TelegramUser | null, initData?: string) => Promise<void>
+  setFromTelegram: (tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => void
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
@@ -54,157 +46,66 @@ declare global {
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [browserMode, setBrowserMode] = useState(false)
 
-  const setTelegramUser = useCallback((tgUser: TelegramUser | null) => {
-    // If tgUser is null, don't change user (guest mode = user remains null)
+  const setFromTelegram = useCallback((tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => {
+    // If no user, set to null (guest mode)
     if (!tgUser) {
+      setUser(null)
+      setBrowserMode(true)
       return
     }
 
-    // Set user from Telegram with required id field
-    setUser({
-      id: tgUser.id, // Required field
-      tgId: tgUser.id,
+    // Normalize user data from Telegram
+    // id → telegramId
+    // first_name + last_name → name
+    // photo_url → avatar
+    const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || undefined
+
+    const normalizedUser: User = {
+      telegramId: tgUser.id, // Required: Telegram ID
+      name,
       username: tgUser.username,
-      firstName: tgUser.first_name,
-      lastName: tgUser.last_name,
       avatar: tgUser.photo_url,
-      photo_url: tgUser.photo_url,
-      photoUrl: tgUser.photo_url,
-      first_name: tgUser.first_name,
-      last_name: tgUser.last_name,
-      source: 'telegram',
-    })
-  }, [])
-
-  const setFromTelegram = useCallback(async (tgUser: TelegramUser | null, initData?: string) => {
-    // If no user, don't break guest mode
-    if (!tgUser) {
-      return
+      source: 'telegram', // Required
     }
 
-    // Set user from Telegram immediately
-    setUser((prevState) => {
-      const newUser: User = {
-        id: tgUser.id,
-        tgId: tgUser.id,
-        first_name: tgUser.first_name,
-        last_name: tgUser.last_name,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
-        username: tgUser.username,
-        photo_url: tgUser.photo_url,
-        photoUrl: tgUser.photo_url,
-        avatar: tgUser.photo_url,
-        source: 'telegram',
-      }
-
-      if (prevState === null) {
-        return newUser
-      }
-
-      return {
-        ...prevState,
-        ...newUser,
-      }
-    })
-
-    // If initData is available, try to authenticate with backend (non-blocking)
-    if (initData && initData.length > 0) {
-      try {
-        const { apiUrl } = await import('../utils/api')
-        const endpoint = apiUrl('/api/auth/telegram')
-        
-        if (endpoint) {
-          // Use AbortController with timeout
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 3000)
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData }),
-            signal: controller.signal,
-          })
-
-          clearTimeout(timeoutId)
-
-          if (response.ok) {
-            // Backend may return normalized user profile
-            const data = await response.json()
-            if (data.user) {
-              // Update user with backend data if available
-              setUser((prevState: User | null) => {
-                if (!prevState) {
-                  // If no previous state, create new user from backend data
-                  return {
-                    id: data.user.id || tgUser.id, // Ensure id is always present
-                    ...data.user,
-                    source: 'telegram',
-                  }
-                }
-                return {
-                  ...prevState,
-                  ...data.user,
-                  source: 'telegram',
-                }
-              })
-            }
-          }
-        }
-      } catch (error) {
-        // Silent fail - user can still use the app with Telegram user data
-        if (import.meta.env.DEV) {
-          console.warn('Backend auth error, continuing with Telegram user:', error)
-        }
-      }
-    }
+    // Set user from Telegram
+    setUser(normalizedUser)
+    setBrowserMode(false)
   }, [])
 
   const refresh = useCallback(() => {
-    // Refresh is kept for backward compatibility
-    // Actual user sync is done via setTelegramUser in LoadingScreen
-    // This method can be called to re-read Telegram user data
+    // Re-read Telegram user data from WebApp
     if (typeof window !== 'undefined') {
       const wa = (window as any).Telegram?.WebApp
-      const tgUser = wa?.initDataUnsafe?.user
-      if (tgUser) {
-        setTelegramUser({
-          id: tgUser.id,
-          username: tgUser.username,
-          first_name: tgUser.first_name,
-          last_name: tgUser.last_name,
-          photo_url: tgUser.photo_url,
-        })
-      } else {
-        // Don't clear user on refresh if Telegram is not available
-        // This allows guest mode to persist
-      }
+      const tgUser = wa?.initDataUnsafe?.user || null
+      
+      setFromTelegram(tgUser)
     }
-  }, [setTelegramUser])
+  }, [setFromTelegram])
 
   // User data is synced via useTelegramUser hook in LoadingScreen/App
   // This effect is kept for backward compatibility but refresh is called from useTelegramUser
 
   const displayName = useMemo(() => {
-    if (!user) return 'ASKED'
-    return user.firstName || user.first_name || user.username || 'ASKED'
+    if (!user) return 'Гость'
+    return user.name || user.username || 'Гость'
   }, [user])
 
   const initials = useMemo(() => {
-    if (!user) return 'A'
-    const first = user.firstName || user.first_name || ''
-    const last = user.lastName || user.last_name || ''
-    if (first && last) {
-      return `${first[0]}${last[0]}`.toUpperCase()
-    }
-    if (first) {
-      return first[0].toUpperCase()
+    if (!user) return 'Г'
+    if (user.name) {
+      const parts = user.name.split(' ')
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+      }
+      return user.name[0].toUpperCase()
     }
     if (user.username) {
       return user.username[0].toUpperCase()
     }
-    return 'A'
+    return 'Г'
   }, [user])
 
   const isTelegram = useMemo(() => {
@@ -216,8 +117,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     displayName,
     initials,
     isTelegram,
+    browserMode,
     refresh,
-    setTelegramUser,
     setFromTelegram,
   }
 

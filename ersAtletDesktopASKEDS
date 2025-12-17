@@ -1,0 +1,77 @@
+warning: in the working copy of 'apps/bot/src/bot.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/apps/bot/src/bot.ts b/apps/bot/src/bot.ts[m
+[1mindex e56bbf9..8200bcf 100644[m
+[1m--- a/apps/bot/src/bot.ts[m
+[1m+++ b/apps/bot/src/bot.ts[m
+[36m@@ -1,24 +1,63 @@[m
+[31m-import { Telegraf } from 'telegraf'[m
+[32m+[m[32mimport { Telegraf, Context, Markup } from 'telegraf'[m
+ import { config } from './config.js'[m
+[31m-import { handleStart, handleStore } from './handlers/start.js'[m
+ import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp } from './handlers/menu.js'[m
+ import { emojiCaptureMiddleware } from './tools/emojiCapture.js'[m
+ [m
+ // Create bot instance[m
+ const bot = new Telegraf(config.botToken)[m
+ [m
+[32m+[m[32m// Middleware: logger for all updates[m
+[32m+[m[32mbot.use(async (ctx: Context, next: () => Promise<void>) => {[m
+[32m+[m[32m  const updateType = ctx.updateType[m
+[32m+[m[32m  const messageText = (ctx.message as any)?.text || (ctx.callbackQuery as any)?.data || 'N/A'[m
+[32m+[m[32m  console.log(`[UPDATE] ${updateType} | text: ${messageText}`)[m
+[32m+[m[32m  return next()[m
+[32m+[m[32m})[m
+[32m+[m
+[32m+[m[32m// Register /start command handler FIRST (before any scenes/stage/router middleware)[m
+[32m+[m[32m// This ensures start is never overridden[m
+[32m+[m[32mbot.start(async (ctx: Context) => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    // Leave any active scenes (if scenes exist)[m
+[32m+[m[32m    if ((ctx as any).scene && typeof (ctx as any).scene.leave === 'function') {[m
+[32m+[m[32m      await (ctx as any).scene.leave()[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // Create ReplyKeyboard with web_app button[m
+[32m+[m[32m    const webAppKeyboard = Markup.keyboard([[m
+[32m+[m[32m      Markup.button.webApp('🛍 Открыть ASKED Store', config.webappUrl),[m
+[32m+[m[32m    ]).resize().persistent()[m
+[32m+[m
+[32m+[m[32m    // Send welcome message with web_app button[m
+[32m+[m[32m    const welcomeText = 'Добро пожаловать в ASKED 🖤\n\nОткрывай магазин кнопкой ниже — так Telegram корректно передаст WebApp-контекст.'[m
+[32m+[m[41m    [m
+[32m+[m[32m    await ctx.reply(welcomeText, webAppKeyboard)[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error('❌ Error in bot.start:', error)[m
+[32m+[m[32m    await ctx.reply('Произошла ошибка при обработке команды. Попробуйте позже.')[m
+[32m+[m[32m  }[m
+[32m+[m[32m})[m
+[32m+[m
+[32m+[m[32m// Register /store command handler (sends web_app button if user lost it)[m
+[32m+[m[32mbot.command('store', async (ctx: Context) => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const webAppKeyboard = Markup.keyboard([[m
+[32m+[m[32m      Markup.button.webApp('🛍 Открыть ASKED Store', config.webappUrl),[m
+[32m+[m[32m    ]).resize().persistent()[m
+[32m+[m
+[32m+[m[32m    await ctx.reply('Жми кнопку ниже 👇', webAppKeyboard)[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error('❌ Error in /store command:', error)[m
+[32m+[m[32m    await ctx.reply('Произошла ошибка. Попробуйте позже.')[m
+[32m+[m[32m  }[m
+[32m+[m[32m})[m
+[32m+[m
+ // Register emoji capture middleware (only if EMOJI_CAPTURE=1)[m
+ if (process.env.EMOJI_CAPTURE === '1') {[m
+   bot.use(emojiCaptureMiddleware)[m
+   console.log('📸 Emoji capture mode enabled')[m
+ }[m
+ [m
+[31m-// Register /start command handler (always sends web_app button)[m
+[31m-bot.start(handleStart)[m
+[31m-[m
+[31m-// Register /store command handler (sends web_app button if user lost it)[m
+[31m-bot.command('store', handleStore)[m
+[31m-[m
+ // Register menu action handlers (legacy, for backward compatibility)[m
+ bot.action(MenuActions.MY_ORDERS, handleMyOrders)[m
+ bot.action(MenuActions.ASKED_LAB, handleAskedLab)[m

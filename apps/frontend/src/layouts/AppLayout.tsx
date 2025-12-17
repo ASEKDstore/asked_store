@@ -11,6 +11,7 @@ import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useUser } from '../context/UserContext'
+import { useTelegramInit } from '../hooks/useTelegramInit'
 import { TgDebugOverlay } from '../components/TgDebugOverlay'
 import './AppLayout.css'
 
@@ -21,44 +22,28 @@ export const AppLayout = () => {
   const { setFromTelegram } = useUser()
   const scrollRef = useRef<HTMLDivElement>(null)
   
+  // Initialize Telegram WebApp
+  const { waPresent, tgUser, initData } = useTelegramInit()
+  
   // Enable swipe-back gesture on scroll container
   useSwipeBack(scrollRef)
 
-  // Initialize Telegram user on mount with retry logic (non-blocking, called once)
+  // Set Telegram user on mount with retry logic (non-blocking, called once)
   useEffect(() => {
-    const initTelegram = async () => {
-      const wa = (window as any).Telegram?.WebApp
-
-      if (!wa) {
-        if (import.meta.env.DEV) {
-          console.log('[TG] WebApp not available')
-        }
+    const initUser = async () => {
+      if (!waPresent) {
+        // WebApp not available - browser mode, set user to null
+        setFromTelegram(null)
         return
       }
 
-      // Initialize WebApp
-      wa.ready?.()
-      wa.expand?.()
+      // Use ONLY initDataUnsafe.user (no wa.user - such field doesn't exist)
+      const wa = (window as any).Telegram?.WebApp
+      let currentUser = wa?.initDataUnsafe?.user || null
 
-      // Try to get user immediately
-      let tgUser = wa?.initDataUnsafe?.user
-      const initData = wa?.initData
-
-      if (tgUser) {
+      if (currentUser) {
         // User available immediately
-        await setFromTelegram(
-          {
-            id: tgUser.id,
-            username: tgUser.username,
-            first_name: tgUser.first_name,
-            last_name: tgUser.last_name,
-            photo_url: tgUser.photo_url,
-          },
-          initData
-        )
-        if (import.meta.env.DEV) {
-          console.log('[TG] User loaded immediately')
-        }
+        setFromTelegram(currentUser)
         return
       }
 
@@ -69,18 +54,9 @@ export const AppLayout = () => {
       for (let i = 0; i < maxRetries; i++) {
         await new Promise((resolve) => setTimeout(resolve, retryInterval))
 
-        tgUser = wa?.initDataUnsafe?.user
-        if (tgUser) {
-          await setFromTelegram(
-            {
-              id: tgUser.id,
-              username: tgUser.username,
-              first_name: tgUser.first_name,
-              last_name: tgUser.last_name,
-              photo_url: tgUser.photo_url,
-            },
-            initData
-          )
+        currentUser = wa?.initDataUnsafe?.user || null
+        if (currentUser) {
+          setFromTelegram(currentUser)
           if (import.meta.env.DEV) {
             console.log(`[TG] User loaded after ${i + 1} retries`)
           }
@@ -88,15 +64,16 @@ export const AppLayout = () => {
         }
       }
 
-      // User not available after retries - leave as guest (null, no guest object)
+      // User not available after retries - set to null (guest mode)
+      setFromTelegram(null)
       if (import.meta.env.DEV) {
         console.log('[TG] User not available after retries, staying in guest mode (null)')
       }
     }
 
-    initTelegram()
+    initUser()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Empty deps: call only once on mount
+  }, [waPresent]) // Re-run if WebApp availability changes
 
   // Диагностика навигации (только в dev)
   useEffect(() => {

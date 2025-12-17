@@ -42,15 +42,41 @@ export async function handleAskedLab(ctx: Context) {
 
 /**
  * Handle OPEN_APP action
+ * Sends web_app button to open Mini App
  */
 export async function handleOpenApp(ctx: Context) {
   try {
     await ctx.answerCbQuery()
+    
+    const { config } = await import('../config.js')
+    const webappUrl = config.webappUrl
+
+    if (!webappUrl) {
+      await ctx.reply(
+        '❌ Веб-приложение не настроено. Обратитесь к администратору.'
+      )
+      return
+    }
+
+    // Send message with web_app button
     await ctx.reply(
-      'Веб-приложение скоро будет доступно. Следи за обновлениями 🚀'                                       
+      'Открываю магазин... 🛍',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '🛍 ASKED Store',
+                web_app: { url: webappUrl },
+              },
+            ],
+          ],
+        },
+      }
     )
   } catch (error) {
     console.error('❌ Error in handleOpenApp:', error)
+    await ctx.reply('Произошла ошибка. Попробуйте позже.')
   }
 }
 

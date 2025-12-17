@@ -9,7 +9,7 @@ import { apiUrl } from '../../utils/api'
 const SETTINGS_NOTIFICATIONS_KEY = 'asked_settings_notifications'
 
 export const ProfileContent: React.FC = () => {
-  const { user, isTelegram, refresh, displayName, initials } = useUser()
+  const { user, isTelegram, browserMode, refresh, displayName, initials } = useUser()
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [refreshed, setRefreshed] = useState(false)
@@ -22,14 +22,14 @@ export const ProfileContent: React.FC = () => {
   })
 
   const loadOrders = async () => {
-    if (!user?.id) {
+    if (!user?.telegramId) {
       setOrdersLoading(false)
       return
     }
 
     try {
       setOrdersLoading(true)
-      const response = await fetch(apiUrl(`/api/orders?tgId=${user.id}`))
+      const response = await fetch(apiUrl(`/api/orders?tgId=${user.telegramId}`))
       if (response.ok) {
         const data = await response.json()
         setOrders(data)
@@ -45,7 +45,7 @@ export const ProfileContent: React.FC = () => {
 
   useEffect(() => {
     loadOrders()
-  }, [user?.id])
+  }, [user?.telegramId])
 
   const toggleOrder = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId)
@@ -81,13 +81,10 @@ export const ProfileContent: React.FC = () => {
   }
 
   const handleCopyId = async () => {
-    if (!user) return
-    
-    const userId = user.tgId ?? user.id
-    if (!userId) return
+    if (!user?.telegramId) return
     
     try {
-      await navigator.clipboard.writeText(String(userId))
+      await navigator.clipboard.writeText(String(user.telegramId))
       setCopied(true)
       setTimeout(() => setCopied(false), 1200)
     } catch (error) {
@@ -116,16 +113,16 @@ export const ProfileContent: React.FC = () => {
   }
 
   const displayUsername = user?.username ? `@${user.username}` : null
-  const isAdmin = isAdminId(user?.id)
+  const isAdmin = isAdminId(user?.telegramId) // user.telegramId is Telegram ID
 
   return (
     <div className="profile-container">
       {/* Hero Section */}
       <div className="profile-hero">
         <div className="profile-avatar-wrapper">
-          {user?.photoUrl || user?.photo_url ? (
+          {user?.avatar ? (
             <img
-              src={user.photoUrl || user.photo_url || ''}
+              src={user.avatar}
               alt={displayName}
               className="profile-avatar"
             />
@@ -140,7 +137,7 @@ export const ProfileContent: React.FC = () => {
           <p className="profile-username">{displayUsername}</p>
         )}
         <div className="profile-badge">
-          {isTelegram ? 'Telegram WebApp ✅' : 'Browser mode'}
+          {isTelegram && !browserMode ? 'Telegram WebApp ✅' : 'Browser mode'}
         </div>
       </div>
 
@@ -151,9 +148,9 @@ export const ProfileContent: React.FC = () => {
           <span className="profile-label">Telegram ID</span>
           <div className="profile-value-group">
             <span className="profile-value">
-              {user?.tgId || user?.id ? (user.tgId || user.id) : 'Гость'}
+              {user?.telegramId ? user.telegramId : 'Гость'}
             </span>
-            {user && (user.tgId || user.id) && (
+            {user?.telegramId && (
               <button
                 className="profile-btn-icon"
                 onClick={handleCopyId}
@@ -166,12 +163,6 @@ export const ProfileContent: React.FC = () => {
           </div>
         </div>
 
-        {user?.language_code && (
-          <div className="profile-row">
-            <span className="profile-label">Язык</span>
-            <span className="profile-value">{user.language_code.toUpperCase()}</span>
-          </div>
-        )}
 
         <div className="profile-actions-inline">
           <button
