@@ -11,6 +11,7 @@ import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useUser } from '../context/UserContext'
+import { TgDebugOverlay } from '../components/TgDebugOverlay'
 import './AppLayout.css'
 
 export const AppLayout = () => {
@@ -25,17 +26,8 @@ export const AppLayout = () => {
 
   // Initialize Telegram user on mount with retry logic (non-blocking, called once)
   useEffect(() => {
-    const initTelegramUser = async () => {
+    const initTelegram = async () => {
       const wa = (window as any).Telegram?.WebApp
-      
-      // DEV log
-      if (import.meta.env.DEV) {
-        console.log('[TG]', {
-          hasWA: !!wa,
-          initDataLen: wa?.initData?.length ?? 0,
-          user: wa?.initDataUnsafe?.user,
-        })
-      }
 
       if (!wa) {
         if (import.meta.env.DEV) {
@@ -64,6 +56,9 @@ export const AppLayout = () => {
           },
           initData
         )
+        if (import.meta.env.DEV) {
+          console.log('[TG] User loaded immediately')
+        }
         return
       }
 
@@ -93,13 +88,13 @@ export const AppLayout = () => {
         }
       }
 
-      // User not available after retries - leave as guest (null)
+      // User not available after retries - leave as guest (null, no guest object)
       if (import.meta.env.DEV) {
-        console.log('[TG] User not available after retries, staying in guest mode')
+        console.log('[TG] User not available after retries, staying in guest mode (null)')
       }
     }
 
-    initTelegramUser()
+    initTelegram()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty deps: call only once on mount
 
@@ -198,6 +193,7 @@ export const AppLayout = () => {
       
       <ProductRouteHandler />
       <ProductSheetWrapper />
+      <TgDebugOverlay />
     </div>
   )
 }
