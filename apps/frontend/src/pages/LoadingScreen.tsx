@@ -22,9 +22,7 @@ export function LoadingScreen() {
     
     // Set user from Telegram if available (non-blocking)
     if (result.user) {
-      setFromTelegram(result.user, result.initData).catch(() => {
-        // Silent fail - app continues with Telegram user data
-      })
+      setFromTelegram(result.user)
     }
   }, [setFromTelegram])
 
@@ -57,7 +55,7 @@ export function LoadingScreen() {
     return () => clearTimeout(safetyTimer)
   }, [navigate])
 
-  const userName = user?.first_name || user?.firstName || 'ASKED'
+  const userName = user?.firstName || user?.first_name || user?.name || 'ASKED'
   const displayName = user ? userName : 'ASKED'
 
   return (

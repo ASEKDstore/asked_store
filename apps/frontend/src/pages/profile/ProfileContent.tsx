@@ -22,14 +22,14 @@ export const ProfileContent: React.FC = () => {
   })
 
   const loadOrders = async () => {
-    if (!user?.telegramId) {
+    if (!user?.id) {
       setOrdersLoading(false)
       return
     }
 
     try {
       setOrdersLoading(true)
-      const response = await fetch(apiUrl(`/api/orders?tgId=${user.telegramId}`))
+      const response = await fetch(apiUrl(`/api/orders?tgId=${user.id}`))
       if (response.ok) {
         const data = await response.json()
         setOrders(data)
@@ -45,7 +45,7 @@ export const ProfileContent: React.FC = () => {
 
   useEffect(() => {
     loadOrders()
-  }, [user?.telegramId])
+  }, [user?.id])
 
   const toggleOrder = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId)
@@ -81,10 +81,10 @@ export const ProfileContent: React.FC = () => {
   }
 
   const handleCopyId = async () => {
-    if (!user?.telegramId) return
+    if (!user?.id) return
     
     try {
-      await navigator.clipboard.writeText(String(user.telegramId))
+      await navigator.clipboard.writeText(String(user.id))
       setCopied(true)
       setTimeout(() => setCopied(false), 1200)
     } catch (error) {
@@ -113,7 +113,7 @@ export const ProfileContent: React.FC = () => {
   }
 
   const displayUsername = user?.username ? `@${user.username}` : null
-  const isAdmin = isAdminId(user?.telegramId) // user.telegramId is Telegram ID
+  const isAdmin = isAdminId(user?.id) // user.id is always Telegram ID
 
   return (
     <div className="profile-container">
@@ -148,9 +148,9 @@ export const ProfileContent: React.FC = () => {
           <span className="profile-label">Telegram ID</span>
           <div className="profile-value-group">
             <span className="profile-value">
-              {user?.telegramId ? user.telegramId : 'Гость'}
+              {user?.id ? user.id : 'Гость'}
             </span>
-            {user?.telegramId && (
+            {user?.id && (
               <button
                 className="profile-btn-icon"
                 onClick={handleCopyId}

@@ -1,11 +1,26 @@
 import React, { createContext, useContext, useState, useMemo, useCallback } from 'react'
+import { normalizeTelegramUser } from '../services/telegram/normalizeTelegramUser'
 
-export type User = {
-  telegramId: number // Required: Telegram ID
-  name?: string // first_name + last_name combined
+export type UserSource = 'telegram' | 'guest'
+
+export interface User {
+  // Telegram raw fields (for old code compatibility)
+  id: number // TELEGRAM USER ID (required, main field)
+  first_name?: string
+  last_name?: string
   username?: string
-  avatar?: string // photo_url
-  source: 'telegram' // Required
+  photo_url?: string
+
+  // Normalized aliases (for new code/components)
+  tgId?: number
+  firstName?: string
+  lastName?: string
+  photoUrl?: string
+  avatar?: string
+  name?: string
+
+  source: UserSource
+  isAdmin?: boolean
 }
 
 type UserContextValue = {
@@ -15,7 +30,8 @@ type UserContextValue = {
   isTelegram: boolean
   browserMode: boolean // true if opened as regular URL (not WebApp)
   refresh: () => void
-  setFromTelegram: (tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => void
+  setTelegramUser: (tgUser: any) => void // Normalizes and sets user from Telegram
+  setFromTelegram: (tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => void // Legacy alias
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
@@ -48,32 +64,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [browserMode, setBrowserMode] = useState(false)
 
-  const setFromTelegram = useCallback((tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => {
-    // If no user, set to null (guest mode)
-    if (!tgUser) {
+  const setTelegramUser = useCallback((tgUser: any) => {
+    // If no user or invalid id, set to null (guest mode)
+    if (!tgUser?.id) {
       setUser(null)
       setBrowserMode(true)
       return
     }
 
-    // Normalize user data from Telegram
-    // id → telegramId
-    // first_name + last_name → name
-    // photo_url → avatar
-    const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || undefined
-
-    const normalizedUser: User = {
-      telegramId: tgUser.id, // Required: Telegram ID
-      name,
-      username: tgUser.username,
-      avatar: tgUser.photo_url,
-      source: 'telegram', // Required
+    try {
+      const normalized = normalizeTelegramUser(tgUser)
+      setUser((prev: User | null) => (prev ? { ...prev, ...normalized } : normalized))
+      setBrowserMode(false)
+    } catch (error) {
+      // Invalid user data - set to null
+      if (import.meta.env.DEV) {
+        console.warn('[UserContext] Failed to normalize Telegram user:', error)
+      }
+      setUser(null)
+      setBrowserMode(true)
     }
-
-    // Set user from Telegram
-    setUser(normalizedUser)
-    setBrowserMode(false)
   }, [])
+
+  // Legacy alias for backward compatibility
+  const setFromTelegram = useCallback((tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => {
+    setTelegramUser(tgUser)
+  }, [setTelegramUser])
 
   const refresh = useCallback(() => {
     // Re-read Telegram user data from WebApp
@@ -90,17 +106,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const displayName = useMemo(() => {
     if (!user) return 'Гость'
-    return user.name || user.username || 'Гость'
+    return user.name || user.firstName || user.first_name || user.username || 'Гость'
   }, [user])
 
   const initials = useMemo(() => {
     if (!user) return 'Г'
-    if (user.name) {
-      const parts = user.name.split(' ')
+    const name = user.name || [user.firstName || user.first_name, user.lastName || user.last_name].filter(Boolean).join(' ')
+    if (name) {
+      const parts = name.split(' ')
       if (parts.length >= 2) {
         return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
       }
-      return user.name[0].toUpperCase()
+      return name[0].toUpperCase()
     }
     if (user.username) {
       return user.username[0].toUpperCase()
@@ -119,6 +136,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isTelegram,
     browserMode,
     refresh,
+    setTelegramUser,
     setFromTelegram,
   }
 

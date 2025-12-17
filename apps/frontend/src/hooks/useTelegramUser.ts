@@ -21,9 +21,7 @@ export function useTelegramUser() {
     
     // Set user from Telegram if available (non-blocking)
     if (result.user) {
-      setFromTelegram(result.user, result.initData).catch(() => {
-        // Silent fail - user can still use the app as guest
-      })
+      setFromTelegram(result.user)
     }
   }, [setFromTelegram])
 }

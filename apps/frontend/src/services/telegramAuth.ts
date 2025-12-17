@@ -1,4 +1,5 @@
 import { User } from '../context/UserContext'
+import { normalizeTelegramUser } from './telegram/normalizeTelegramUser'
 
 /**
  * Mock Telegram login function
@@ -35,7 +36,7 @@ export async function loginWithTelegram(): Promise<User> {
   //     }),
   //   })
   //   const data = await response.json()
-  //   return { ...data.user, token: data.token }
+  //   return normalizeTelegramUser(data.user)
   // }
 
   return mockTelegramLogin()
@@ -46,11 +47,11 @@ export async function loginWithTelegram(): Promise<User> {
  */
 async function mockTelegramLogin(): Promise<User> {
   // TODO: Replace with real integration Telegram Login
-  return {
+  return normalizeTelegramUser({
     id: Date.now(),
-    firstName: 'ASKED',
+    first_name: 'ASKED',
     username: 'demo_user',
-  }
+  })
 }
 
 
