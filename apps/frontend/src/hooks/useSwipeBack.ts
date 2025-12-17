@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 /**
  * Hook for swipe-back gesture (iOS-style: swipe from left edge to right = back)
- * Works on mobile/touch devices including Telegram WebApp
+ * Optimized for Telegram Android WebApp
  * 
  * @param scrollElementRef - Ref to the scrollable container element (.app-scroll)
  */
@@ -11,7 +11,6 @@ export function useSwipeBack(scrollElementRef: RefObject<HTMLElement>) {
   const navigate = useNavigate()
   const startXRef = useRef<number | null>(null)
   const startYRef = useRef<number | null>(null)
-  const isSwipeRef = useRef(false)
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -25,45 +24,29 @@ export function useSwipeBack(scrollElementRef: RefObject<HTMLElement>) {
         return
       }
 
-      // Ignore if target is input, textarea, select, or inside one
-      // Also ignore if inside elements with data-no-swipe (e.g., horizontal carousels)
+      // Ignore if target is input, textarea, select, button, a, or inside [data-no-swipe]
       const target = e.target as HTMLElement
-      if (target.closest('input, textarea, select, [role="slider"], [role="spinbutton"], [data-no-swipe]')) {
+      if (target.closest('input, textarea, select, button, a, [role="slider"], [role="spinbutton"], [data-no-swipe]')) {
         return
       }
 
       startXRef.current = e.clientX
       startYRef.current = e.clientY
-      isSwipeRef.current = false
     }
 
     const handlePointerMove = (e: PointerEvent) => {
+      // Early exit if no start position
       if (startXRef.current === null || startYRef.current === null) {
         return
       }
 
-      const dx = e.clientX - startXRef.current
-      const dy = e.clientY - startYRef.current
-
-      // Ignore if gesture is more vertical than horizontal
-      if (Math.abs(dy) > Math.abs(dx)) {
-        startXRef.current = null
-        startYRef.current = null
-        return
-      }
-
-      // Only consider rightward swipe (positive dx)
-      if (dx > 0) {
-        isSwipeRef.current = true
-      }
+      // Don't prevent default - allow vertical scrolling
+      // We only track the gesture, not block it
     }
 
     const handlePointerUp = (e: PointerEvent) => {
-      // Early exit if start positions are null or swipe not detected
-      if (startXRef.current === null || startYRef.current === null || !isSwipeRef.current) {
-        startXRef.current = null
-        startYRef.current = null
-        isSwipeRef.current = false
+      // Early exit if no start position
+      if (startXRef.current === null || startYRef.current === null) {
         return
       }
 
@@ -72,7 +55,8 @@ export function useSwipeBack(scrollElementRef: RefObject<HTMLElement>) {
       const dy = Math.abs(e.clientY - startYRef.current)
       const threshold = 80 // Minimum swipe distance in pixels
 
-      // Only trigger if horizontal swipe is greater than vertical (dx > abs(dy))
+      // Condition: dx >= 80 && dx > abs(dy)
+      // This ensures horizontal swipe is greater than vertical (doesn't block vertical scroll)
       if (dx >= threshold && dx > dy) {
         // Swipe back triggered
         if (window.history.length > 1) {
@@ -82,22 +66,28 @@ export function useSwipeBack(scrollElementRef: RefObject<HTMLElement>) {
         }
       }
 
+      // Reset
       startXRef.current = null
       startYRef.current = null
-      isSwipeRef.current = false
     }
 
-    // Attach listeners to scroll container, not document
-    scrollElement.addEventListener('pointerdown', handlePointerDown)
-    scrollElement.addEventListener('pointermove', handlePointerMove)
-    scrollElement.addEventListener('pointerup', handlePointerUp)
-    scrollElement.addEventListener('pointercancel', handlePointerUp)
+    const handlePointerCancel = () => {
+      // Reset on cancel
+      startXRef.current = null
+      startYRef.current = null
+    }
+
+    // Attach listeners ONLY to scroll container
+    scrollElement.addEventListener('pointerdown', handlePointerDown, { passive: true })
+    scrollElement.addEventListener('pointermove', handlePointerMove, { passive: true })
+    scrollElement.addEventListener('pointerup', handlePointerUp, { passive: true })
+    scrollElement.addEventListener('pointercancel', handlePointerCancel, { passive: true })
 
     return () => {
       scrollElement.removeEventListener('pointerdown', handlePointerDown)
       scrollElement.removeEventListener('pointermove', handlePointerMove)
       scrollElement.removeEventListener('pointerup', handlePointerUp)
-      scrollElement.removeEventListener('pointercancel', handlePointerUp)
+      scrollElement.removeEventListener('pointercancel', handlePointerCancel)
     }
   }, [navigate, scrollElementRef])
 }
