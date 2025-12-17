@@ -35,10 +35,7 @@ export const AppLayout = () => {
       scrollRef.current.classList.remove('scroll-lock')
     }
 
-    // 2) Убеждаемся что body не скроллится (overflow: hidden)
-    document.body.style.overflow = 'hidden'
-
-    // 3) Закрываем ProductSheet если мы не на /app/product/:id
+    // 2) Закрываем ProductSheet если мы не на /app/product/:id
     // Это предотвращает залипание sheet при переходе на другие страницы (например, /app/banner/:id)
     if (!location.pathname.startsWith('/app/product/')) {
       if (isOpen) {
@@ -48,8 +45,6 @@ export const AppLayout = () => {
         closeProduct()
       }
     }
-
-    // 4) Диагностика в dev (уже есть проверка выше)
   }, [location.pathname, isOpen, closeProduct])
 
   useEffect(() => {

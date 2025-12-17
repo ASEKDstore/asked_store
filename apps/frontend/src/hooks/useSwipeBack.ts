@@ -59,13 +59,15 @@ export function useSwipeBack(scrollElementRef: RefObject<HTMLElement>) {
     }
 
     const handlePointerUp = (e: PointerEvent) => {
-      if (startXRef.current === null || !isSwipeRef.current) {
+      // Early exit if start positions are null or swipe not detected
+      if (startXRef.current === null || startYRef.current === null || !isSwipeRef.current) {
         startXRef.current = null
         startYRef.current = null
         isSwipeRef.current = false
         return
       }
 
+      // Safe to compute dx/dy as numbers after null checks
       const dx = e.clientX - startXRef.current
       const dy = Math.abs(e.clientY - startYRef.current)
       const threshold = 80 // Minimum swipe distance in pixels
