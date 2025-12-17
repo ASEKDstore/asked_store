@@ -24,13 +24,14 @@ export const AppLayout = () => {
   // Enable swipe-back gesture on scroll container
   useSwipeBack(scrollRef)
 
-  // Initialize Telegram user on mount (non-blocking)
+  // Initialize Telegram user on mount (non-blocking, called once)
   useEffect(() => {
     const result = initTelegram()
     if (result.user) {
       setTelegramUser(result.user)
     }
-  }, [setTelegramUser])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps: call only once on mount
 
   // Диагностика навигации (только в dev)
   useEffect(() => {

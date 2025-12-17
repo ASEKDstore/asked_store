@@ -12,14 +12,14 @@ export const Header: React.FC = () => {
   const [miniCartOpen, setMiniCartOpen] = useState(false)
   const navigate = useNavigate()
 
-  // Get admin IDs from env variable
-  const adminIds = (import.meta.env.VITE_ADMIN_TG_IDS ?? '')
+  // Get admin IDs from env variable and convert to number[]
+  const adminIds: number[] = (import.meta.env.VITE_ADMIN_TG_IDS ?? '')
     .split(',')
     .map((s: string) => Number(s.trim()))
-    .filter((n: number) => Number.isFinite(n))
+    .filter((n: number) => Number.isFinite(n) && n > 0)
 
-  // Check if user is admin by tgId
-  const isAdmin = Boolean(user?.tgId && adminIds.includes(user.tgId))
+  // Check if user is admin by tgId (number) only
+  const isAdmin = Boolean(user?.tgId && typeof user.tgId === 'number' && adminIds.includes(user.tgId))
 
   const toggleMenu = () => setOpen((v) => !v)
 
