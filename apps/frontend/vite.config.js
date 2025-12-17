@@ -17,8 +17,18 @@ export default defineConfig({
   // Production build settings
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: false, // Disable sourcemaps in production
     minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'vendor': ['react-router-dom'],
+        },
+      },
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
   },
 })
 

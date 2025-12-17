@@ -1,15 +1,17 @@
 import { useUser } from '../context/UserContext'
-import { apiUrl } from '../utils/api'
+import { apiUrl, fetchWithTimeout } from '../utils/api'
 
 /**
  * Единый fetch wrapper для админки
  * Всегда добавляет x-tg-id header
  * Читает res.text() до проверки res.ok
+ * Uses fetchWithTimeout for graceful fallback
  */
 async function adminFetch<T>(
   endpoint: string,
   tgId: number,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  timeoutMs: number = 3000
 ): Promise<T> {
   if (!tgId) {
     throw new Error('No tgId')
@@ -17,14 +19,18 @@ async function adminFetch<T>(
 
   const url = apiUrl(endpoint)
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-tg-id': String(tgId),
-      ...options.headers,
+  const response = await fetchWithTimeout(
+    url,
+    {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-tg-id': String(tgId),
+        ...options.headers,
+      },
     },
-  })
+    timeoutMs
+  )
 
   // ВСЕГДА читаем response.text() ДО проверки res.ok
   const text = await response.text().catch(() => '')

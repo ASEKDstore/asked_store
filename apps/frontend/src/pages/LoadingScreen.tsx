@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
+import { initTelegram } from '../lib/telegram'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { user, setTelegramUser } = useUser()
+  const { user, setFromTelegram } = useUser()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
   
@@ -17,31 +18,15 @@ export function LoadingScreen() {
 
   // Initialize Telegram WebApp and sync user data on mount (non-blocking)
   useEffect(() => {
-    // Safely get Telegram WebApp
-    const wa = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : undefined
+    const result = initTelegram()
     
-    if (wa) {
-      // Initialize Telegram WebApp
-      try {
-        wa.ready?.()
-        wa.expand?.()
-      } catch (error) {
-        console.warn('Failed to initialize Telegram WebApp:', error)
-      }
-
-      // Get user data if available
-      const tgUser = wa.initDataUnsafe?.user
-      if (tgUser) {
-        setTelegramUser({
-          id: tgUser.id,
-          username: tgUser.username,
-          first_name: tgUser.first_name,
-          last_name: tgUser.last_name,
-          photo_url: tgUser.photo_url,
-        })
-      }
+    // Set user from Telegram if available (non-blocking)
+    if (result.user) {
+      setFromTelegram(result.user, result.initData).catch(() => {
+        // Silent fail - app continues with Telegram user data
+      })
     }
-  }, [setTelegramUser])
+  }, [setFromTelegram])
 
   // Navigate to /app after progress completes OR timeout (always, regardless of Telegram)
   useEffect(() => {

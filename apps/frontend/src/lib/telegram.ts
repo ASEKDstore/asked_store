@@ -11,11 +11,28 @@ export type TelegramUser = {
   photo_url?: string
 }
 
+export type TelegramWebApp = {
+  initData?: string
+  initDataUnsafe?: {
+    user?: {
+      id: number
+      first_name?: string
+      last_name?: string
+      username?: string
+      photo_url?: string
+    }
+  }
+  ready?: () => void
+  expand?: () => void
+  platform?: string
+  version?: string
+}
+
 /**
  * Get Telegram WebApp instance
  * @returns Telegram.WebApp object or null if not available
  */
-export function getTelegramWebApp(): any | null {
+export function getWebApp(): TelegramWebApp | null {
   if (typeof window === 'undefined') {
     return null
   }
@@ -27,7 +44,7 @@ export function getTelegramWebApp(): any | null {
  * @returns TelegramUser object or null if not available
  */
 export function getTelegramUser(): TelegramUser | null {
-  const wa = getTelegramWebApp()
+  const wa = getWebApp()
   if (!wa) {
     return null
   }
@@ -49,14 +66,15 @@ export function getTelegramUser(): TelegramUser | null {
 /**
  * Initialize Telegram WebApp
  * Calls ready() and expand() if WebApp is available
- * @returns Object with hasWebApp flag, initDataLen, and user data
+ * @returns Object with hasWebApp flag, initDataLen, user data, and initData
  */
-export function initTelegramWebApp(): {
+export function initTelegram(): {
   hasWebApp: boolean
   initDataLen: number
   user: TelegramUser | null
+  initData?: string
 } {
-  const wa = getTelegramWebApp()
+  const wa = getWebApp()
   
   if (!wa) {
     return {
@@ -71,16 +89,20 @@ export function initTelegramWebApp(): {
     wa.ready?.()
     wa.expand?.()
   } catch (error) {
-    console.warn('Failed to initialize Telegram WebApp:', error)
+    if (import.meta.env.DEV) {
+      console.warn('Failed to initialize Telegram WebApp:', error)
+    }
   }
 
   const initDataLen = wa.initData?.length ?? 0
   const user = getTelegramUser()
+  const initData = wa.initData
 
   return {
     hasWebApp: true,
     initDataLen,
     user,
+    initData,
   }
 }
 

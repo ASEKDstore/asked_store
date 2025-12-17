@@ -13,6 +13,7 @@ export type User = {
   first_name?: string
   last_name?: string
   language_code?: string
+  source?: 'telegram' | 'guest'
 }
 
 type UserContextValue = {
@@ -22,6 +23,7 @@ type UserContextValue = {
   isTelegram: boolean
   refresh: () => void
   setTelegramUser: (user: TelegramUser | null) => void
+  setFromTelegram: (user: TelegramUser | null, initData?: string) => Promise<void>
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
@@ -72,6 +74,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         photo_url: tgUser.photo_url,
         photoUrl: tgUser.photo_url,
         avatar: tgUser.photo_url,
+        source: 'telegram',
       }
 
       // If prevState is null, return new user
@@ -85,6 +88,80 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...newUser,
       }
     })
+  }, [])
+
+  const setFromTelegram = useCallback(async (tgUser: TelegramUser | null, initData?: string) => {
+    // If no user, don't break guest mode
+    if (!tgUser) {
+      return
+    }
+
+    // Set user from Telegram immediately
+    setUser((prevState) => {
+      const newUser: User = {
+        id: tgUser.id,
+        tgId: tgUser.id,
+        first_name: tgUser.first_name,
+        last_name: tgUser.last_name,
+        firstName: tgUser.first_name,
+        lastName: tgUser.last_name,
+        username: tgUser.username,
+        photo_url: tgUser.photo_url,
+        photoUrl: tgUser.photo_url,
+        avatar: tgUser.photo_url,
+        source: 'telegram',
+      }
+
+      if (prevState === null) {
+        return newUser
+      }
+
+      return {
+        ...prevState,
+        ...newUser,
+      }
+    })
+
+    // If initData is available, try to authenticate with backend (non-blocking)
+    if (initData && initData.length > 0) {
+      try {
+        const { apiUrl } = await import('../utils/api')
+        const endpoint = apiUrl('/api/auth/telegram')
+        
+        if (endpoint) {
+          // Use AbortController with timeout
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 3000)
+
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData }),
+            signal: controller.signal,
+          })
+
+          clearTimeout(timeoutId)
+
+          if (response.ok) {
+            // Backend may return normalized user profile
+            const data = await response.json()
+            if (data.user) {
+              // Update user with backend data if available
+              setUser((prevState) => ({
+                ...prevState,
+                ...data.user,
+                source: 'telegram',
+              }))
+            }
+          }
+        }
+      } catch (error) {
+        // Silent fail - user can still use the app with Telegram user data
+        if (import.meta.env.DEV) {
+          console.warn('Backend auth error, continuing with Telegram user:', error)
+        }
+      }
+    }
   }, [])
 
   const refresh = useCallback(() => {
@@ -144,6 +221,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isTelegram,
     refresh,
     setTelegramUser,
+    setFromTelegram,
   }
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>

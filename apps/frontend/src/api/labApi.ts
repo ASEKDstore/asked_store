@@ -1,4 +1,4 @@
-import { apiUrl } from '../utils/api'
+import { apiUrl, fetchWithTimeout } from '../utils/api'
 
 export interface LabArtist {
   id: string
@@ -26,7 +26,7 @@ export interface LabProduct {
 }
 
 export async function getLabArtists(): Promise<LabArtist[]> {
-  const response = await fetch(apiUrl('/api/lab/artists'))
+  const response = await fetchWithTimeout(apiUrl('/api/lab/artists'), {}, 3000)
   if (!response.ok) {
     throw new Error('Failed to fetch lab artists')
   }
@@ -37,7 +37,7 @@ export async function getLabProducts(artistId?: string): Promise<LabProduct[]> {
   const url = artistId
     ? apiUrl(`/api/lab/products?artistId=${artistId}`)
     : apiUrl('/api/lab/products')
-  const response = await fetch(url)
+  const response = await fetchWithTimeout(url, {}, 3000)
   if (!response.ok) {
     throw new Error('Failed to fetch lab products')
   }

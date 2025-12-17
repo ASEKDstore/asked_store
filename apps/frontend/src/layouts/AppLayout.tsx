@@ -6,6 +6,7 @@ import { MaintenancePage } from '../pages/MaintenancePage'
 import { ProductSheetWrapper } from '../components/ProductSheet/ProductSheetWrapper'
 import { ProductRouteHandler } from '../components/ProductSheet/ProductRouteHandler'
 import { useProductSheet } from '../context/ProductSheetContext'
+import { Footer } from '../components/Footer/Footer'
 import './AppLayout.css'
 
 export const AppLayout = () => {
@@ -13,9 +14,11 @@ export const AppLayout = () => {
   const { shouldBlock, loading } = useMaintenanceMode()
   const { closeProduct, isOpen } = useProductSheet()
 
-  // Диагностика навигации
+  // Диагностика навигации (только в dev)
   useEffect(() => {
-    console.log('[NAV]', location.pathname)
+    if (import.meta.env.DEV) {
+      console.log('[NAV]', location.pathname)
+    }
   }, [location.pathname])
 
   // UI Reset при изменении route - снимаем все залипшие состояния
@@ -35,15 +38,14 @@ export const AppLayout = () => {
     // Это предотвращает залипание sheet при переходе на другие страницы (например, /app/banner/:id)
     if (!location.pathname.startsWith('/app/product/')) {
       if (isOpen) {
-        console.log('[UI RESET] Closing ProductSheet on route change to:', location.pathname)
+        if (import.meta.env.DEV) {
+          console.log('[UI RESET] Closing ProductSheet on route change to:', location.pathname)
+        }
         closeProduct()
       }
     }
 
-    // 4) Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[UI RESET] Route changed, unlocked scroll and reset body styles')
-    }
+    // 4) Диагностика в dev (уже есть проверка выше)
   }, [location.pathname, isOpen, closeProduct])
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export const AppLayout = () => {
         </div>
         <ProductRouteHandler />
         <ProductSheetWrapper />
+        <Footer />
       </div>
     )
   }
@@ -85,21 +88,22 @@ export const AppLayout = () => {
         </div>
         <ProductRouteHandler />
         <ProductSheetWrapper />
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className={`app-layout app-root ${isAdminRoute ? 'admin-shell' : ''}`}>
+    <div className={`app-layout app-root ${isAdminRoute ? 'admin-shell' : ''}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {!isAdminRoute && <Header />}
-      <div className="app-scroll">
-        <main className={`app-layout-main ${isAdminRoute ? 'admin-main-wrapper' : ''}`}>
+      <div className="app-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <main className={`app-layout-main ${isAdminRoute ? 'admin-main-wrapper' : ''}`} style={{ flex: 1 }}>
           <Outlet />
         </main>
       </div>
       <ProductRouteHandler />
       <ProductSheetWrapper />
-      {/* здесь потом добавим нижнюю навигацию */}
+      <Footer />
     </div>
   )
 }
