@@ -10,16 +10,27 @@ import { Footer } from '../components/Footer/Footer'
 import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { useSwipeBack } from '../hooks/useSwipeBack'
+import { useUser } from '../context/UserContext'
+import { initTelegram } from '../lib/telegram'
 import './AppLayout.css'
 
 export const AppLayout = () => {
   const location = useLocation()
   const { shouldBlock, loading } = useMaintenanceMode()
   const { closeProduct, isOpen } = useProductSheet()
+  const { setTelegramUser } = useUser()
   const scrollRef = useRef<HTMLDivElement>(null)
   
   // Enable swipe-back gesture on scroll container
   useSwipeBack(scrollRef)
+
+  // Initialize Telegram user on mount (non-blocking)
+  useEffect(() => {
+    const result = initTelegram()
+    if (result.user) {
+      setTelegramUser(result.user)
+    }
+  }, [setTelegramUser])
 
   // Диагностика навигации (только в dev)
   useEffect(() => {

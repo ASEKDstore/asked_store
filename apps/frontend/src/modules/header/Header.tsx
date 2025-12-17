@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../../context/UserContext'
 import { useCart } from '../../context/CartContext'
-import { isAdminId } from '../../config/admins'
 import { MiniCartDrawer } from '../cart/MiniCartDrawer'
 import './header.css'
 
@@ -13,7 +12,14 @@ export const Header: React.FC = () => {
   const [miniCartOpen, setMiniCartOpen] = useState(false)
   const navigate = useNavigate()
 
-  const isAdmin = isAdminId(user?.id)
+  // Get admin IDs from env variable
+  const adminIds = (import.meta.env.VITE_ADMIN_TG_IDS ?? '')
+    .split(',')
+    .map((s: string) => Number(s.trim()))
+    .filter((n: number) => Number.isFinite(n))
+
+  // Check if user is admin by tgId
+  const isAdmin = Boolean(user?.tgId && adminIds.includes(user.tgId))
 
   const toggleMenu = () => setOpen((v) => !v)
 
@@ -147,6 +153,16 @@ export const Header: React.FC = () => {
               Сотрудничество
             </Link>
           </li>
+          {isAdmin && (
+            <>
+              <li className="header-menu-divider" />
+              <li className="header-menu-admin">
+                <Link to="/app/admin" onClick={toggleMenu}>
+                  Админка
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
 

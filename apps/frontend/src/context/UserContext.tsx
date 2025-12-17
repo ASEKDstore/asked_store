@@ -57,36 +57,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setTelegramUser = useCallback((tgUser: TelegramUser | null) => {
     if (!tgUser) {
-      // If user is null, don't break existing state - leave current user or null
+      // If user is null, set guest mode
+      setUser((prev: User | null) => prev ?? { source: 'guest' })
       return
     }
 
-    setUser((prevState) => {
-      // Create new User object from TelegramUser
-      const newUser: User = {
-        id: tgUser.id,
-        tgId: tgUser.id,
-        first_name: tgUser.first_name,
-        last_name: tgUser.last_name,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
-        username: tgUser.username,
-        photo_url: tgUser.photo_url,
-        photoUrl: tgUser.photo_url,
-        avatar: tgUser.photo_url,
-        source: 'telegram',
-      }
-
-      // If prevState is null, return new user
-      if (prevState === null) {
-        return newUser
-      }
-
-      // Otherwise, merge with existing state
-      return {
-        ...prevState,
-        ...newUser,
-      }
+    // Set user from Telegram
+    setUser({
+      tgId: tgUser.id,
+      id: tgUser.id,
+      username: tgUser.username,
+      firstName: tgUser.first_name,
+      lastName: tgUser.last_name,
+      avatar: tgUser.photo_url,
+      photo_url: tgUser.photo_url,
+      photoUrl: tgUser.photo_url,
+      first_name: tgUser.first_name,
+      last_name: tgUser.last_name,
+      source: 'telegram',
     })
   }, [])
 

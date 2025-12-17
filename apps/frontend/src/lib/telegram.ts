@@ -66,21 +66,20 @@ export function getTelegramUser(): TelegramUser | null {
 /**
  * Initialize Telegram WebApp
  * Calls ready() and expand() if WebApp is available
- * @returns Object with hasWebApp flag, initDataLen, user data, and initData
+ * @returns Object with hasWebApp flag, user data, and initData
  */
 export function initTelegram(): {
   hasWebApp: boolean
-  initDataLen: number
   user: TelegramUser | null
-  initData?: string
+  initData: string
 } {
   const wa = getWebApp()
   
   if (!wa) {
     return {
       hasWebApp: false,
-      initDataLen: 0,
       user: null,
+      initData: '',
     }
   }
 
@@ -94,13 +93,11 @@ export function initTelegram(): {
     }
   }
 
-  const initDataLen = wa.initData?.length ?? 0
   const user = getTelegramUser()
-  const initData = wa.initData
+  const initData = wa.initData ?? ''
 
   return {
     hasWebApp: true,
-    initDataLen,
     user,
     initData,
   }
