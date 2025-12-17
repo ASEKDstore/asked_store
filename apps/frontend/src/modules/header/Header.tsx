@@ -18,8 +18,9 @@ export const Header: React.FC = () => {
     .map((s: string) => Number(s.trim()))
     .filter((n: number) => Number.isFinite(n) && n > 0)
 
-  // Check if user is admin by tgId (number) only
-  const isAdmin = Boolean(user?.tgId && typeof user.tgId === 'number' && adminIds.includes(user.tgId))
+  // Check if user is admin by tgId (preferred) or id (fallback)
+  const userId = user?.tgId ?? user?.id
+  const isAdmin = Boolean(userId && typeof userId === 'number' && adminIds.includes(userId))
 
   const toggleMenu = () => setOpen((v) => !v)
 

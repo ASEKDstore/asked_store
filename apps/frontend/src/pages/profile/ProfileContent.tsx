@@ -83,8 +83,11 @@ export const ProfileContent: React.FC = () => {
   const handleCopyId = async () => {
     if (!user) return
     
+    const userId = user.tgId ?? user.id
+    if (!userId) return
+    
     try {
-      await navigator.clipboard.writeText(String(user.id))
+      await navigator.clipboard.writeText(String(userId))
       setCopied(true)
       setTimeout(() => setCopied(false), 1200)
     } catch (error) {
@@ -147,15 +150,19 @@ export const ProfileContent: React.FC = () => {
         <div className="profile-row">
           <span className="profile-label">Telegram ID</span>
           <div className="profile-value-group">
-            <span className="profile-value">{user?.id || '—'}</span>
-            <button
-              className="profile-btn-icon"
-              onClick={handleCopyId}
-              aria-label="Копировать ID"
-              title="Копировать ID"
-            >
-              📋
-            </button>
+            <span className="profile-value">
+              {user?.tgId || user?.id ? (user.tgId || user.id) : 'Гость'}
+            </span>
+            {user && (user.tgId || user.id) && (
+              <button
+                className="profile-btn-icon"
+                onClick={handleCopyId}
+                aria-label="Копировать ID"
+                title="Копировать ID"
+              >
+                📋
+              </button>
+            )}
           </div>
         </div>
 
