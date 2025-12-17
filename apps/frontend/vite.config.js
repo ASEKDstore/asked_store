@@ -21,9 +21,24 @@ export default defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'vendor': ['react-router-dom'],
+        manualChunks(id) {
+          // Only split node_modules
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          // react-vendor: react, react-dom, react-router, react-router-dom
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) {
+            return 'react-vendor'
+          }
+
+          // OPTIONAL: UI libraries chunk (uncomment if you use these)
+          // if (/[\\/]node_modules[\\/](framer-motion|lucide-react|@radix-ui|clsx|tailwind-merge)[\\/]/.test(id)) {
+          //   return 'ui'
+          // }
+
+          // All other node_modules go to vendor
+          return 'vendor'
         },
       },
     },
