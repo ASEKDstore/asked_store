@@ -1,56 +1,53 @@
 import type { User } from '../types/user'
 import { normalizeTelegramUser } from './telegram/normalizeTelegramUser'
+import { apiUrl } from '../utils/api'
 
 /**
- * Mock Telegram login function
- * TODO: Replace with real Telegram Login Widget / WebApp integration
+ * Real Telegram WebApp login function
+ * Uses Telegram WebApp initData for authentication
  * 
- * Real flow will be:
- * 1. Load Telegram script: <script src="https://telegram.org/js/telegram-widget.js"></script>
- * 2. Initialize widget with bot name and callback
- * 3. On user auth, receive user data from Telegram
- * 4. Send user data to backend /api/auth/telegram
- * 5. Receive JWT token from backend
- * 6. Store token and user data
+ * Flow:
+ * 1. Get initData from Telegram WebApp
+ * 2. Send initData to backend /api/auth/telegram
+ * 3. Backend validates initData and returns JWT + user data
+ * 4. Return normalized user data
  */
 export async function loginWithTelegram(): Promise<User> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  const tg = window.Telegram?.WebApp
 
-  // TODO: Replace with real Telegram Login Widget / WebApp
-  // Example real implementation:
-  // const tg = window.Telegram?.WebApp
-  // if (tg?.initDataUnsafe?.user) {
-  //   const tgUser = tg.initDataUnsafe.user
-  //   const response = await fetch('/api/auth/telegram', {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({
-  //       id: tgUser.id,
-  //       first_name: tgUser.first_name,
-  //       last_name: tgUser.last_name,
-  //       username: tgUser.username,
-  //       photo_url: tgUser.photo_url,
-  //       auth_date: tg.initDataUnsafe.auth_date,
-  //       hash: tg.initDataUnsafe.hash,
-  //     }),
-  //   })
-  //   const data = await response.json()
-  //   return normalizeTelegramUser(data.user)
-  // }
+  if (!tg || !tg.initData) {
+    throw new Error('Telegram WebApp not available or initData missing')
+  }
 
-  return mockTelegramLogin()
-}
+  // Initialize WebApp
+  tg.ready?.()
+  tg.expand?.()
 
-/**
- * Mock function for development
- */
-async function mockTelegramLogin(): Promise<User> {
-  // TODO: Replace with real integration Telegram Login
+  // Get initData
+  const initData = tg.initData
+
+  // Send initData to backend for validation
+  const response = await fetch(apiUrl('/api/auth/telegram'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }))
+    throw new Error(errorData.error || 'Не удалось авторизоваться. Перезапусти через /start.')
+  }
+
+  const data = await response.json()
+  const { user } = data
+
+  // Return normalized user data
   return normalizeTelegramUser({
-    id: Date.now(),
-    first_name: 'ASKED',
-    username: 'demo_user',
+    id: user.telegram_id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    username: user.username,
+    photo_url: user.avatar_url,
   })
 }
 
