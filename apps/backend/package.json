@@ -21,12 +21,12 @@
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
     "@types/uuid": "^9.0.7",
-    "@types/jsonwebtoken": "^9.0.5",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
-    "prisma": "^5.19.0"
+    "prisma": "^5.19.0",
+    "@types/jsonwebtoken": "^9.0.5"
   }
 }
 
