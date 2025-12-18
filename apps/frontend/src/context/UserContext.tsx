@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react'
 import type { User, TgUser } from '../types/user'
-import { useTelegramSession } from '../hooks/useTelegramSession'
+import { useAuth } from './AuthContext'
 
 // Get admin IDs from env
 const getAdminIds = (): number[] => {
@@ -47,38 +47,47 @@ declare global {
 }
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use Telegram session hook
-  const { status, profile, token } = useTelegramSession()
+  // Use Auth context (replaces useTelegramSession)
+  const { status, token } = useAuth()
   
   // Initialize with guest user (never null)
   const [user, setUser] = useState<User>({ source: 'guest', tgId: 0 })
 
-  // Update user when profile is available
+  // Get user data from Telegram WebApp initDataUnsafe
   useEffect(() => {
-    if (status === 'ready' && profile) {
-      const adminIds = getAdminIds()
-      const isAdmin = adminIds.includes(profile.telegram_id)
+    if (status === 'ready' && token) {
+      // Try to get user from initDataUnsafe
+      const tg = window.Telegram?.WebApp
+      const unsafeUser = tg?.initDataUnsafe?.user
+      
+      if (unsafeUser && unsafeUser.id) {
+        const adminIds = getAdminIds()
+        const isAdmin = adminIds.includes(unsafeUser.id)
 
-      const newUser: User = {
-        source: 'telegram',
-        tgId: profile.telegram_id,
-        firstName: profile.first_name || undefined,
-        lastName: profile.last_name || undefined,
-        username: profile.username || undefined,
-        avatar: profile.avatar_url || undefined,
-        isAdmin,
-      }
+        const newUser: User = {
+          source: 'telegram',
+          tgId: unsafeUser.id,
+          firstName: unsafeUser.first_name || undefined,
+          lastName: unsafeUser.last_name || undefined,
+          username: unsafeUser.username || undefined,
+          avatar: unsafeUser.photo_url || undefined,
+          isAdmin,
+        }
 
-      setUser(newUser)
+        setUser(newUser)
 
-      if (import.meta.env.DEV) {
-        console.log('[UserContext] User authenticated:', newUser)
+        if (import.meta.env.DEV) {
+          console.log('[UserContext] User authenticated:', newUser)
+        }
+      } else {
+        // Token exists but no user data - set guest
+        setUser({ source: 'guest', tgId: 0 })
       }
     } else if (status === 'error') {
       // Error state - set guest
       setUser({ source: 'guest', tgId: 0 })
     }
-  }, [status, profile])
+  }, [status, token])
 
   const refresh = useCallback(() => {
     // Refresh will be handled by useTelegramSession hook

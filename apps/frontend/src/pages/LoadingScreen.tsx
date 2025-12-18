@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTelegramSession } from '../hooks/useTelegramSession'
+import { useAuth } from '../context/AuthContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { status, displayName, error } = useTelegramSession()
+  const { status, displayName, error } = useAuth()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
   
@@ -46,7 +46,7 @@ export function LoadingScreen() {
     return () => clearTimeout(safetyTimer)
   }, [navigate, status])
 
-  // Greeting text
+  // Greeting text - show name if available, otherwise show error or loading
   const greeting = displayName 
     ? `Привет, ${displayName} 👋`
     : error 
