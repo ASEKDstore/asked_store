@@ -21,7 +21,7 @@ npm run dev
 Создайте файл `.env` в директории `apps/bot/` или установите переменные окружения в Render:
 
 ```env
-BOT_TOKEN=8211081274:AAHIwp3TWNwbeWbaNtUesAKcMkZA8aUv3Yo
+BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
 WELCOME_VIDEO_URL=https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4
 TELEGRAM_CHANNEL_URL=https://t.me/asked_store
 ```
