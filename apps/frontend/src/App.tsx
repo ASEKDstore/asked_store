@@ -171,7 +171,7 @@ function AppContent() {
 function App() {
   // Top-level Telegram auth - runs on app start, independent of routing
   useEffect(() => {
-    const waitForTelegramWebApp = (maxRetries = 20, delay = 100): Promise<typeof window.Telegram.WebApp | null> => {
+    const waitForTelegramWebApp = (maxRetries = 20, delay = 100): Promise<any> => {
       return new Promise((resolve) => {
         let retries = 0
         
