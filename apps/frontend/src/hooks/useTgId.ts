@@ -6,7 +6,7 @@ import { useUser } from '../context/UserContext'
  */
 export function useTgId(): number | null {
   const { user } = useUser()
-  return user?.id ?? null
+  return user.tgId && user.source === 'telegram' ? user.tgId : null
 }
 
 /**

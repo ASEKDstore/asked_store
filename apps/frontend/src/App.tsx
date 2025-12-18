@@ -2,7 +2,6 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { LoadingScreen } from './pages/LoadingScreen'
 import { AppLayout } from './layouts/AppLayout'
-import { useTelegramUser } from './hooks/useTelegramUser'
 import { MainPage } from './pages/main/MainPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { ProfileContent } from './pages/profile/ProfileContent'
@@ -62,9 +61,6 @@ function ProfileRoute() {
 }
 
 function AppContent() {
-  // Initialize Telegram WebApp and sync user data
-  useTelegramUser()
-
   return (
     <Routes>
       <Route path="/" element={<LoadingScreen />} />

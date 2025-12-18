@@ -18,8 +18,8 @@ export const Header: React.FC = () => {
     .map((s: string) => Number(s.trim()))
     .filter((n: number) => Number.isFinite(n) && n > 0)
 
-  // Check if user is admin by id (id is always Telegram ID)
-  const isAdmin = Boolean(user?.id && typeof user.id === 'number' && adminIds.includes(user.id))
+  // Check if user is admin by tgId
+  const isAdmin = Boolean(user.tgId && typeof user.tgId === 'number' && adminIds.includes(user.tgId))
 
   const toggleMenu = () => setOpen((v) => !v)
 

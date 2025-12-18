@@ -19,7 +19,7 @@ export const ReviewForm: React.FC<Props> = ({ workId, onReviewAdded }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!user) {
+    if (user.source === 'guest' || !user.tgId) {
       alert('Пожалуйста, войдите в систему для оставления отзыва')
       return
     }
@@ -37,10 +37,10 @@ export const ReviewForm: React.FC<Props> = ({ workId, onReviewAdded }) => {
     setIsSubmitting(true)
 
     try {
-      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'USER'
+      const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'USER'
       const review = addReviewForWork({
         workId,
-        userId: String(user.id),
+        userId: String(user.tgId),
         userName,
         rating,
         comment: comment.trim(),

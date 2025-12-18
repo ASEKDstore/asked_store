@@ -5,7 +5,7 @@ import { isAdminId } from '../config/admins'
 export const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useUser()
 
-  if (!user) {
+  if (user.source === 'guest' || !user.tgId) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -22,7 +22,7 @@ export const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => {
     )
   }
 
-  if (!isAdminId(user.id)) {
+  if (!isAdminId(user.tgId)) {
     return (
       <div style={{
         minHeight: '100vh',

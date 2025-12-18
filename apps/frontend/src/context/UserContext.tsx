@@ -1,37 +1,21 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react'
-import { normalizeTelegramUser } from '../services/telegram/normalizeTelegramUser'
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react'
+import type { User, TgUser } from '../types/user'
 
-export type UserSource = 'telegram' | 'guest'
-
-export interface User {
-  // Telegram raw fields (for old code compatibility)
-  id: number // TELEGRAM USER ID (required, main field)
-  first_name?: string
-  last_name?: string
-  username?: string
-  photo_url?: string
-
-  // Normalized aliases (for new code/components)
-  tgId?: number
-  firstName?: string
-  lastName?: string
-  photoUrl?: string
-  avatar?: string
-  name?: string
-
-  source: UserSource
-  isAdmin?: boolean
+// Get admin IDs from env
+const getAdminIds = (): number[] => {
+  const envValue = import.meta.env.VITE_ADMIN_TG_IDS || ''
+  return envValue
+    .split(',')
+    .map((s: string) => Number(s.trim()))
+    .filter((n: number) => Number.isFinite(n) && n > 0)
 }
 
 type UserContextValue = {
-  user: User | null // null = guest mode
+  user: User // Always defined (guest = {source:'guest', tgId:0})
   displayName: string
   initials: string
   isTelegram: boolean
-  browserMode: boolean // true if opened as regular URL (not WebApp)
   refresh: () => void
-  setTelegramUser: (tgUser: any) => void // Normalizes and sets user from Telegram
-  setFromTelegram: (tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => void // Legacy alias
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
@@ -61,57 +45,106 @@ declare global {
 }
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [browserMode, setBrowserMode] = useState(false)
+  // Initialize with guest user (never null)
+  const [user, setUser] = useState<User>({ source: 'guest', tgId: 0 })
 
-  const setTelegramUser = useCallback((tgUser: any) => {
-    // If no user or invalid id, set to null (guest mode)
-    if (!tgUser?.id) {
-      setUser(null)
-      setBrowserMode(true)
-      return
-    }
+  // Initialize Telegram WebApp and set user on mount
+  useEffect(() => {
+    const initTelegram = () => {
+      try {
+        const wa = window.Telegram?.WebApp
+        if (wa) {
+          // Initialize WebApp
+          wa.ready?.()
+          wa.expand?.()
 
-    try {
-      const normalized = normalizeTelegramUser(tgUser)
-      setUser((prev: User | null) => (prev ? { ...prev, ...normalized } : normalized))
-      setBrowserMode(false)
-    } catch (error) {
-      // Invalid user data - set to null
-      if (import.meta.env.DEV) {
-        console.warn('[UserContext] Failed to normalize Telegram user:', error)
+          // Get Telegram user
+          const tgUser = wa.initDataUnsafe?.user
+
+          if (tgUser && typeof tgUser.id === 'number') {
+            // Map Telegram user to User type
+            const adminIds = getAdminIds()
+            const isAdmin = adminIds.includes(tgUser.id)
+
+            const newUser: User = {
+              source: 'telegram',
+              tgId: tgUser.id,
+              firstName: tgUser.first_name,
+              lastName: tgUser.last_name,
+              username: tgUser.username,
+              avatar: tgUser.photo_url,
+              isAdmin,
+            }
+
+            setUser(newUser)
+          } else {
+            // No Telegram user - set guest
+            setUser({ source: 'guest', tgId: 0 })
+          }
+        } else {
+          // No WebApp - set guest
+          setUser({ source: 'guest', tgId: 0 })
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[UserContext] Error initializing Telegram:', error)
+        }
+        setUser({ source: 'guest', tgId: 0 })
       }
-      setUser(null)
-      setBrowserMode(true)
     }
-  }, [])
 
-  // Legacy alias for backward compatibility
-  const setFromTelegram = useCallback((tgUser: { id: number; first_name?: string; last_name?: string; username?: string; photo_url?: string } | null) => {
-    setTelegramUser(tgUser)
-  }, [setTelegramUser])
+    initTelegram()
+  }, [])
 
   const refresh = useCallback(() => {
     // Re-read Telegram user data from WebApp
     if (typeof window !== 'undefined') {
-      const wa = (window as any).Telegram?.WebApp
-      const tgUser = wa?.initDataUnsafe?.user || null
-      
-      setFromTelegram(tgUser)
+      try {
+        const wa = window.Telegram?.WebApp
+        if (wa) {
+          const tgUser = wa.initDataUnsafe?.user
+
+          if (tgUser && typeof tgUser.id === 'number') {
+            const adminIds = getAdminIds()
+            const isAdmin = adminIds.includes(tgUser.id)
+
+            const newUser: User = {
+              source: 'telegram',
+              tgId: tgUser.id,
+              firstName: tgUser.first_name,
+              lastName: tgUser.last_name,
+              username: tgUser.username,
+              avatar: tgUser.photo_url,
+              isAdmin,
+            }
+
+            setUser(newUser)
+          } else {
+            setUser({ source: 'guest', tgId: 0 })
+          }
+        } else {
+          setUser({ source: 'guest', tgId: 0 })
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[UserContext] Error refreshing user:', error)
+        }
+        setUser({ source: 'guest', tgId: 0 })
+      }
     }
-  }, [setFromTelegram])
+  }, [])
 
   // User data is synced via useTelegramUser hook in LoadingScreen/App
   // This effect is kept for backward compatibility but refresh is called from useTelegramUser
 
   const displayName = useMemo(() => {
-    if (!user) return 'Гость'
-    return user.name || user.firstName || user.first_name || user.username || 'Гость'
+    if (user.source === 'guest') return 'Гость'
+    return user.firstName || user.username || 'Гость'
   }, [user])
 
   const initials = useMemo(() => {
-    if (!user) return 'Г'
-    const name = user.name || [user.firstName || user.first_name, user.lastName || user.last_name].filter(Boolean).join(' ')
+    if (user.source === 'guest') return 'Г'
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
     if (name) {
       const parts = name.split(' ')
       if (parts.length >= 2) {
@@ -134,10 +167,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     displayName,
     initials,
     isTelegram,
-    browserMode,
     refresh,
-    setTelegramUser,
-    setFromTelegram,
   }
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>

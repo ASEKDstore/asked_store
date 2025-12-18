@@ -2,29 +2,18 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
-import { initTelegram } from '../lib/telegram'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { user, setFromTelegram } = useUser()
+  const { user } = useUser()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
   
   // Auth state: always allow progress (guest mode supported)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
-    user ? 'authenticated' : 'unauthenticated'
+    user.source === 'telegram' ? 'authenticated' : 'unauthenticated'
   
   const progress = useLoadingProgress(authState)
-
-  // Initialize Telegram WebApp and sync user data on mount (non-blocking)
-  useEffect(() => {
-    const result = initTelegram()
-    
-    // Set user from Telegram if available (non-blocking)
-    if (result.user) {
-      setFromTelegram(result.user)
-    }
-  }, [setFromTelegram])
 
   // Navigate to /app after progress completes OR timeout (always, regardless of Telegram)
   useEffect(() => {
@@ -55,8 +44,8 @@ export function LoadingScreen() {
     return () => clearTimeout(safetyTimer)
   }, [navigate])
 
-  const userName = user?.firstName || user?.first_name || user?.name || 'ASKED'
-  const displayName = user ? userName : 'ASKED'
+  const userName = user.firstName || user.username || 'ASKED'
+  const displayName = user.source === 'telegram' ? userName : 'ASKED'
 
   return (
     <div className="ls-root">

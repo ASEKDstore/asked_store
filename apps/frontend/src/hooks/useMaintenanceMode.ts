@@ -27,7 +27,7 @@ export function useMaintenanceMode() {
     checkMaintenance()
   }, [])
 
-  const isAdmin = user ? isAdminId(user.id) : false
+  const isAdmin = user.tgId ? isAdminId(user.tgId) : false
   const shouldBlock = maintenanceMode && !isAdmin
 
   return { maintenanceMode, loading, shouldBlock, isAdmin }

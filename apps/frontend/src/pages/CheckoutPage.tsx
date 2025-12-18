@@ -114,10 +114,10 @@ export const CheckoutPage: React.FC = () => {
 
       const orderPayload = {
         user: {
-          tgId: user.id,
-          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'USER',
+          tgId: user.tgId,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'USER',
           username: user.username,
-          photo_url: user.photo_url,
+          photo_url: user.avatar,
         },
         items: orderItems,
         delivery: {

@@ -10,8 +10,6 @@ import { Footer } from '../components/Footer/Footer'
 import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { useSwipeBack } from '../hooks/useSwipeBack'
-import { useUser } from '../context/UserContext'
-import { useTelegramInit } from '../hooks/useTelegramInit'
 import { TgDebugOverlay } from '../components/TgDebugOverlay'
 import './AppLayout.css'
 
@@ -19,61 +17,10 @@ export const AppLayout = () => {
   const location = useLocation()
   const { shouldBlock, loading } = useMaintenanceMode()
   const { closeProduct, isOpen } = useProductSheet()
-  const { setFromTelegram } = useUser()
   const scrollRef = useRef<HTMLDivElement>(null)
-  
-  // Initialize Telegram WebApp
-  const { waPresent, tgUser, initData } = useTelegramInit()
   
   // Enable swipe-back gesture on scroll container
   useSwipeBack(scrollRef)
-
-  // Set Telegram user on mount with retry logic (non-blocking, called once)
-  useEffect(() => {
-    const initUser = async () => {
-      if (!waPresent) {
-        // WebApp not available - browser mode, set user to null
-        setFromTelegram(null)
-        return
-      }
-
-      // Use ONLY initDataUnsafe.user (no wa.user - such field doesn't exist)
-      const wa = (window as any).Telegram?.WebApp
-      let currentUser = wa?.initDataUnsafe?.user || null
-
-      if (currentUser) {
-        // User available immediately
-        setFromTelegram(currentUser)
-        return
-      }
-
-      // Retry logic for Android Telegram (user may not be available immediately)
-      const maxRetries = 10
-      const retryInterval = 250
-
-      for (let i = 0; i < maxRetries; i++) {
-        await new Promise((resolve) => setTimeout(resolve, retryInterval))
-
-        currentUser = wa?.initDataUnsafe?.user || null
-        if (currentUser) {
-          setFromTelegram(currentUser)
-          if (import.meta.env.DEV) {
-            console.log(`[TG] User loaded after ${i + 1} retries`)
-          }
-          return
-        }
-      }
-
-      // User not available after retries - set to null (guest mode)
-      setFromTelegram(null)
-      if (import.meta.env.DEV) {
-        console.log('[TG] User not available after retries, staying in guest mode (null)')
-      }
-    }
-
-    initUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waPresent]) // Re-run if WebApp availability changes
 
   // Диагностика навигации (только в dev)
   useEffect(() => {

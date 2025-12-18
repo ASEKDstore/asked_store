@@ -8,7 +8,7 @@ import './TgDebugOverlay.css'
  * Only visible in DEV mode or when ?debug=1 is in URL
  */
 export const TgDebugOverlay: React.FC = () => {
-  const { user, browserMode } = useUser()
+  const { user } = useUser()
   const [isOpen, setIsOpen] = useState(false)
   const [debugData, setDebugData] = useState<{
     hasTelegram: boolean
@@ -110,8 +110,12 @@ export const TgDebugOverlay: React.FC = () => {
                     <span className="tg-debug-value">{debugData.initDataPreview}</span>
                   </div>
                   <div className="tg-debug-row">
-                    <span className="tg-debug-label">userPresent:</span>
+                    <span className="tg-debug-label">hasUser:</span>
                     <span className="tg-debug-value">{String(debugData.userPresent)}</span>
+                  </div>
+                  <div className="tg-debug-row">
+                    <span className="tg-debug-label">tgId:</span>
+                    <span className="tg-debug-value">{debugData.user?.id || '—'}</span>
                   </div>
                   <div className="tg-debug-row">
                     <span className="tg-debug-label">platform:</span>
@@ -136,12 +140,8 @@ export const TgDebugOverlay: React.FC = () => {
                   <div className="tg-debug-row tg-debug-row-full">
                     <span className="tg-debug-label">contextUser:</span>
                     <pre className="tg-debug-value-pre">
-                      {user ? JSON.stringify({ id: user.id, username: user.username, source: user.source }, null, 2) : 'null'}
+                      {JSON.stringify({ tgId: user.tgId, username: user.username, source: user.source }, null, 2)}
                     </pre>
-                  </div>
-                  <div className="tg-debug-row tg-debug-row-full">
-                    <span className="tg-debug-label">browserMode:</span>
-                    <span className="tg-debug-value">{String(browserMode)}</span>
                   </div>
                   {!debugData.hasWebApp || debugData.initDataLen === 0 ? (
                     <div className="tg-debug-warning">

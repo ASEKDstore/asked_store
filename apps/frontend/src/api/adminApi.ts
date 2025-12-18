@@ -294,9 +294,9 @@ export function createAdminApi(tgId: number) {
 // Hook version
 export function useAdminApi() {
   const { user } = useUser()
-  if (!user?.id) {
+  if (!user.tgId || user.source === 'guest') {
     throw new Error('User not authenticated')
   }
-  return createAdminApi(user.id)
+  return createAdminApi(user.tgId)
 }
 
