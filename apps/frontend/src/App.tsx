@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { LoadingScreen } from './pages/LoadingScreen'
 import { TelegramRequiredScreen } from './pages/TelegramRequiredScreen'
 import { AppLayout } from './layouts/AppLayout'
-import { TelegramWebAppDebug } from './components/TelegramWebAppDebug'
+import { TgDebugPanel } from './components/TgDebugPanel'
 import { MainPage } from './pages/main/MainPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { ProfileContent } from './pages/profile/ProfileContent'
@@ -176,7 +176,7 @@ function App() {
       <ProductSheetProvider>
         <BrowserRouter>
           <AppContent />
-          <TelegramWebAppDebug />
+          <TgDebugPanel />
         </BrowserRouter>
     </ProductSheetProvider>
     </ErrorBoundary>

@@ -1,16 +1,48 @@
-import { useUser } from '../context/UserContext'
+import { useState, useEffect } from 'react'
 import './TelegramRequiredScreen.css'
 
 /**
  * Screen shown when Mini App is opened without Telegram WebApp context
  * (e.g., opened via direct URL in browser)
+ * 
+ * Shows ONLY if window.Telegram?.WebApp is absent
+ * Does NOT depend on user loading state
  */
 export function TelegramRequiredScreen() {
-  const { telegramStatus } = useUser()
+  const [hasWebApp, setHasWebApp] = useState<boolean | null>(null)
 
-  // Show screen ONLY if status is 'browser'
-  // If 'loading' or 'telegram', don't show (will be handled by LoadingScreen)
-  if (telegramStatus !== 'browser') {
+  useEffect(() => {
+    // Check directly for window.Telegram?.WebApp
+    // This is the ONLY condition for showing this screen
+    const checkWebApp = () => {
+      const wa = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
+      setHasWebApp(!!wa)
+    }
+
+    // Initial check
+    checkWebApp()
+
+    // Re-check periodically (in case WebApp loads late)
+    const interval = setInterval(checkWebApp, 500)
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  // Show loading state while checking
+  if (hasWebApp === null) {
+    return (
+      <div className="telegram-required-screen">
+        <div className="telegram-required-content">
+          <div className="telegram-required-icon">⏳</div>
+          <h1 className="telegram-required-title">Проверка...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  // Show screen ONLY if WebApp is absent
+  // If WebApp exists, don't show (even if user is not loaded yet)
+  if (hasWebApp) {
     return null
   }
 
