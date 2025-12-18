@@ -240,10 +240,32 @@ function App() {
         
         console.log('[AUTH] initDataLen', initData.length, 'after', initDataRetries, 'retries')
         
+        // Log detailed info about WebApp state
+        console.log('[AUTH] WebApp state:', {
+          hasInitData: !!tg?.initData,
+          initDataLength: tg?.initData?.length || 0,
+          hasInitDataUnsafe: !!tg?.initDataUnsafe,
+          hasUser: !!tg?.initDataUnsafe?.user,
+          userId: tg?.initDataUnsafe?.user?.id,
+          platform: tg?.platform,
+          version: tg?.version,
+          startParam: tg?.startParam,
+          queryId: tg?.initDataUnsafe?.query_id,
+        })
+        
         if (initData.length === 0) {
           console.warn('[AUTH] initData is empty after waiting')
           console.warn('[AUTH] tg.initData:', tg?.initData)
           console.warn('[AUTH] tg.initDataUnsafe:', tg?.initDataUnsafe)
+          
+          // If initDataUnsafe has user but initData is empty, this might be a configuration issue
+          if (tg?.initDataUnsafe?.user) {
+            console.error('[AUTH] CRITICAL: initDataUnsafe has user but initData is empty!')
+            console.error('[AUTH] This usually means the app was opened NOT via web_app button')
+            console.error('[AUTH] Or the web_app button URL is incorrect')
+            console.error('[AUTH] Check bot button configuration - should use web_app: { url: "..." }')
+          }
+          
           return
         }
 
