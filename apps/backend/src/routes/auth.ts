@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { createHmac, createHash } from 'crypto'
+import jwt from 'jsonwebtoken'
 import { prisma } from '../db/prisma.js'
+import { getUserAvatarUrl } from '../services/telegramAvatar.js'
 
 const router = Router()
 
@@ -128,14 +130,36 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       },
     })
 
-    // Return user data
+    // Try to get avatar URL from Bot API
+    let avatarUrl: string | null = null
+    try {
+      avatarUrl = await getUserAvatarUrl(botToken, userData.id)
+    } catch (error) {
+      console.warn('[auth] Failed to fetch avatar:', error)
+      // Continue without avatar
+    }
+
+    // Generate JWT token (7 days expiry)
+    const jwtSecret = process.env.JWT_SECRET || botToken // Fallback to botToken if JWT_SECRET not set
+    const token = jwt.sign(
+      {
+        sub: String(userData.id),
+        userId: userData.id,
+        telegram_id: userData.id,
+      },
+      jwtSecret,
+      { expiresIn: '7d' }
+    )
+
+    // Return token and user data
     res.json({
+      token,
       user: {
-        id: userData.id,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        username: userData.username,
-        photo_url: userData.photo_url,
+        telegram_id: userData.id,
+        username: userData.username || null,
+        first_name: userData.first_name || null,
+        last_name: userData.last_name || null,
+        avatar_url: avatarUrl,
       },
     })
   } catch (error: any) {
