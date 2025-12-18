@@ -223,12 +223,27 @@ function App() {
         tg.ready?.()
         tg.expand?.()
 
-        // Get initData
-        const initData = tg?.initData || ''
-        console.log('[AUTH] initDataLen', initData.length)
+        // Wait for initData to be available (it may load asynchronously)
+        console.log('[AUTH] Waiting for initData...')
+        let initData = tg?.initData || ''
+        let initDataRetries = 0
+        const maxInitDataRetries = 30 // 3 seconds max
+        
+        while (initData.length === 0 && initDataRetries < maxInitDataRetries) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+          initData = tg?.initData || ''
+          initDataRetries++
+          if (initDataRetries % 5 === 0) {
+            console.log('[AUTH] Waiting for initData, retry', initDataRetries)
+          }
+        }
+        
+        console.log('[AUTH] initDataLen', initData.length, 'after', initDataRetries, 'retries')
         
         if (initData.length === 0) {
-          console.warn('[AUTH] initData is empty')
+          console.warn('[AUTH] initData is empty after waiting')
+          console.warn('[AUTH] tg.initData:', tg?.initData)
+          console.warn('[AUTH] tg.initDataUnsafe:', tg?.initDataUnsafe)
           return
         }
 
