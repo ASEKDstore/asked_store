@@ -1,8 +1,7 @@
-import type { User } from '../../context/UserContext'
+import type { User } from '../../types/user'
 
 /**
  * Normalizes Telegram user data to User type
- * Supports both old (id, first_name, photo_url) and new (tgId, firstName, photoUrl) field names
  */
 export function normalizeTelegramUser(tgUser: any): User {
   const id = Number(tgUser?.id)
@@ -20,8 +19,6 @@ export function normalizeTelegramUser(tgUser: any): User {
   const lastName = last_name || undefined
   const photoUrl = photo_url || undefined
 
-  const name = [first_name, last_name].filter(Boolean).join(' ').trim() || username || `id:${id}`
-
   // Get admin IDs from env
   const adminIds = (import.meta.env.VITE_ADMIN_TG_IDS ?? '')
     .split(',')
@@ -31,22 +28,12 @@ export function normalizeTelegramUser(tgUser: any): User {
   const isAdmin = adminIds.includes(id)
 
   return {
-    // Telegram raw fields (for old code compatibility)
-    id,
-    first_name: first_name || undefined,
-    last_name: last_name || undefined,
-    username,
-    photo_url,
-
-    // Normalized aliases (for new code)
+    source: 'telegram',
     tgId: id,
     firstName,
     lastName,
-    photoUrl,
+    username,
     avatar: photoUrl,
-    name,
-
-    source: 'telegram',
     isAdmin,
   }
 }

@@ -134,8 +134,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // User data is synced via useTelegramUser hook in LoadingScreen/App
-  // This effect is kept for backward compatibility but refresh is called from useTelegramUser
 
   const displayName = useMemo(() => {
     if (user.source === 'guest') return 'Гость'
