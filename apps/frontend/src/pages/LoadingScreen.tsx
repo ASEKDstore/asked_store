@@ -5,9 +5,12 @@ import { useLoadingProgress } from '../hooks/useLoadingProgress'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { user } = useUser()
+  const { user, isTelegram } = useUser()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
+  
+  // Check if Telegram WebApp is available
+  const hasTelegramContext = typeof window !== 'undefined' && !!window.Telegram?.WebApp
   
   // Auth state: always allow progress (guest mode supported)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
@@ -15,10 +18,31 @@ export function LoadingScreen() {
   
   const progress = useLoadingProgress(authState)
 
+  // Check if we should redirect to telegram-required screen
+  useEffect(() => {
+    // Wait a bit to allow Telegram WebApp to initialize
+    const checkTimer = setTimeout(() => {
+      // If no Telegram WebApp context and no initData, redirect to telegram-required
+      if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
+        if (import.meta.env.DEV) {
+          console.log('[LoadingScreen] No Telegram context, redirecting to telegram-required')
+        }
+        navigate('/telegram-required', { replace: true })
+      }
+    }, 1000) // Wait 1 second for Telegram to initialize
+
+    return () => clearTimeout(checkTimer)
+  }, [hasTelegramContext, navigate])
+
   // Navigate to /app after progress completes OR timeout (always, regardless of Telegram)
   useEffect(() => {
     // Prevent double navigation
     if (hasNavigatedRef.current) return
+
+    // Don't navigate if we're going to telegram-required
+    if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
+      return
+    }
 
     // Navigate when progress reaches 100%
     if (progress >= 100) {
@@ -28,11 +52,14 @@ export function LoadingScreen() {
       }, 300)
       return () => clearTimeout(timer)
     }
-  }, [progress, navigate])
+  }, [progress, navigate, hasTelegramContext])
 
-  // Safety timeout: always navigate after 2 seconds maximum
+  // Safety timeout: navigate after 2 seconds maximum (only if Telegram context exists)
   useEffect(() => {
     if (hasNavigatedRef.current) return
+    if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
+      return // Don't navigate if no Telegram context
+    }
 
     const safetyTimer = setTimeout(() => {
       if (!hasNavigatedRef.current) {
@@ -42,7 +69,7 @@ export function LoadingScreen() {
     }, 2000)
 
     return () => clearTimeout(safetyTimer)
-  }, [navigate])
+  }, [navigate, hasTelegramContext])
 
   const userName = user.firstName || user.username || 'ASKED'
   const displayName = user.source === 'telegram' ? userName : 'ASKED'

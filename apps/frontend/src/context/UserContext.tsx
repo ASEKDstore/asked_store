@@ -50,7 +50,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize Telegram WebApp and set user on mount
   useEffect(() => {
-    const initTelegram = () => {
+    const initTelegram = async () => {
       try {
         const wa = window.Telegram?.WebApp
         if (wa) {
@@ -58,31 +58,103 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           wa.ready?.()
           wa.expand?.()
 
-          // Get Telegram user
+          // Log Telegram data in dev mode
+          if (import.meta.env.DEV) {
+            console.log('[UserContext] TG initDataUnsafe:', wa.initDataUnsafe)
+            console.log('[UserContext] TG initData:', wa.initData ? `${wa.initData.substring(0, 50)}...` : 'empty')
+          }
+
+          // Get Telegram user and initData
           const tgUser = wa.initDataUnsafe?.user
+          const initData = wa.initData
 
-          if (tgUser && typeof tgUser.id === 'number') {
-            // Map Telegram user to User type
-            const adminIds = getAdminIds()
-            const isAdmin = adminIds.includes(tgUser.id)
+          if (tgUser && typeof tgUser.id === 'number' && initData) {
+            // Send initData to backend for validation
+            try {
+              const { apiUrl } = await import('../utils/api')
+              const response = await fetch(apiUrl('/api/auth/telegram'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData }),
+              })
 
-            const newUser: User = {
-              source: 'telegram',
-              tgId: tgUser.id,
-              firstName: tgUser.first_name,
-              lastName: tgUser.last_name,
-              username: tgUser.username,
-              avatar: tgUser.photo_url,
-              isAdmin,
+              if (response.ok) {
+                const data = await response.json()
+                const validatedUser = data.user
+
+                // Map validated user to User type
+                const adminIds = getAdminIds()
+                const isAdmin = adminIds.includes(validatedUser.id)
+
+                const newUser: User = {
+                  source: 'telegram',
+                  tgId: validatedUser.id,
+                  firstName: validatedUser.first_name,
+                  lastName: validatedUser.last_name,
+                  username: validatedUser.username,
+                  avatar: validatedUser.photo_url,
+                  isAdmin,
+                }
+
+                setUser(newUser)
+
+                if (import.meta.env.DEV) {
+                  console.log('[UserContext] User authenticated via backend:', newUser)
+                }
+              } else {
+                // Backend validation failed - fallback to initDataUnsafe (dev only)
+                if (import.meta.env.DEV) {
+                  console.warn('[UserContext] Backend validation failed, using initDataUnsafe as fallback')
+                }
+                
+                const adminIds = getAdminIds()
+                const isAdmin = adminIds.includes(tgUser.id)
+
+                const newUser: User = {
+                  source: 'telegram',
+                  tgId: tgUser.id,
+                  firstName: tgUser.first_name,
+                  lastName: tgUser.last_name,
+                  username: tgUser.username,
+                  avatar: tgUser.photo_url,
+                  isAdmin,
+                }
+
+                setUser(newUser)
+              }
+            } catch (error) {
+              // Network error - fallback to initDataUnsafe
+              if (import.meta.env.DEV) {
+                console.warn('[UserContext] Network error during auth, using initDataUnsafe:', error)
+              }
+
+              const adminIds = getAdminIds()
+              const isAdmin = adminIds.includes(tgUser.id)
+
+              const newUser: User = {
+                source: 'telegram',
+                tgId: tgUser.id,
+                firstName: tgUser.first_name,
+                lastName: tgUser.last_name,
+                username: tgUser.username,
+                avatar: tgUser.photo_url,
+                isAdmin,
+              }
+
+              setUser(newUser)
             }
-
-            setUser(newUser)
           } else {
-            // No Telegram user - set guest
+            // No Telegram user or initData - set guest
+            if (import.meta.env.DEV) {
+              console.log('[UserContext] No Telegram user or initData, setting guest mode')
+            }
             setUser({ source: 'guest', tgId: 0 })
           }
         } else {
           // No WebApp - set guest
+          if (import.meta.env.DEV) {
+            console.log('[UserContext] No Telegram WebApp, setting guest mode')
+          }
           setUser({ source: 'guest', tgId: 0 })
         }
       } catch (error) {
@@ -96,29 +168,77 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initTelegram()
   }, [])
 
-  const refresh = useCallback(() => {
-    // Re-read Telegram user data from WebApp
+  const refresh = useCallback(async () => {
+    // Re-read Telegram user data from WebApp and validate with backend
     if (typeof window !== 'undefined') {
       try {
         const wa = window.Telegram?.WebApp
         if (wa) {
           const tgUser = wa.initDataUnsafe?.user
+          const initData = wa.initData
 
-          if (tgUser && typeof tgUser.id === 'number') {
-            const adminIds = getAdminIds()
-            const isAdmin = adminIds.includes(tgUser.id)
+          if (tgUser && typeof tgUser.id === 'number' && initData) {
+            // Send initData to backend for validation
+            try {
+              const { apiUrl } = await import('../utils/api')
+              const response = await fetch(apiUrl('/api/auth/telegram'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData }),
+              })
 
-            const newUser: User = {
-              source: 'telegram',
-              tgId: tgUser.id,
-              firstName: tgUser.first_name,
-              lastName: tgUser.last_name,
-              username: tgUser.username,
-              avatar: tgUser.photo_url,
-              isAdmin,
+              if (response.ok) {
+                const data = await response.json()
+                const validatedUser = data.user
+
+                const adminIds = getAdminIds()
+                const isAdmin = adminIds.includes(validatedUser.id)
+
+                const newUser: User = {
+                  source: 'telegram',
+                  tgId: validatedUser.id,
+                  firstName: validatedUser.first_name,
+                  lastName: validatedUser.last_name,
+                  username: validatedUser.username,
+                  avatar: validatedUser.photo_url,
+                  isAdmin,
+                }
+
+                setUser(newUser)
+              } else {
+                // Backend validation failed - fallback to initDataUnsafe
+                const adminIds = getAdminIds()
+                const isAdmin = adminIds.includes(tgUser.id)
+
+                const newUser: User = {
+                  source: 'telegram',
+                  tgId: tgUser.id,
+                  firstName: tgUser.first_name,
+                  lastName: tgUser.last_name,
+                  username: tgUser.username,
+                  avatar: tgUser.photo_url,
+                  isAdmin,
+                }
+
+                setUser(newUser)
+              }
+            } catch (error) {
+              // Network error - fallback to initDataUnsafe
+              const adminIds = getAdminIds()
+              const isAdmin = adminIds.includes(tgUser.id)
+
+              const newUser: User = {
+                source: 'telegram',
+                tgId: tgUser.id,
+                firstName: tgUser.first_name,
+                lastName: tgUser.last_name,
+                username: tgUser.username,
+                avatar: tgUser.photo_url,
+                isAdmin,
+              }
+
+              setUser(newUser)
             }
-
-            setUser(newUser)
           } else {
             setUser({ source: 'guest', tgId: 0 })
           }

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { LoadingScreen } from './pages/LoadingScreen'
+import { TelegramRequiredScreen } from './pages/TelegramRequiredScreen'
 import { AppLayout } from './layouts/AppLayout'
 import { MainPage } from './pages/main/MainPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
@@ -64,6 +65,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<LoadingScreen />} />
+      <Route path="/telegram-required" element={<TelegramRequiredScreen />} />
       <Route path="/app" element={<AppLayout />}>
       <Route index element={<MainPage />} />
       <Route path="profile" element={<ProfileRoute />} />
