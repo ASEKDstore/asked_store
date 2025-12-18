@@ -46,8 +46,14 @@ export function useTelegramSession(): UseTelegramSessionResult {
       try {
         const tg = window.Telegram?.WebApp
 
+        // Debug logging
+        console.log('[useTelegramSession] WebApp exists:', !!tg)
+        console.log('[useTelegramSession] initData exists:', !!tg?.initData)
+        console.log('[useTelegramSession] initData length:', tg?.initData?.length || 0)
+
         // If no Telegram WebApp, set error state (but don't show instruction screen)
-        if (!tg || !tg.initData) {
+        if (!tg) {
+          console.error('[useTelegramSession] Telegram WebApp not found')
           setStatus('error')
           setError('Не удалось получить данные Telegram. Перезапусти через /start.')
           return
@@ -60,6 +66,11 @@ export function useTelegramSession(): UseTelegramSessionResult {
         // Get initData and unsafe user for display name
         const initData = tg.initData
         const unsafeUser = tg.initDataUnsafe?.user
+
+        // Debug logging
+        console.log('[useTelegramSession] initData:', initData ? `${initData.substring(0, 50)}...` : 'empty')
+        console.log('[useTelegramSession] initData length:', initData?.length || 0)
+        console.log('[useTelegramSession] unsafeUser:', unsafeUser)
 
         // Set display name for greeting (from unsafeUser, just for UI)
         if (unsafeUser) {
@@ -77,13 +88,30 @@ export function useTelegramSession(): UseTelegramSessionResult {
         // Start authentication
         setStatus('authing')
 
-        // Send initData to backend
+        // Import apiUrl (use dynamic import to avoid circular dependencies)
         const { apiUrl } = await import('../utils/api')
-        const response = await fetch(apiUrl('/api/auth/telegram'), {
+        const backendUrl = apiUrl('/api/auth/telegram')
+        
+        // Debug logging
+        console.log('[useTelegramSession] backendUrl:', backendUrl)
+        console.log('[useTelegramSession] About to fetch /api/auth/telegram')
+        console.log('[useTelegramSession] initData available:', !!initData)
+
+        // If no initData, set error and return (cannot proceed without initData)
+        if (!initData) {
+          console.error('[useTelegramSession] Cannot fetch: initData is empty')
+          setStatus('error')
+          setError('Не удалось получить данные Telegram. Перезапусти через /start.')
+          return
+        }
+
+        const response = await fetch(backendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData }),
         })
+
+        console.log('[useTelegramSession] Response status:', response.status)
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }))

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { LoadingScreen } from './pages/LoadingScreen'
 import { AppLayout } from './layouts/AppLayout'
@@ -169,6 +169,92 @@ function AppContent() {
 }
 
 function App() {
+  // Top-level Telegram auth - runs on app start, independent of routing
+  useEffect(() => {
+    const performTelegramAuth = async () => {
+      try {
+        const tg = window.Telegram?.WebApp
+        
+        console.log('[AUTH] hasWebApp', !!tg)
+        
+        if (!tg) {
+          console.warn('[AUTH] Telegram WebApp not found')
+          return
+        }
+
+        // Initialize WebApp
+        tg.ready?.()
+        tg.expand?.()
+
+        // Get initData
+        const initData = tg?.initData || ''
+        console.log('[AUTH] initDataLen', initData.length)
+        
+        if (initData.length === 0) {
+          console.warn('[AUTH] initData is empty')
+          return
+        }
+
+        // Get backend URL - try VITE_BACKEND_URL first, then fallback to VITE_API_URL/VITE_API_BASE
+        const envBackendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
+                              (import.meta as any).env?.VITE_API_URL || 
+                              (import.meta as any).env?.VITE_API_BASE
+        
+        // Fallback to known backend URL if env variable is missing
+        const backendUrl = envBackendUrl || 'https://asked-store-backend.onrender.com'
+        
+        if (!envBackendUrl) {
+          console.warn('[AUTH] VITE_BACKEND_URL/VITE_API_URL not set, using fallback:', backendUrl)
+        } else {
+          console.log('[AUTH] Using backend URL from env:', backendUrl)
+        }
+        
+        // Construct full auth URL
+        const authUrl = backendUrl.endsWith('/') 
+          ? `${backendUrl}api/auth/telegram`
+          : `${backendUrl}/api/auth/telegram`
+        console.log('[AUTH] backendUrl', authUrl)
+
+        // Make auth request
+        console.log('[AUTH] Making POST request to /api/auth/telegram')
+        const response = await fetch(authUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData }),
+        })
+
+        console.log('[AUTH] status', response.status)
+        
+        const responseText = await response.text()
+        console.log('[AUTH] body', responseText)
+
+        if (!response.ok) {
+          console.error('[AUTH] Auth failed:', response.status, responseText)
+          return
+        }
+
+        // Parse response and store token
+        try {
+          const data = JSON.parse(responseText)
+          if (data.token) {
+            localStorage.setItem('asked_telegram_token', data.token)
+            console.log('[AUTH] Token stored successfully')
+          }
+          if (data.user) {
+            console.log('[AUTH] User authenticated:', data.user)
+          }
+        } catch (parseError) {
+          console.error('[AUTH] Failed to parse response:', parseError)
+        }
+      } catch (error) {
+        console.error('[AUTH] Error during auth:', error)
+      }
+    }
+
+    // Run auth immediately on mount
+    performTelegramAuth()
+  }, [])
+
   return (
     <ErrorBoundary>
       <ProductSheetProvider>
