@@ -171,14 +171,51 @@ function AppContent() {
 function App() {
   // Top-level Telegram auth - runs on app start, independent of routing
   useEffect(() => {
+    const waitForTelegramWebApp = (maxRetries = 20, delay = 100): Promise<typeof window.Telegram.WebApp | null> => {
+      return new Promise((resolve) => {
+        let retries = 0
+        
+        const check = () => {
+          // Check if Telegram object exists
+          const hasTelegram = typeof window !== 'undefined' && !!window.Telegram
+          const tg = window.Telegram?.WebApp
+          
+          if (retries === 0) {
+            console.log('[AUTH] Initial check - hasTelegram:', hasTelegram, 'hasWebApp:', !!tg)
+          }
+          
+          if (tg) {
+            console.log('[AUTH] Telegram WebApp found after', retries, 'retries')
+            resolve(tg)
+            return
+          }
+          
+          retries++
+          if (retries >= maxRetries) {
+            console.warn('[AUTH] Telegram WebApp not found after', maxRetries, 'retries')
+            console.warn('[AUTH] window.Telegram exists:', hasTelegram)
+            console.warn('[AUTH] window.Telegram.WebApp exists:', !!tg)
+            resolve(null)
+            return
+          }
+          
+          setTimeout(check, delay)
+        }
+        
+        check()
+      })
+    }
+
     const performTelegramAuth = async () => {
       try {
-        const tg = window.Telegram?.WebApp
+        // Wait for Telegram WebApp to load (it's injected asynchronously by Telegram)
+        console.log('[AUTH] Waiting for Telegram WebApp...')
+        const tg = await waitForTelegramWebApp(20, 100) // 20 retries, 100ms each = 2 seconds max
         
         console.log('[AUTH] hasWebApp', !!tg)
         
         if (!tg) {
-          console.warn('[AUTH] Telegram WebApp not found')
+          console.warn('[AUTH] Telegram WebApp not found after waiting')
           return
         }
 
