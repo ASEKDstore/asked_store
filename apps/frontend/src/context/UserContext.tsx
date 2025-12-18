@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react'
 import type { User, TgUser } from '../types/user'
+import { useTelegramWebApp } from '../hooks/useTelegramWebApp'
 
 // Get admin IDs from env
 const getAdminIds = (): number[] => {
@@ -15,6 +16,7 @@ type UserContextValue = {
   displayName: string
   initials: string
   isTelegram: boolean
+  telegramStatus: 'loading' | 'telegram' | 'browser'
   refresh: () => void
 }
 
@@ -45,214 +47,173 @@ declare global {
 }
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use Telegram WebApp hook for status detection
+  const { status: telegramStatus, user: tgUser, initData } = useTelegramWebApp()
+  
   // Initialize with guest user (never null)
   const [user, setUser] = useState<User>({ source: 'guest', tgId: 0 })
 
-  // Initialize Telegram WebApp and set user on mount
+  // Update user when Telegram user is available
   useEffect(() => {
-    const initTelegram = async () => {
-      try {
-        const wa = window.Telegram?.WebApp
-        if (wa) {
-          // Initialize WebApp
-          wa.ready?.()
-          wa.expand?.()
+    if (telegramStatus === 'telegram' && tgUser && typeof tgUser.id === 'number' && initData) {
+      const authenticateUser = async () => {
+        try {
+          // Send initData to backend for validation
+          const { apiUrl } = await import('../utils/api')
+          const response = await fetch(apiUrl('/api/auth/telegram'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData }),
+          })
 
-          // Log Telegram data in dev mode
-          if (import.meta.env.DEV) {
-            console.log('[UserContext] TG initDataUnsafe:', wa.initDataUnsafe)
-            console.log('[UserContext] TG initData:', wa.initData ? `${wa.initData.substring(0, 50)}...` : 'empty')
-          }
+          if (response.ok) {
+            const data = await response.json()
+            const validatedUser = data.user
 
-          // Get Telegram user and initData
-          const tgUser = wa.initDataUnsafe?.user
-          const initData = wa.initData
+            // Map validated user to User type
+            const adminIds = getAdminIds()
+            const isAdmin = adminIds.includes(validatedUser.id)
 
-          if (tgUser && typeof tgUser.id === 'number' && initData) {
-            // Send initData to backend for validation
-            try {
-              const { apiUrl } = await import('../utils/api')
-              const response = await fetch(apiUrl('/api/auth/telegram'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData }),
-              })
+            const newUser: User = {
+              source: 'telegram',
+              tgId: validatedUser.id,
+              firstName: validatedUser.first_name,
+              lastName: validatedUser.last_name,
+              username: validatedUser.username,
+              avatar: validatedUser.photo_url,
+              isAdmin,
+            }
 
-              if (response.ok) {
-                const data = await response.json()
-                const validatedUser = data.user
+            setUser(newUser)
 
-                // Map validated user to User type
-                const adminIds = getAdminIds()
-                const isAdmin = adminIds.includes(validatedUser.id)
-
-                const newUser: User = {
-                  source: 'telegram',
-                  tgId: validatedUser.id,
-                  firstName: validatedUser.first_name,
-                  lastName: validatedUser.last_name,
-                  username: validatedUser.username,
-                  avatar: validatedUser.photo_url,
-                  isAdmin,
-                }
-
-                setUser(newUser)
-
-                if (import.meta.env.DEV) {
-                  console.log('[UserContext] User authenticated via backend:', newUser)
-                }
-              } else {
-                // Backend validation failed - fallback to initDataUnsafe (dev only)
-                if (import.meta.env.DEV) {
-                  console.warn('[UserContext] Backend validation failed, using initDataUnsafe as fallback')
-                }
-                
-                const adminIds = getAdminIds()
-                const isAdmin = adminIds.includes(tgUser.id)
-
-                const newUser: User = {
-                  source: 'telegram',
-                  tgId: tgUser.id,
-                  firstName: tgUser.first_name,
-                  lastName: tgUser.last_name,
-                  username: tgUser.username,
-                  avatar: tgUser.photo_url,
-                  isAdmin,
-                }
-
-                setUser(newUser)
-              }
-            } catch (error) {
-              // Network error - fallback to initDataUnsafe
-              if (import.meta.env.DEV) {
-                console.warn('[UserContext] Network error during auth, using initDataUnsafe:', error)
-              }
-
-              const adminIds = getAdminIds()
-              const isAdmin = adminIds.includes(tgUser.id)
-
-              const newUser: User = {
-                source: 'telegram',
-                tgId: tgUser.id,
-                firstName: tgUser.first_name,
-                lastName: tgUser.last_name,
-                username: tgUser.username,
-                avatar: tgUser.photo_url,
-                isAdmin,
-              }
-
-              setUser(newUser)
+            if (import.meta.env.DEV) {
+              console.log('[UserContext] User authenticated via backend:', newUser)
             }
           } else {
-            // No Telegram user or initData - set guest
+            // Backend validation failed - fallback to initDataUnsafe (dev only)
             if (import.meta.env.DEV) {
-              console.log('[UserContext] No Telegram user or initData, setting guest mode')
+              console.warn('[UserContext] Backend validation failed, using initDataUnsafe as fallback')
             }
-            setUser({ source: 'guest', tgId: 0 })
-          }
-        } else {
-          // No WebApp - set guest
-          if (import.meta.env.DEV) {
-            console.log('[UserContext] No Telegram WebApp, setting guest mode')
-          }
-          setUser({ source: 'guest', tgId: 0 })
-        }
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn('[UserContext] Error initializing Telegram:', error)
-        }
-        setUser({ source: 'guest', tgId: 0 })
-      }
-    }
+            
+            const adminIds = getAdminIds()
+            const isAdmin = adminIds.includes(tgUser.id)
 
-    initTelegram()
-  }, [])
+            const newUser: User = {
+              source: 'telegram',
+              tgId: tgUser.id,
+              firstName: tgUser.first_name,
+              lastName: tgUser.last_name,
+              username: tgUser.username,
+              avatar: tgUser.photo_url,
+              isAdmin,
+            }
+
+            setUser(newUser)
+          }
+        } catch (error) {
+          // Network error - fallback to initDataUnsafe
+          if (import.meta.env.DEV) {
+            console.warn('[UserContext] Network error during auth, using initDataUnsafe:', error)
+          }
+
+          const adminIds = getAdminIds()
+          const isAdmin = adminIds.includes(tgUser.id)
+
+          const newUser: User = {
+            source: 'telegram',
+            tgId: tgUser.id,
+            firstName: tgUser.first_name,
+            lastName: tgUser.last_name,
+            username: tgUser.username,
+            avatar: tgUser.photo_url,
+            isAdmin,
+          }
+
+          setUser(newUser)
+        }
+      }
+
+      authenticateUser()
+    } else if (telegramStatus === 'browser') {
+      // Browser mode - set guest
+      setUser({ source: 'guest', tgId: 0 })
+    }
+    // If status === 'loading', keep current user state
+  }, [telegramStatus, tgUser, initData])
 
   const refresh = useCallback(async () => {
     // Re-read Telegram user data from WebApp and validate with backend
-    if (typeof window !== 'undefined') {
+    // Use current telegramStatus, tgUser, and initData from useTelegramWebApp hook
+    if (telegramStatus === 'telegram' && tgUser && typeof tgUser.id === 'number' && initData) {
       try {
-        const wa = window.Telegram?.WebApp
-        if (wa) {
-          const tgUser = wa.initDataUnsafe?.user
-          const initData = wa.initData
+        // Send initData to backend for validation
+        const { apiUrl } = await import('../utils/api')
+        const response = await fetch(apiUrl('/api/auth/telegram'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData }),
+        })
 
-          if (tgUser && typeof tgUser.id === 'number' && initData) {
-            // Send initData to backend for validation
-            try {
-              const { apiUrl } = await import('../utils/api')
-              const response = await fetch(apiUrl('/api/auth/telegram'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData }),
-              })
+        if (response.ok) {
+          const data = await response.json()
+          const validatedUser = data.user
 
-              if (response.ok) {
-                const data = await response.json()
-                const validatedUser = data.user
+          const adminIds = getAdminIds()
+          const isAdmin = adminIds.includes(validatedUser.id)
 
-                const adminIds = getAdminIds()
-                const isAdmin = adminIds.includes(validatedUser.id)
-
-                const newUser: User = {
-                  source: 'telegram',
-                  tgId: validatedUser.id,
-                  firstName: validatedUser.first_name,
-                  lastName: validatedUser.last_name,
-                  username: validatedUser.username,
-                  avatar: validatedUser.photo_url,
-                  isAdmin,
-                }
-
-                setUser(newUser)
-              } else {
-                // Backend validation failed - fallback to initDataUnsafe
-                const adminIds = getAdminIds()
-                const isAdmin = adminIds.includes(tgUser.id)
-
-                const newUser: User = {
-                  source: 'telegram',
-                  tgId: tgUser.id,
-                  firstName: tgUser.first_name,
-                  lastName: tgUser.last_name,
-                  username: tgUser.username,
-                  avatar: tgUser.photo_url,
-                  isAdmin,
-                }
-
-                setUser(newUser)
-              }
-            } catch (error) {
-              // Network error - fallback to initDataUnsafe
-              const adminIds = getAdminIds()
-              const isAdmin = adminIds.includes(tgUser.id)
-
-              const newUser: User = {
-                source: 'telegram',
-                tgId: tgUser.id,
-                firstName: tgUser.first_name,
-                lastName: tgUser.last_name,
-                username: tgUser.username,
-                avatar: tgUser.photo_url,
-                isAdmin,
-              }
-
-              setUser(newUser)
-            }
-          } else {
-            setUser({ source: 'guest', tgId: 0 })
+          const newUser: User = {
+            source: 'telegram',
+            tgId: validatedUser.id,
+            firstName: validatedUser.first_name,
+            lastName: validatedUser.last_name,
+            username: validatedUser.username,
+            avatar: validatedUser.photo_url,
+            isAdmin,
           }
+
+          setUser(newUser)
         } else {
-          setUser({ source: 'guest', tgId: 0 })
+          // Backend validation failed - fallback to initDataUnsafe
+          const adminIds = getAdminIds()
+          const isAdmin = adminIds.includes(tgUser.id)
+
+          const newUser: User = {
+            source: 'telegram',
+            tgId: tgUser.id,
+            firstName: tgUser.first_name,
+            lastName: tgUser.last_name,
+            username: tgUser.username,
+            avatar: tgUser.photo_url,
+            isAdmin,
+          }
+
+          setUser(newUser)
         }
       } catch (error) {
+        // Network error - fallback to initDataUnsafe
         if (import.meta.env.DEV) {
           console.warn('[UserContext] Error refreshing user:', error)
         }
-        setUser({ source: 'guest', tgId: 0 })
+        
+        const adminIds = getAdminIds()
+        const isAdmin = adminIds.includes(tgUser.id)
+
+        const newUser: User = {
+          source: 'telegram',
+          tgId: tgUser.id,
+          firstName: tgUser.first_name,
+          lastName: tgUser.last_name,
+          username: tgUser.username,
+          avatar: tgUser.photo_url,
+          isAdmin,
+        }
+
+        setUser(newUser)
       }
+    } else if (telegramStatus === 'browser') {
+      setUser({ source: 'guest', tgId: 0 })
     }
-  }, [])
+  }, [telegramStatus, tgUser, initData])
 
 
   const displayName = useMemo(() => {
@@ -277,14 +238,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user])
 
   const isTelegram = useMemo(() => {
-    return typeof window !== 'undefined' && !!window.Telegram?.WebApp
-  }, [])
+    return telegramStatus === 'telegram'
+  }, [telegramStatus])
 
   const value: UserContextValue = {
     user,
     displayName,
     initials,
     isTelegram,
+    telegramStatus,
     refresh,
   }
 

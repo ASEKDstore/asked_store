@@ -6,10 +6,11 @@ import './TelegramRequiredScreen.css'
  * (e.g., opened via direct URL in browser)
  */
 export function TelegramRequiredScreen() {
-  const { isTelegram } = useUser()
+  const { telegramStatus } = useUser()
 
-  // If Telegram WebApp is available, don't show this screen
-  if (isTelegram) {
+  // Show screen ONLY if status is 'browser'
+  // If 'loading' or 'telegram', don't show (will be handled by LoadingScreen)
+  if (telegramStatus !== 'browser') {
     return null
   }
 

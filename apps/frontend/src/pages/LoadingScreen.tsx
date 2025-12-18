@@ -5,12 +5,9 @@ import { useLoadingProgress } from '../hooks/useLoadingProgress'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
-  const { user, isTelegram } = useUser()
+  const { user, telegramStatus } = useUser()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
-  
-  // Check if Telegram WebApp is available
-  const hasTelegramContext = typeof window !== 'undefined' && !!window.Telegram?.WebApp
   
   // Auth state: always allow progress (guest mode supported)
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
@@ -18,58 +15,53 @@ export function LoadingScreen() {
   
   const progress = useLoadingProgress(authState)
 
-  // Check if we should redirect to telegram-required screen
+  // Redirect to telegram-required screen ONLY if status is 'browser'
   useEffect(() => {
-    // Wait a bit to allow Telegram WebApp to initialize
-    const checkTimer = setTimeout(() => {
-      // If no Telegram WebApp context and no initData, redirect to telegram-required
-      if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
-        if (import.meta.env.DEV) {
-          console.log('[LoadingScreen] No Telegram context, redirecting to telegram-required')
-        }
-        navigate('/telegram-required', { replace: true })
+    if (telegramStatus === 'browser') {
+      if (import.meta.env.DEV) {
+        console.log('[LoadingScreen] Browser mode detected, redirecting to telegram-required')
       }
-    }, 1000) // Wait 1 second for Telegram to initialize
+      navigate('/telegram-required', { replace: true })
+    }
+  }, [telegramStatus, navigate])
 
-    return () => clearTimeout(checkTimer)
-  }, [hasTelegramContext, navigate])
-
-  // Navigate to /app after progress completes OR timeout (always, regardless of Telegram)
+  // Navigate to /app after progress completes OR timeout
+  // Only navigate if status is NOT 'browser' (loading or telegram)
   useEffect(() => {
     // Prevent double navigation
     if (hasNavigatedRef.current) return
 
-    // Don't navigate if we're going to telegram-required
-    if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
+    // Don't navigate if browser mode (will redirect to telegram-required)
+    if (telegramStatus === 'browser') {
       return
     }
 
     // Navigate when progress reaches 100%
-    if (progress >= 100) {
+    if (progress >= 100 && telegramStatus !== 'loading') {
       hasNavigatedRef.current = true
       const timer = setTimeout(() => {
         navigate('/app')
       }, 300)
       return () => clearTimeout(timer)
     }
-  }, [progress, navigate, hasTelegramContext])
+  }, [progress, navigate, telegramStatus])
 
-  // Safety timeout: navigate after 2 seconds maximum (only if Telegram context exists)
+  // Safety timeout: navigate after 2 seconds maximum (only if not browser)
   useEffect(() => {
     if (hasNavigatedRef.current) return
-    if (!hasTelegramContext && !window.Telegram?.WebApp?.initData) {
-      return // Don't navigate if no Telegram context
+    if (telegramStatus === 'browser') {
+      return // Don't navigate if browser mode
     }
 
     const safetyTimer = setTimeout(() => {
-      if (!hasNavigatedRef.current) {
+      if (!hasNavigatedRef.current && telegramStatus !== 'loading') {
         hasNavigatedRef.current = true
         navigate('/app')
       }
     }, 2000)
 
     return () => clearTimeout(safetyTimer)
-  }, [navigate, hasTelegramContext])
+  }, [navigate, telegramStatus])
 
   const userName = user.firstName || user.username || 'ASKED'
   const displayName = user.source === 'telegram' ? userName : 'ASKED'
