@@ -6,7 +6,7 @@ import settingsRouter from './routes/settings.js'
 import telegramRouter from './routes/telegram.js'
 import authRouter from './routes/auth.js'
 import publicLabRouter from './routes/publicLabRoutes.js'
-import { requireAdmin } from './middleware/requireAdmin.js'
+import { adminOnly } from './middleware/adminOnly.js'
 import adminOrdersRouter from './routes/admin/orders.js'
 import adminProductsRouter from './routes/admin/products.js'
 import adminPromosRouter from './routes/admin/promos.js'
@@ -76,18 +76,18 @@ app.use('/api/telegram', telegramRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/lab', publicLabRouter)
 
-// Admin APIs (protected)
-app.use('/api/admin/orders', requireAdmin, adminOrdersRouter)
-app.use('/api/admin/products', requireAdmin, adminProductsRouter)
-app.use('/api/admin/promos', requireAdmin, adminPromosRouter)
-app.use('/api/admin/admins', requireAdmin, adminAdminsRouter)
-app.use('/api/admin/stats', requireAdmin, adminStatsRouter)
-app.use('/api/admin/settings', requireAdmin, adminSettingsRouter)
-app.use('/api/admin/banners', requireAdmin, adminBannersRouter)
-app.use('/api/admin/lab', requireAdmin, adminLabRouter)
-app.use('/api/admin/telegram', requireAdmin, adminTelegramRouter)
-app.use('/api/admin/telegram/subscribers', requireAdmin, adminTelegramSubscribersRouter)
-app.use('/api/admin/bot/flows', requireAdmin, adminBotFlowsRouter)
+// Admin APIs (protected with adminOnly middleware)
+app.use('/api/admin/orders', adminOnly, adminOrdersRouter)
+app.use('/api/admin/products', adminOnly, adminProductsRouter)
+app.use('/api/admin/promos', adminOnly, adminPromosRouter)
+app.use('/api/admin/admins', adminOnly, adminAdminsRouter)
+app.use('/api/admin/stats', adminOnly, adminStatsRouter)
+app.use('/api/admin/settings', adminOnly, adminSettingsRouter)
+app.use('/api/admin/banners', adminOnly, adminBannersRouter)
+app.use('/api/admin/lab', adminOnly, adminLabRouter)
+app.use('/api/admin/telegram', adminOnly, adminTelegramRouter)
+app.use('/api/admin/telegram/subscribers', adminOnly, adminTelegramSubscribersRouter)
+app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsRouter)
 
 // Error handler (должен быть последним middleware)
 app.use(errorHandler)

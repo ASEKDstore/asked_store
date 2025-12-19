@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../db/prisma.js'
 import { getUserAvatarUrl } from '../services/telegramAvatar.js'
 import { verifyTelegramInitData } from '../utils/telegramAuth.js'
+import { isAdminTelegramId } from '../utils/admin.js'
 
 const router = Router()
 
@@ -101,17 +102,8 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       throw dbError
     }
 
-    // Check if user is admin
-    const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS || process.env.ROOT_ADMIN_ID || ''
-    const adminIds = adminIdsEnv
-      .split(',')
-      .map(s => s.trim())
-      .map(s => Number(s))
-      .filter(n => Number.isFinite(n) && n > 0)
-    
-    const userIdString = String(userData.id)
-    const isAdmin = adminIds.some(adminId => String(adminId) === userIdString)
-    const role = isAdmin ? 'admin' : 'user'
+    // Determine role using helper function
+    const role = isAdminTelegramId(userData.id) ? 'admin' : 'user'
 
     // Generate JWT token (7 days expiry) with role
     const token = jwt.sign(
@@ -125,7 +117,7 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       { expiresIn: '7d' }
     )
 
-    console.log('[AUTH][TELEGRAM] Token generated successfully for user:', userData.id, 'role:', role)
+    console.log('[AUTH] user', { tgId: userData.id, role })
 
     // Return token and user data (keeping backward compatibility)
     res.json({

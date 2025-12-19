@@ -43,6 +43,28 @@ export function SessionExpiredScreen() {
       }
 
       console.log('[ASKED SESSION] REAUTH_START', { initDataLength: initData.length })
+      
+      // Use the same performAuth logic as apiClient
+      const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
+                        (import.meta as any).env?.VITE_API_URL || 
+                        (import.meta as any).env?.VITE_API_BASE || ''
+      
+      if (!backendUrl) {
+        setError('Не настроен URL бэкенда')
+        setIsReAuthing(false)
+        return
+      }
+
+      // Normalize backend URL
+      let normalizedUrl = backendUrl.trim()
+      if (!normalizedUrl.startsWith('https://') && !normalizedUrl.startsWith('http://')) {
+        normalizedUrl = `https://${normalizedUrl}`
+      }
+      if (normalizedUrl.endsWith('/')) {
+        normalizedUrl = normalizedUrl.slice(0, -1)
+      }
+
+      const authUrl = `${normalizedUrl}/api/auth/telegram`
 
       // Get backend URL
       const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 

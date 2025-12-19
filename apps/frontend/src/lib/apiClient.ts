@@ -102,7 +102,7 @@ async function performAuth(): Promise<string | null> {
     
     const authUrl = `${normalizedUrl}/api/auth/telegram`
     
-    console.log('[apiClient] Retrying auth flow...')
+    console.log('[ASKED API] reauth start')
     
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
@@ -118,25 +118,26 @@ async function performAuth(): Promise<string | null> {
       clearTimeout(timeoutId)
       
       if (!response.ok) {
-        console.error('[apiClient] Auth retry failed:', response.status, response.statusText)
+        console.error('[ASKED API] reauth fail:', response.status, response.statusText)
         return null
       }
       
       const data = await response.json()
       if (data.token) {
         setToken(data.token)
-        console.log('[apiClient] Auth retry successful, token refreshed')
+        console.log('[ASKED API] reauth ok')
         return data.token
       }
       
+      console.warn('[ASKED API] reauth fail: no token in response')
       return null
     } catch (error) {
       clearTimeout(timeoutId)
-      console.error('[apiClient] Auth retry error:', error)
+      console.error('[ASKED API] reauth fail:', error)
       return null
     }
   } catch (error) {
-    console.error('[apiClient] Auth retry setup error:', error)
+    console.error('[ASKED API] reauth fail (setup):', error)
     return null
   }
 }
@@ -204,14 +205,14 @@ export async function request(
     
     // Handle 401 Unauthorized
     if (response.status === 401 && retryOn401 && !skipAuth) {
-      console.log('[apiClient] Received 401, attempting auth retry...')
+      console.log('[ASKED API] 401 -> reauth start')
       
       // Try to refresh token
       const newToken = await performAuth()
       
       if (newToken) {
         // Retry original request with new token
-        console.log('[apiClient] Retrying original request with new token...')
+        console.log('[ASKED API] reauth ok, retrying request')
         
         // Rebuild headers with new token
         const retryHeaders: Record<string, string> = {
@@ -233,7 +234,7 @@ export async function request(
           
           // If retry still returns 401, don't retry again (prevent infinite loop)
           if (retryResponse.status === 401) {
-            console.warn('[apiClient] Retry still returned 401, session may be invalid')
+            console.warn('[ASKED API] reauth fail: retry still returned 401')
             // Dispatch custom event for UI to handle
             window.dispatchEvent(new CustomEvent('session-expired'))
           }
@@ -245,7 +246,7 @@ export async function request(
         }
       } else {
         // Auth retry failed, dispatch event for UI
-        console.warn('[apiClient] Auth retry failed, session expired')
+        console.warn('[ASKED API] reauth fail: could not refresh token')
         window.dispatchEvent(new CustomEvent('session-expired'))
         return response
       }
