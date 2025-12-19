@@ -6,6 +6,9 @@
   padding: 24px;
   background: #0a0a0a;
   color: #f5f5f5;
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto;
 }
 
 .session-expired-content {
@@ -37,10 +40,25 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10000;
+}
+
+.session-expired-error {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 24px;
+  color: #ff6b6b;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .session-expired-retry,
-.session-expired-back {
+.session-expired-back,
+.session-expired-reload {
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
@@ -48,6 +66,15 @@
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10001;
+}
+
+.session-expired-retry:disabled,
+.session-expired-back:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .session-expired-retry {

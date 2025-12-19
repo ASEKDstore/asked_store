@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { SessionExpiredScreen } from './SessionExpiredScreen'
+import './SessionExpiredHandler.css'
 
 /**
  * Global handler for session-expired events
@@ -10,7 +11,7 @@ export function SessionExpiredHandler() {
 
   useEffect(() => {
     const handleSessionExpired = () => {
-      console.log('[SessionExpiredHandler] Session expired event received')
+      console.log('[ASKED SESSION] Session expired event received')
       setShowExpired(true)
     }
 
@@ -22,7 +23,11 @@ export function SessionExpiredHandler() {
   }, [])
 
   if (showExpired) {
-    return <SessionExpiredScreen />
+    return (
+      <div className="session-expired-handler">
+        <SessionExpiredScreen />
+      </div>
+    )
   }
 
   return null
