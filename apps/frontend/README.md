@@ -96,6 +96,36 @@ src/
 - **React Router** — маршрутизация
 - **CSS Modules / CSS** — стилизация
 
+## Стилизация и анимации
+
+### Design Tokens
+
+Все дизайн-токены (цвета, типографика, радиусы, анимации) определены в `src/index.css` в блоке `:root`:
+
+- **Typography**: `--font-family-base`, `--font-size-*`, `--line-height-*`, `--letter-spacing-*`
+- **Colors**: `--color-bg`, `--color-text`, `--color-stroke`, `--color-accent`, и т.д.
+- **Radius**: `--radius-sm`, `--radius-md`, `--radius-lg`
+- **Motion**: `--motion-fast`, `--motion-base`, `--motion-slow`, `--ease`, `--ease-out`
+
+### Анимации
+
+- **Анимации карточек**: Используйте класс `.enter` для явной анимации появления:
+  ```jsx
+  <div className="card enter">...</div>
+  ```
+  Не навешивайте `.enter` на каждый элемент списка без необходимости.
+
+### Интеракции кнопок
+
+- **Базовые кнопки**: Автоматически получают `opacity` transition при клике
+- **Премиум эффекты**: Используйте класс `.btn` или `.btn-premium` для hover-эффектов (только на устройствах с hover)
+
+### Performance
+
+- Глобальные `transform: scale()` эффекты удалены для предотвращения layout thrashing
+- `scroll-behavior: smooth` удалён глобально (оставлен только `-webkit-overflow-scrolling: touch`)
+- Поддержка `prefers-reduced-motion` для пользователей, предпочитающих уменьшенную анимацию
+
 ## Скрипты
 
 - `npm run dev` — запуск dev-сервера с hot-reload
