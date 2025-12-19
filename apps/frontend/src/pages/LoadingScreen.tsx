@@ -2,12 +2,18 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
+import { ErrorScreen } from '../components/ErrorScreen'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
   const { status, displayName, error } = useAuth()
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
+  
+  // Show error screen if error
+  if (status === 'error') {
+    return <ErrorScreen />
+  }
   
   // Auth state based on session status
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
@@ -46,11 +52,9 @@ export function LoadingScreen() {
     return () => clearTimeout(safetyTimer)
   }, [navigate, status])
 
-  // Greeting text - show name if available, otherwise show error or loading
+  // Greeting text - show name if available, otherwise show loading
   const greeting = displayName 
     ? `Привет, ${displayName} 👋`
-    : error 
-    ? error 
     : 'Загружаем...'
 
   return (
@@ -65,7 +69,7 @@ export function LoadingScreen() {
         {/* Приветствие */}
         <div className="ls-text">
           <div className="ls-title">{greeting}</div>
-          {!error && <div className="ls-sub">Внутри — дропы, кастомы и мерч.</div>}
+          <div className="ls-sub">Внутри — дропы, кастомы и мерч.</div>
         </div>
 
         {/* Прогресс */}

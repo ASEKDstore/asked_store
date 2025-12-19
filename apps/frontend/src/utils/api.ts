@@ -28,13 +28,13 @@ export const apiUrl = (path: string): string => {
  * Fetch with timeout and AbortController
  * @param url - Request URL
  * @param options - Fetch options
- * @param timeoutMs - Timeout in milliseconds (default: 3000)
+ * @param timeoutMs - Timeout in milliseconds (default: 15000)
  * @returns Promise<Response>
  */
 export async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs: number = 3000
+  timeoutMs: number = 15000
 ): Promise<Response> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
