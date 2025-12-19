@@ -43,28 +43,6 @@ export function SessionExpiredScreen() {
       }
 
       console.log('[ASKED SESSION] REAUTH_START', { initDataLength: initData.length })
-      
-      // Use the same performAuth logic as apiClient
-      const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
-                        (import.meta as any).env?.VITE_API_URL || 
-                        (import.meta as any).env?.VITE_API_BASE || ''
-      
-      if (!backendUrl) {
-        setError('Не настроен URL бэкенда')
-        setIsReAuthing(false)
-        return
-      }
-
-      // Normalize backend URL
-      let normalizedUrl = backendUrl.trim()
-      if (!normalizedUrl.startsWith('https://') && !normalizedUrl.startsWith('http://')) {
-        normalizedUrl = `https://${normalizedUrl}`
-      }
-      if (normalizedUrl.endsWith('/')) {
-        normalizedUrl = normalizedUrl.slice(0, -1)
-      }
-
-      const authUrl = `${normalizedUrl}/api/auth/telegram`
 
       // Get backend URL
       const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
@@ -137,11 +115,19 @@ export function SessionExpiredScreen() {
 
         // Save token
         setApiToken(newToken)
-        console.log('[ASKED SESSION] REAUTH_OK', { tokenLength: newToken.length })
-
-        // Determine redirect path based on role
         const role = data.role || data.user?.role || 'user'
-        const redirectPath = role === 'admin' ? '/app/admin' : '/app'
+        console.log('[ASKED SESSION] REAUTH_OK', { tokenLength: newToken.length, role })
+
+        // Determine redirect path: try to go back to previous page or admin panel
+        let redirectPath = '/app'
+        
+        // If was on admin page, go back to admin
+        if (window.location.pathname.includes('/admin')) {
+          redirectPath = '/app/admin'
+        } else if (role === 'admin') {
+          // If user is admin, offer admin panel
+          redirectPath = '/app/admin'
+        }
 
         // Navigate after successful auth
         setTimeout(() => {
