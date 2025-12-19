@@ -69,24 +69,37 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
 
     // Ensure user exists in subscribers table and save avatar_url
     const tgIdBigInt = BigInt(userData.id)
-    await prisma.telegramSubscriber.upsert({
-      where: { tgId: tgIdBigInt },
-      update: {
-        username: userData.username,
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        avatarUrl: avatarUrl,
-        isActive: true,
-      },
-      create: {
-        tgId: tgIdBigInt,
-        username: userData.username,
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        avatarUrl: avatarUrl,
-        isActive: true,
-      },
-    })
+    try {
+      await prisma.telegramSubscriber.upsert({
+        where: { tgId: tgIdBigInt },
+        update: {
+          username: userData.username,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          avatarUrl: avatarUrl,
+          isActive: true,
+        },
+        create: {
+          tgId: tgIdBigInt,
+          username: userData.username,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          avatarUrl: avatarUrl,
+          isActive: true,
+        },
+      })
+    } catch (dbError: any) {
+      // Check if it's a table missing error
+      if (dbError?.message?.includes('does not exist') || dbError?.message?.includes('table')) {
+        console.error('[AUTH][TELEGRAM] Database table missing:', dbError.message)
+        return res.status(503).json({
+          error: 'Database not migrated',
+          message: 'The database schema is not up to date. Please run migrations.',
+        })
+      }
+      // Re-throw other database errors
+      throw dbError
+    }
 
     // Generate JWT token (7 days expiry)
     const token = jwt.sign(
