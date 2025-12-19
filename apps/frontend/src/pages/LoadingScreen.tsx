@@ -10,16 +10,16 @@ export function LoadingScreen() {
   const navigate = useNavigate()
   const hasNavigatedRef = useRef(false)
   
-  // Show error screen if error
-  if (status === 'error') {
-    return <ErrorScreen />
-  }
-  
   // Auth state based on session status
   const authState: 'authenticated' | 'unauthenticated' | 'authenticating' = 
     status === 'ready' ? 'authenticated' : status === 'authing' ? 'authenticating' : 'unauthenticated'
   
   const progress = useLoadingProgress(authState)
+  
+  // Show error screen if error (after hooks)
+  if (status === 'error') {
+    return <ErrorScreen />
+  }
 
   // Navigate to /app when session is ready
   useEffect(() => {

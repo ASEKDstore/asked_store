@@ -9,6 +9,8 @@ export type AuthState = {
   status: AuthStatus
   displayName: string | null // For greeting (from initDataUnsafe)
   error: string | null // Specific error message
+  errorStatus: number | null // HTTP status code if available
+  errorDetails: string | null // Additional error details (response text)
   token: string | null
   phase: BootPhase | null
   requestId: string | null
@@ -19,6 +21,8 @@ const AuthContext = createContext<AuthState>({
   status: 'booting',
   displayName: null,
   error: null,
+  errorStatus: null,
+  errorDetails: null,
   token: null,
   phase: null,
   requestId: null,
@@ -34,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     status: 'booting',
     displayName: null,
     error: null,
+    errorStatus: null,
+    errorDetails: null,
     token: null,
     phase: null,
     requestId: null,
@@ -46,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: 'booting',
       displayName: null,
       error: null,
+      errorStatus: null,
+      errorDetails: null,
       token: null,
       phase: 'start',
       requestId: null,
@@ -82,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...prev,
           status: 'error',
           error: 'Telegram WebApp не найден',
+          errorStatus: null,
+          errorDetails: null,
           requestId,
           retry: performBootstrap,
         }))
@@ -116,6 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...prev,
           status: 'error',
           error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
+          errorStatus: null,
+          errorDetails: null,
           requestId,
           retry: performBootstrap,
         }))
@@ -135,6 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           status: 'error',
           displayName: unsafeUser ? (unsafeUser.first_name || unsafeUser.username || null) : null,
           error: errorMsg,
+          errorStatus: null,
+          errorDetails: null,
           token: null,
           phase: 'error',
           requestId,
@@ -188,24 +202,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[ASKED BOOT] auth_response text', responseText.substring(0, 200))
 
           if (!response.ok) {
-            // Parse error message if possible
-            let errorMessage = `Auth failed: ${response.status}`
+            // Parse error message if possible - ensure it's always a string
+            let errorMessage = 'Ошибка авторизации'
+            let errorDetails: string | null = null
+            
             try {
               const errorData = JSON.parse(responseText)
-              if (errorData.error) {
-                errorMessage = `Auth failed: ${response.status} ${errorData.error}`
+              if (errorData && typeof errorData.error === 'string') {
+                errorMessage = errorData.error
+                errorDetails = responseText.substring(0, 200) // Store full response for details
+              } else if (errorData && typeof errorData === 'object') {
+                // If error is an object, stringify it safely
+                errorMessage = JSON.stringify(errorData).substring(0, 100)
+                errorDetails = responseText.substring(0, 200)
               } else {
-                errorMessage = `Auth failed: ${response.status} ${responseText.substring(0, 100)}`
+                errorMessage = String(responseText).substring(0, 100) || 'Unknown error'
+                errorDetails = responseText.substring(0, 200)
               }
             } catch {
-              errorMessage = `Auth failed: ${response.status} ${responseText.substring(0, 100) || 'Unknown error'}`
+              // If parsing fails, use responseText as string
+              errorMessage = String(responseText).substring(0, 100) || 'Unknown error'
+              errorDetails = responseText.substring(0, 200)
             }
+            
+            // Ensure errorMessage is always a string
+            const safeErrorMessage = String(errorMessage)
+            const safeErrorDetails = errorDetails ? String(errorDetails) : null
             
             setPhase('error')
             setState(prev => ({
               ...prev,
               status: 'error',
-              error: errorMessage,
+              error: safeErrorMessage,
+              errorStatus: response.status,
+              errorDetails: safeErrorDetails,
               requestId,
               retry: performBootstrap,
             }))
@@ -231,6 +261,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 status: 'error',
                 error: 'Auth failed: No token in response',
+                errorStatus: null,
+                errorDetails: null,
                 requestId,
                 retry: performBootstrap,
               }))
@@ -241,25 +273,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...prev,
               status: 'error',
               error: `Auth failed: Invalid response format`,
+              errorStatus: null,
+              errorDetails: null,
               requestId,
               retry: performBootstrap,
             }))
           }
         } catch (fetchError) {
+          // Ensure error message is always a string
           let errorMsg = 'Auth failed: Network error'
           if (fetchError instanceof Error) {
             if (fetchError.message.includes('timeout')) {
               errorMsg = 'Бэкенд не отвечает (timeout)'
             } else {
-              errorMsg = `Auth failed: ${fetchError.message}`
+              errorMsg = `Auth failed: ${String(fetchError.message)}`
             }
+          } else {
+            errorMsg = `Auth failed: ${String(fetchError)}`
           }
           console.error('[ASKED BOOT] fetch error:', fetchError)
           setPhase('error')
           setState(prev => ({
             ...prev,
             status: 'error',
-            error: errorMsg,
+            error: String(errorMsg), // Ensure it's a string
+            errorStatus: null,
+            errorDetails: null,
             requestId,
             retry: performBootstrap,
           }))
@@ -289,16 +328,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('[ASKED BOOT] Error:', error)
       setPhase('error')
+      // Ensure error message is always a string
+      const errorMessage = error instanceof Error 
+        ? String(error.message) 
+        : String(error || 'Unknown error')
       setState(prev => ({
         ...prev,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        errorStatus: null,
+        errorDetails: null,
         requestId,
         retry: performBootstrap,
       }))
     } finally {
-      // Guarantee loading is false
+      // Guarantee loading is false - ensure status is set
       console.log('[ASKED BOOT] finally - phase:', currentPhase)
+      // If we're still in error state, make sure it's properly set
+      if (currentPhase === 'error') {
+        setState(prev => ({
+          ...prev,
+          status: 'error',
+          error: prev.error || 'Unknown error',
+          errorStatus: prev.errorStatus,
+          errorDetails: prev.errorDetails,
+          retry: performBootstrap,
+        }))
+      }
     }
   }, [])
 
