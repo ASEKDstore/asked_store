@@ -33,9 +33,9 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
     // This is implicit - if DATABASE_URL is missing, Prisma will fail later
 
     if (missingEnv.length > 0) {
-      const errorMsg = `Server configuration error: missing required environment variables`
+      const errorMsg = 'Server configuration error'
       console.error('[AUTH][CONFIG]', errorMsg, { missing: missingEnv })
-      return res.status(503).json({ 
+      return res.status(500).json({ 
         error: errorMsg,
         missing: missingEnv 
       })
@@ -43,23 +43,18 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
 
     // Log initData length (not full content for security)
     console.log('[AUTH][TELEGRAM] initData length:', initData.length)
-    console.log('[AUTH][TELEGRAM] initData preview:', initData.substring(0, 50) + '...')
 
     // Verify initData using official Telegram algorithm
     const userData = verifyTelegramInitData(initData, botToken!)
 
     if (!userData) {
-      console.log('[AUTH][TELEGRAM] Verification failed - invalid initData signature or expired')
+      console.log('[AUTH][TELEGRAM] Validation result: invalid')
       return res.status(401).json({ error: 'Invalid initData' })
     }
 
     // Log verified user (without sensitive data)
-    console.log('[AUTH][TELEGRAM] Verification OK', {
-      userId: userData.id,
-      username: userData.username || 'none',
-      hasFirstName: !!userData.first_name,
-      hasPhoto: !!userData.photo_url,
-    })
+    console.log('[AUTH][TELEGRAM] Validation result: ok')
+    console.log('[AUTH][TELEGRAM] User id:', userData.id)
 
     // Get avatar URL: prefer photo_url from initData, fallback to Bot API
     let avatarUrl: string | null = userData.photo_url || null
@@ -106,10 +101,12 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
 
     console.log('[AUTH][TELEGRAM] Token generated successfully for user:', userData.id)
 
-    // Return token and user data
+    // Return token and user data (keeping backward compatibility)
     res.json({
+      ok: true,
       token,
       user: {
+        id: userData.id,
         telegram_id: userData.id,
         username: userData.username || null,
         first_name: userData.first_name || null,
