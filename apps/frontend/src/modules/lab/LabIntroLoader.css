@@ -17,11 +17,6 @@
   pointer-events: auto;
 }
 
-/* Ensure backdrop and effects don't block interactions, but loader container does */
-.lab-intro-loader.is-visible .lab-intro-backdrop {
-  pointer-events: auto;
-}
-
 .lab-intro-loader.is-finishing {
   animation: labIntroPuff 0.4s ease-out forwards;
 }

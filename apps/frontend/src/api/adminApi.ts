@@ -1,11 +1,9 @@
 import { useUser } from '../context/UserContext'
-import { apiUrl, fetchWithTimeout } from '../utils/api'
+import { requestJson } from '../lib/apiClient'
 
 /**
  * Единый fetch wrapper для админки
- * Использует JWT token из localStorage (приоритет) или x-tg-id header (fallback)
- * Читает res.text() до проверки res.ok
- * Uses fetchWithTimeout for graceful fallback
+ * Использует централизованный apiClient с автоматической авторизацией
  */
 async function adminFetch<T>(
   endpoint: string,
@@ -17,65 +15,11 @@ async function adminFetch<T>(
     throw new Error('No tgId')
   }
 
-  const url = apiUrl(endpoint)
-  
-  // Get JWT token from localStorage (preferred method)
-  const token = localStorage.getItem('asked_telegram_token')
-  
-  // Build headers: prefer Authorization (JWT) over x-tg-id
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
-  
-  // Add existing headers
-  if (options.headers) {
-    Object.entries(options.headers).forEach(([key, value]) => {
-      if (typeof value === 'string') {
-        headers[key] = value
-      }
-    })
-  }
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  } else {
-    // Fallback to x-tg-id if no token
-    headers['x-tg-id'] = String(tgId)
-  }
-  
-  const response = await fetchWithTimeout(
-    url,
-    {
-      ...options,
-      headers,
-    },
-    timeoutMs
-  )
-
-  // ВСЕГДА читаем response.text() ДО проверки res.ok
-  const text = await response.text().catch(() => '')
-
-  if (!response.ok) {
-    // Пытаемся распарсить JSON для получения message
-    let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-    try {
-      const errorData = text ? JSON.parse(text) : {}
-      if (errorData.message) {
-        errorMessage = `HTTP ${response.status}: ${errorData.message}`
-      } else if (text) {
-        errorMessage = `HTTP ${response.status}: ${text}`
-      }
-    } catch {
-      // Если не JSON, показываем текст ответа
-      if (text) {
-        errorMessage = `HTTP ${response.status}: ${text}`
-      }
-    }
-    throw new Error(errorMessage)
-  }
-
-  // Парсим JSON только если response.ok
-  return text ? JSON.parse(text) : ({} as T)
+  // Use centralized apiClient which handles auth automatically
+  return requestJson<T>(endpoint, {
+    ...options,
+    timeoutMs,
+  })
 }
 
 export function createAdminApi(tgId: number) {

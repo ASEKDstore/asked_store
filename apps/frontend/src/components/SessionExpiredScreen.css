@@ -1,0 +1,71 @@
+.session-expired-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #0a0a0a;
+  color: #f5f5f5;
+}
+
+.session-expired-content {
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.session-expired-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+}
+
+.session-expired-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #f5f5f5;
+}
+
+.session-expired-message {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 32px 0;
+  opacity: 0.8;
+}
+
+.session-expired-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session-expired-retry,
+.session-expired-back {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.session-expired-retry {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.session-expired-retry:hover {
+  opacity: 0.9;
+}
+
+.session-expired-back {
+  background: transparent;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.session-expired-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+

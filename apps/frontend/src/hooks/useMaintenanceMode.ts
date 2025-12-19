@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useUser } from '../context/UserContext'
 import { isAdminId } from '../config/admins'
 
-import { apiUrl } from '../utils/api'
+import { requestJson } from '../lib/apiClient'
 
 export function useMaintenanceMode() {
   const { user } = useUser()
@@ -12,11 +12,8 @@ export function useMaintenanceMode() {
   useEffect(() => {
     const checkMaintenance = async () => {
       try {
-        const response = await fetch(apiUrl('/api/settings'))
-        if (response.ok) {
-          const data = await response.json()
-          setMaintenanceMode(data.maintenanceMode || false)
-        }
+        const data = await requestJson<{ maintenanceMode?: boolean }>('/api/settings', { skipAuth: true })
+        setMaintenanceMode(data.maintenanceMode || false)
       } catch (error) {
         console.error('Failed to check maintenance mode:', error)
       } finally {

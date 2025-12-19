@@ -5,7 +5,7 @@ import { isAdminId } from '../../config/admins'
 import type { Order } from '../../types/order'
 import './ProfilePage.css'
 
-import { apiUrl } from '../../utils/api'
+import { requestJson } from '../../lib/apiClient'
 const SETTINGS_NOTIFICATIONS_KEY = 'asked_settings_notifications'
 
 export const ProfileContent: React.FC = () => {
@@ -29,13 +29,8 @@ export const ProfileContent: React.FC = () => {
 
     try {
       setOrdersLoading(true)
-      const response = await fetch(apiUrl(`/api/orders?tgId=${user.tgId}`))
-      if (response.ok) {
-        const data = await response.json()
-        setOrders(data)
-      } else {
-        console.error('Failed to load orders')
-      }
+      const data = await requestJson<Order[]>(`/api/orders?tgId=${user.tgId}`)
+      setOrders(data)
     } catch (error) {
       console.error('Error loading orders:', error)
     } finally {

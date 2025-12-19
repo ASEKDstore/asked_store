@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { fetchWithTimeout } from '../utils/api'
+// Note: AuthContext uses direct fetch for auth endpoint to avoid circular dependency
 
 export type AuthStatus = 'booting' | 'authing' | 'ready' | 'error'
 
@@ -254,7 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const data = JSON.parse(responseText)
             if (data.token) {
-              localStorage.setItem('asked_telegram_token', data.token)
+              // Import and use apiClient token management
+              const { setApiToken } = await import('../lib/apiClient')
+              setApiToken(data.token)
+              
               const role = data.role || data.user?.role || 'user'
               setPhase('auth_ok')
               setState(prev => ({

@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext'
 import { useUser } from '../context/UserContext'
 import './checkout.css'
 
-import { apiUrl } from '../utils/api'
+import { requestJson } from '../lib/apiClient'
 
 type DeliveryMethod = 'post' | 'cdek' | 'avito'
 
@@ -58,19 +58,16 @@ export const CheckoutPage: React.FC = () => {
     setPromoError(null)
 
     try {
-      const response = await fetch(apiUrl('/api/promos/apply'), {
+      const data = await requestJson<{ ok: boolean; discount?: number; error?: string }>('/api/promos/apply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code: formData.promoCode,
           cartTotal: totalPrice,
         }),
       })
 
-      const data = await response.json()
-
       if (data.ok) {
-        setPromoDiscount(data.discount)
+        setPromoDiscount(data.discount || null)
         setPromoApplied(true)
         setPromoError(null)
       } else {
@@ -131,20 +128,10 @@ export const CheckoutPage: React.FC = () => {
         discount: promoDiscount || undefined,
       }
 
-      const response = await fetch(apiUrl('/api/orders'), {
+      const order = await requestJson<{ id: string }>('/api/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(orderPayload),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Ошибка при создании заказа')
-      }
-
-      const order = await response.json()
       setOrderId(order.id)
       setSuccess(true)
       

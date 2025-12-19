@@ -19,6 +19,7 @@ import { HelpPage } from './pages/HelpPage'
 import { CollabPage } from './pages/CollabPage'
 import { ProductSheetProvider } from './context/ProductSheetContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 
 // Lazy load heavy pages (admin, lab, reviews)
 const OrdersAdminPage = lazy(() => import('./pages/admin/OrdersAdminPage').then(m => ({ default: m.OrdersAdminPage })))
@@ -176,6 +177,7 @@ function App() {
     <ErrorBoundary>
       <ProductSheetProvider>
         <BrowserRouter>
+          <SessionExpiredHandler />
           <AppContent />
           <TgDebugPanel />
         </BrowserRouter>
