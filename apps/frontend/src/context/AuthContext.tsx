@@ -344,17 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // Guarantee loading is false - ensure status is set
       console.log('[ASKED BOOT] finally - phase:', currentPhase)
-      // If we're still in error state, make sure it's properly set
-      if (currentPhase === 'error') {
-        setState(prev => ({
-          ...prev,
-          status: 'error',
-          error: prev.error || 'Unknown error',
-          errorStatus: prev.errorStatus,
-          errorDetails: prev.errorDetails,
-          retry: performBootstrap,
-        }))
-      }
+      // State is already set in catch/error blocks, no need to check here
     }
   }, [])
 
