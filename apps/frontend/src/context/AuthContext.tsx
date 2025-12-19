@@ -12,6 +12,7 @@ export type AuthState = {
   errorStatus: number | null // HTTP status code if available
   errorDetails: string | null // Additional error details (response text)
   token: string | null
+  role: 'admin' | 'user' | null // User role from backend
   phase: BootPhase | null
   requestId: string | null
   retry: () => void
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthState>({
   errorStatus: null,
   errorDetails: null,
   token: null,
+  role: null,
   phase: null,
   requestId: null,
   retry: () => {},
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     errorStatus: null,
     errorDetails: null,
     token: null,
+    role: null,
     phase: null,
     requestId: null,
     retry: () => {},
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       errorStatus: null,
       errorDetails: null,
       token: null,
+      role: null,
       phase: 'start',
       requestId: null,
       retry: performBootstrap,
@@ -92,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error: 'Telegram WebApp не найден',
           errorStatus: null,
           errorDetails: null,
+          role: null,
           requestId,
           retry: performBootstrap,
         }))
@@ -128,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
           errorStatus: null,
           errorDetails: null,
+          role: null,
           requestId,
           retry: performBootstrap,
         }))
@@ -150,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           errorStatus: null,
           errorDetails: null,
           token: null,
+          role: null,
           phase: 'error',
           requestId,
           retry: performBootstrap,
@@ -236,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               error: safeErrorMessage,
               errorStatus: response.status,
               errorDetails: safeErrorDetails,
+              role: null,
               requestId,
               retry: performBootstrap,
             }))
@@ -252,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 status: 'ready',
                 token: data.token,
+                role: role,
                 error: null,
                 phase: 'boot_done',
               }))
@@ -263,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 error: 'Auth failed: No token in response',
                 errorStatus: null,
                 errorDetails: null,
+                role: null,
                 requestId,
                 retry: performBootstrap,
               }))
@@ -275,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               error: `Auth failed: Invalid response format`,
               errorStatus: null,
               errorDetails: null,
+              role: null,
               requestId,
               retry: performBootstrap,
             }))
@@ -299,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             error: String(errorMsg), // Ensure it's a string
             errorStatus: null,
             errorDetails: null,
+            role: null,
             requestId,
             retry: performBootstrap,
           }))
@@ -311,6 +323,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...prev,
             status: 'error',
             error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
+            errorStatus: null,
+            errorDetails: null,
+            role: null,
             requestId,
             retry: performBootstrap,
           }))
@@ -320,6 +335,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...prev,
             status: 'error',
             error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
+            errorStatus: null,
+            errorDetails: null,
+            role: null,
             requestId,
             retry: performBootstrap,
           }))
@@ -338,6 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: errorMessage,
         errorStatus: null,
         errorDetails: null,
+        role: null,
         requestId,
         retry: performBootstrap,
       }))

@@ -101,23 +101,37 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       throw dbError
     }
 
-    // Generate JWT token (7 days expiry)
+    // Check if user is admin
+    const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS || process.env.ROOT_ADMIN_ID || ''
+    const adminIds = adminIdsEnv
+      .split(',')
+      .map(s => s.trim())
+      .map(s => Number(s))
+      .filter(n => Number.isFinite(n) && n > 0)
+    
+    const userIdString = String(userData.id)
+    const isAdmin = adminIds.some(adminId => String(adminId) === userIdString)
+    const role = isAdmin ? 'admin' : 'user'
+
+    // Generate JWT token (7 days expiry) with role
     const token = jwt.sign(
       {
         sub: String(userData.id),
         userId: userData.id,
         telegram_id: userData.id,
+        role: role,
       },
       jwtSecret,
       { expiresIn: '7d' }
     )
 
-    console.log('[AUTH][TELEGRAM] Token generated successfully for user:', userData.id)
+    console.log('[AUTH][TELEGRAM] Token generated successfully for user:', userData.id, 'role:', role)
 
     // Return token and user data (keeping backward compatibility)
     res.json({
       ok: true,
       token,
+      role: role,
       user: {
         id: userData.id,
         telegram_id: userData.id,
@@ -125,6 +139,7 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
         first_name: userData.first_name || null,
         last_name: userData.last_name || null,
         avatar_url: avatarUrl,
+        role: role,
       },
     })
   } catch (error: any) {

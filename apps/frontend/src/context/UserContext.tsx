@@ -48,7 +48,7 @@ declare global {
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Use Auth context (replaces useTelegramSession)
-  const { status, token } = useAuth()
+  const { status, token, role } = useAuth()
   
   // Initialize with guest user (never null)
   const [user, setUser] = useState<User>({ source: 'guest', tgId: 0 })
@@ -61,8 +61,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const unsafeUser = tg?.initDataUnsafe?.user
       
       if (unsafeUser && unsafeUser.id) {
-        const adminIds = getAdminIds()
-        const isAdmin = adminIds.includes(unsafeUser.id)
+        // Use role from backend auth response (more reliable than env check)
+        const isAdmin = role === 'admin'
 
         const newUser: User = {
           source: 'telegram',
@@ -77,7 +77,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(newUser)
 
         if (import.meta.env.DEV) {
-          console.log('[UserContext] User authenticated:', newUser)
+          console.log('[UserContext] User authenticated:', newUser, 'role:', role)
         }
       } else {
         // Token exists but no user data - set guest
@@ -87,7 +87,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Error state - set guest
       setUser({ source: 'guest', tgId: 0 })
     }
-  }, [status, token])
+  }, [status, token, role])
 
   const refresh = useCallback(() => {
     // Refresh will be handled by useTelegramSession hook

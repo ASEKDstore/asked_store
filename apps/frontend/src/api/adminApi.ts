@@ -3,7 +3,7 @@ import { apiUrl, fetchWithTimeout } from '../utils/api'
 
 /**
  * Единый fetch wrapper для админки
- * Всегда добавляет x-tg-id header
+ * Использует JWT token из localStorage (приоритет) или x-tg-id header (fallback)
  * Читает res.text() до проверки res.ok
  * Uses fetchWithTimeout for graceful fallback
  */
@@ -19,15 +19,27 @@ async function adminFetch<T>(
 
   const url = apiUrl(endpoint)
   
+  // Get JWT token from localStorage (preferred method)
+  const token = localStorage.getItem('asked_telegram_token')
+  
+  // Build headers: prefer Authorization (JWT) over x-tg-id
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  }
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  } else {
+    // Fallback to x-tg-id if no token
+    headers['x-tg-id'] = String(tgId)
+  }
+  
   const response = await fetchWithTimeout(
     url,
     {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-tg-id': String(tgId),
-        ...options.headers,
-      },
+      headers,
     },
     timeoutMs
   )

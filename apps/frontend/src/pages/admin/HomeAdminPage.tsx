@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminApi } from '../../api/adminApi'
 import './AdminPages.css'
 
 export const HomeAdminPage: React.FC = () => {
   const api = useAdminApi()
+  const navigate = useNavigate()
   const [showBanners, setShowBanners] = useState(true)
   const [showTiles, setShowTiles] = useState(true)
   const [showLab, setShowLab] = useState(true)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadSettings()
@@ -17,6 +20,7 @@ export const HomeAdminPage: React.FC = () => {
   const loadSettings = async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await api.getSettings() as { home?: { showBanners?: boolean; showTiles?: boolean; showLab?: boolean } }
       if (data.home) {
         setShowBanners(data.home.showBanners ?? true)
@@ -25,6 +29,14 @@ export const HomeAdminPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to load settings:', error)
+      const errorMessage = error?.message || 'Unknown error'
+      if (errorMessage.includes('403') || errorMessage.includes('Admin access')) {
+        setError('Доступ запрещён. Только для администраторов.')
+        // Redirect to regular mode after a delay
+        setTimeout(() => navigate('/app'), 2000)
+      } else {
+        setError(`Ошибка: ${errorMessage}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -51,6 +63,35 @@ export const HomeAdminPage: React.FC = () => {
 
   if (loading) {
     return <div className="admin-loading">Загрузка...</div>
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        padding: '48px',
+        textAlign: 'center',
+        color: '#f5f5f5',
+      }}>
+        <h2>Ошибка</h2>
+        <p>{error}</p>
+        <button
+          onClick={() => navigate('/app')}
+          style={{
+            padding: '12px 24px',
+            background: '#ffffff',
+            color: '#0a0a0a',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 600,
+            marginTop: '16px',
+          }}
+        >
+          Обычный режим
+        </button>
+      </div>
+    )
   }
 
   return (
