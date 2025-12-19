@@ -59,26 +59,37 @@ export function verifyTelegramInitData(
 
     // Compare computed_hash === hash
     if (computedHash !== hash) {
+      console.log('[AUTH][TELEGRAM] Hash mismatch - invalid signature')
       return null
     }
 
     // Check auth_date (not older than 24 hours)
     const authDate = Number(params.get('auth_date'))
-    if (!authDate || Date.now() / 1000 - authDate > 86400) {
+    if (!authDate) {
+      console.log('[AUTH][TELEGRAM] Missing auth_date')
+      return null
+    }
+    
+    const authDateAge = Date.now() / 1000 - authDate
+    if (authDateAge > 86400) {
+      console.log('[AUTH][TELEGRAM] auth_date expired:', authDateAge, 'seconds old')
       return null
     }
 
     // Get and parse user data
     const userRaw = params.get('user')
     if (!userRaw) {
+      console.log('[AUTH][TELEGRAM] Missing user data in initData')
       return null
     }
 
     // URLSearchParams already decodes values, so we parse directly
     // DO NOT use decodeURIComponent here - it's already decoded
-    return JSON.parse(userRaw)
+    const userData = JSON.parse(userRaw)
+    console.log('[AUTH][TELEGRAM] Verification OK - user data parsed')
+    return userData
   } catch (error) {
-    console.error('[TG AUTH] Verification error:', error)
+    console.error('[AUTH][TELEGRAM] Verification error:', error)
     return null
   }
 }

@@ -16,34 +16,58 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ error: 'initData is required' })
     }
 
-    // Get bot token from env
+    // Check required environment variables
+    const missingEnv: string[] = []
     const botToken = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
     if (!botToken) {
-      console.error('[TG AUTH] BOT_TOKEN not configured')
-      return res.status(500).json({ error: 'Server configuration error' })
+      missingEnv.push('BOT_TOKEN or TELEGRAM_BOT_TOKEN')
     }
 
-    // Log initData for debugging (temporarily)
-    console.log('[TG AUTH] initData:', initData)
+    // JWT_SECRET is optional (falls back to botToken), but log if missing
+    const jwtSecret = process.env.JWT_SECRET || botToken
+    if (!process.env.JWT_SECRET && botToken) {
+      console.warn('[AUTH][CONFIG] JWT_SECRET not set, using BOT_TOKEN as fallback')
+    }
+
+    // Check database connection (Prisma will throw if not configured)
+    // This is implicit - if DATABASE_URL is missing, Prisma will fail later
+
+    if (missingEnv.length > 0) {
+      const errorMsg = `Server configuration error: missing required environment variables`
+      console.error('[AUTH][CONFIG]', errorMsg, { missing: missingEnv })
+      return res.status(503).json({ 
+        error: errorMsg,
+        missing: missingEnv 
+      })
+    }
+
+    // Log initData length (not full content for security)
+    console.log('[AUTH][TELEGRAM] initData length:', initData.length)
+    console.log('[AUTH][TELEGRAM] initData preview:', initData.substring(0, 50) + '...')
 
     // Verify initData using official Telegram algorithm
-    const userData = verifyTelegramInitData(initData, botToken)
+    const userData = verifyTelegramInitData(initData, botToken!)
 
     if (!userData) {
-      console.log('[TG AUTH] Verification failed')
-      return res.status(401).json({ error: 'Invalid Telegram data' })
+      console.log('[AUTH][TELEGRAM] Verification failed - invalid initData signature or expired')
+      return res.status(401).json({ error: 'Invalid initData' })
     }
 
-    // Log verified user for debugging
-    console.log('[TG AUTH] verified user:', userData)
+    // Log verified user (without sensitive data)
+    console.log('[AUTH][TELEGRAM] Verification OK', {
+      userId: userData.id,
+      username: userData.username || 'none',
+      hasFirstName: !!userData.first_name,
+      hasPhoto: !!userData.photo_url,
+    })
 
     // Get avatar URL: prefer photo_url from initData, fallback to Bot API
     let avatarUrl: string | null = userData.photo_url || null
     if (!avatarUrl) {
       try {
-        avatarUrl = await getUserAvatarUrl(botToken, userData.id)
+        avatarUrl = await getUserAvatarUrl(botToken!, userData.id)
       } catch (error) {
-        console.warn('[TG AUTH] Failed to fetch avatar:', error)
+        console.warn('[AUTH][TELEGRAM] Failed to fetch avatar:', error)
         // Continue without avatar
       }
     }
@@ -70,7 +94,6 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
     })
 
     // Generate JWT token (7 days expiry)
-    const jwtSecret = process.env.JWT_SECRET || botToken // Fallback to botToken if JWT_SECRET not set
     const token = jwt.sign(
       {
         sub: String(userData.id),
@@ -80,6 +103,8 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       jwtSecret,
       { expiresIn: '7d' }
     )
+
+    console.log('[AUTH][TELEGRAM] Token generated successfully for user:', userData.id)
 
     // Return token and user data
     res.json({
@@ -93,7 +118,14 @@ router.post('/telegram', async (req: Request, res: Response, next: NextFunction)
       },
     })
   } catch (error: any) {
-    console.error('Telegram auth error:', error)
+    console.error('[AUTH][TELEGRAM] Error:', error)
+    // Don't leak internal errors to client
+    if (error instanceof Error) {
+      console.error('[AUTH][TELEGRAM] Error details:', {
+        message: error.message,
+        stack: error.stack,
+      })
+    }
     next(error)
   }
 })
