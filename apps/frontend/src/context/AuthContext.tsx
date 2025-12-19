@@ -255,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = JSON.parse(responseText)
             if (data.token) {
               localStorage.setItem('asked_telegram_token', data.token)
+              const role = data.role || data.user?.role || 'user'
               setPhase('auth_ok')
               setState(prev => ({
                 ...prev,

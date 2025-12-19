@@ -23,9 +23,17 @@ async function adminFetch<T>(
   const token = localStorage.getItem('asked_telegram_token')
   
   // Build headers: prefer Authorization (JWT) over x-tg-id
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+  }
+  
+  // Add existing headers
+  if (options.headers) {
+    Object.entries(options.headers).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        headers[key] = value
+      }
+    })
   }
   
   if (token) {
