@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 // Note: AuthContext uses direct fetch for auth endpoint to avoid circular dependency
+// We implement timeout manually using AbortController
 
 export type AuthStatus = 'booting' | 'authing' | 'ready' | 'error'
 
@@ -197,11 +198,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[ASKED BOOT] auth_request', authUrl)
         
         try {
-          const response = await fetchWithTimeout(authUrl, {
+          // Use direct fetch with AbortController for timeout (avoid circular dependency with apiClient)
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 15000)
+          
+          const response = await fetch(authUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData }),
-          }, 15000)
+            signal: controller.signal,
+          })
+          
+          clearTimeout(timeoutId)
 
           const responseText = await response.text()
           
