@@ -106,22 +106,13 @@ export const CheckoutPage: React.FC = () => {
     }
 
     try {
-      // If lab order, use its items, otherwise use cart items
-      const orderItems = labOrder 
-        ? labOrder.items.map((item: any) => ({
-            ...item,
-            price: Number(item.price),
-            qty: Number(item.qty),
-          }))
-        : items.map(item => ({
-            type: 'product' as const,
-            productId: item.productId,
-            title: item.title,
-            article: item.article,
-            price: Number(item.price),
-            qty: Number(item.qty),
-            size: item.size,
-          }))
+      // Validate items before processing
+      const sourceItems = labOrder ? labOrder.items : items
+      if (!sourceItems || sourceItems.length === 0) {
+        setError('Корзина пуста')
+        setIsSubmitting(false)
+        return
+      }
 
       // Use tgId from Telegram.WebApp.initDataUnsafe.user.id
       const tgId = Number(tgUser.id)
@@ -131,12 +122,53 @@ export const CheckoutPage: React.FC = () => {
         return
       }
 
+      // Build order items with guaranteed price and qty
+      const orderItems = sourceItems.map((item: any, index: number) => {
+        // Normalize price - must be a finite number
+        const price = Number(item.price)
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new Error(`Товар "${item.title || `#${index + 1}`}" имеет неверную цену`)
+        }
+
+        // Normalize qty - must be integer > 0, default to 1
+        const qty = Number(item.qty ?? 1)
+        const qtyInt = Math.max(1, Math.floor(qty))
+        if (!Number.isFinite(qty) || qtyInt <= 0) {
+          throw new Error(`Товар "${item.title || `#${index + 1}`}" имеет неверное количество`)
+        }
+
+        // Build item based on type
+        if (labOrder && item.type === 'lab') {
+          return {
+            type: 'lab' as const,
+            labProductId: item.labProductId ?? null,
+            title: item.title || 'Товар',
+            article: item.article || null,
+            price: price,
+            qty: qtyInt,
+            size: item.size ?? null,
+            artistName: item.artistName ?? null,
+          }
+        } else {
+          return {
+            type: 'product' as const,
+            productId: item.productId || null,
+            title: item.title || 'Товар',
+            article: item.article ?? null,
+            price: price,
+            qty: qtyInt,
+            size: item.size ?? null,
+          }
+        }
+      })
+
+      // Build payload - ONLY ONE user object
       const orderPayload = {
         user: {
           tgId: tgId,
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'USER',
-          username: user.username,
-          photo_url: user.avatar,
+          username: user.username ?? null,
+          photo_url: user.avatar ?? null,
         },
         items: orderItems,
         delivery: {
@@ -145,15 +177,36 @@ export const CheckoutPage: React.FC = () => {
           address: formData.address,
           method: formData.method,
         },
-        comment: labOrder ? labOrder.comment : (formData.comment || undefined),
-        promoCode: promoApplied ? formData.promoCode : undefined,
-        discount: promoDiscount || undefined,
+        ...(labOrder ? { comment: labOrder.comment } : formData.comment ? { comment: formData.comment } : {}),
+        ...(promoApplied && formData.promoCode ? { promoCode: formData.promoCode } : {}),
       }
 
-      const order = await requestJson<{ id: string }>('/api/orders', {
+      // Send order
+      const response = await fetch('/api/orders', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(orderPayload),
       })
+
+      // Handle response
+      if (!response.ok) {
+        let errorMessage = 'Не удалось оформить заказ'
+        try {
+          const errorData = await response.json()
+          if (errorData?.error) {
+            errorMessage = errorData.error
+          }
+        } catch {
+          // If JSON parsing fails, use default message
+        }
+        setError(errorMessage)
+        setIsSubmitting(false)
+        return
+      }
+
+      const order = await response.json()
 
       setOrderId(order.id)
       setSuccess(true)
@@ -165,14 +218,10 @@ export const CheckoutPage: React.FC = () => {
     } catch (err: any) {
       console.error('Order creation error:', err)
       
-      // Extract error message from response
+      // Extract error message
       let errorMessage = 'Не удалось оформить заказ'
       
-      // requestJson already parses error response and puts it in err.response.data
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error
-      } else if (err.message) {
-        // err.message already contains the parsed error message from requestJson
+      if (err.message) {
         errorMessage = err.message
       }
       

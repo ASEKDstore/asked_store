@@ -25,22 +25,38 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'tgId is required' })
     }
 
-    // Validate required fields - items and delivery
-    if (!data.items?.length || !data.delivery) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    // Validate and parse tgId
+    const tgIdRaw = String(data.user.tgId).trim()
+    let tgIdBigInt: bigint
+    try {
+      tgIdBigInt = BigInt(tgIdRaw)
+    } catch (error) {
+      console.error('[POST /api/orders] Invalid tgId:', tgIdRaw, error)
+      return res.status(400).json({ error: 'Invalid tgId' })
+    }
+
+    // Validate required fields - items must be array with length > 0
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      return res.status(400).json({ error: 'Items must be a non-empty array' })
+    }
+
+    // Validate delivery
+    if (!data.delivery) {
+      return res.status(400).json({ error: 'Delivery is required' })
     }
 
     // Normalize and validate items
     const normalizedItems = data.items.map((item: any, index: number) => {
+      // Validate price - must be finite number > 0
       const price = Number(item.price)
-      const qty = Number(item.qty)
-
       if (!Number.isFinite(price) || price <= 0) {
-        throw { statusCode: 400, message: `Invalid item price/qty: item ${index + 1} has invalid price (must be a positive number)` }
+        throw { statusCode: 400, message: `Item ${index + 1}: invalid price (must be a positive number)` }
       }
 
+      // Validate qty - must be integer > 0
+      const qty = Number(item.qty)
       if (!Number.isInteger(qty) || qty <= 0) {
-        throw { statusCode: 400, message: `Invalid item price/qty: item ${index + 1} has invalid quantity (must be a positive integer)` }
+        throw { statusCode: 400, message: `Item ${index + 1}: invalid quantity (must be a positive integer)` }
       }
 
       return {
@@ -80,61 +96,90 @@ router.post('/', async (req, res) => {
     totalPrice = Math.max(0, totalPrice - discount)
     totalPrice = Math.round(totalPrice) // Ensure integer
 
-    // Final validation: totalPrice must be finite
-    if (!Number.isFinite(totalPrice)) {
-      return res.status(400).json({ error: 'Invalid total price' })
+    // Final validation: totalPrice must be finite positive integer
+    if (!Number.isFinite(totalPrice) || totalPrice < 0 || !Number.isInteger(totalPrice)) {
+      console.error('[POST /api/orders] Invalid totalPrice after calculation:', totalPrice)
+      return res.status(400).json({ error: 'Invalid total price calculated' })
     }
 
     // Convert normalized items to JSON-safe plain objects
-    const itemsJson = normalizedItems.map(item => ({
-      productId: item.productId ?? null,
-      labProductId: item.labProductId ?? null,
-      type: item.type ?? null,
-      title: item.title,
-      article: item.article,
-      price: item.price, // Already normalized
-      qty: item.qty, // Already normalized
-      size: item.size ?? null,
-      artistName: item.artistName ?? null,
-    }))
+    // Guarantee all required fields exist
+    const itemsJson = normalizedItems.map(item => {
+      // Validate required fields
+      if (!item.title || typeof item.title !== 'string') {
+        throw { statusCode: 400, message: 'Item title is required' }
+      }
 
-    // Create JSON-safe order data
+      return {
+        productId: item.productId ?? null,
+        labProductId: item.labProductId ?? null,
+        type: item.type ?? null,
+        title: String(item.title),
+        article: item.article ?? null,
+        price: Number(item.price), // Already normalized, but ensure number
+        qty: Number(item.qty), // Already normalized, but ensure number
+        size: item.size ?? null,
+        artistName: item.artistName ?? null,
+      }
+    })
+
+    // Create JSON-safe order data - validate all required fields
+    if (!data.user.name || typeof data.user.name !== 'string') {
+      return res.status(400).json({ error: 'User name is required' })
+    }
+
+    if (!data.delivery.fullName || typeof data.delivery.fullName !== 'string') {
+      return res.status(400).json({ error: 'Delivery fullName is required' })
+    }
+
+    if (!data.delivery.phone || typeof data.delivery.phone !== 'string') {
+      return res.status(400).json({ error: 'Delivery phone is required' })
+    }
+
+    if (!data.delivery.address || typeof data.delivery.address !== 'string') {
+      return res.status(400).json({ error: 'Delivery address is required' })
+    }
+
     const orderDataJson = {
       user: {
-        tgId: data.user.tgId,
-        name: data.user.name,
-        username: data.user.username ?? null,
-        photo_url: data.user.photo_url ?? null,
+        tgId: Number(data.user.tgId), // Keep as number in JSON
+        name: String(data.user.name),
+        username: data.user.username ? String(data.user.username) : null,
+        photo_url: data.user.photo_url ? String(data.user.photo_url) : null,
       },
       items: itemsJson,
       delivery: {
-        fullName: data.delivery.fullName,
-        phone: data.delivery.phone,
-        address: data.delivery.address,
-        method: data.delivery.method,
+        fullName: String(data.delivery.fullName),
+        phone: String(data.delivery.phone),
+        address: String(data.delivery.address),
+        method: String(data.delivery.method),
       },
-      comment: data.comment ?? null,
-      promoCode: promoCode ?? null,
-      discount: discount > 0 ? discount : null,
+      comment: data.comment ? String(data.comment) : null,
+      promoCode: promoCode ? String(promoCode) : null,
+      discount: discount > 0 ? Number(discount) : null,
     }
 
-    // Safely parse BigInt for tgId
-    let tgIdBigInt: bigint
-    try {
-      tgIdBigInt = BigInt(data.user.tgId)
-    } catch (error) {
-      console.error('[POST /api/orders] Invalid tgId:', data.user.tgId, error)
-      return res.status(400).json({ error: 'Invalid tgId' })
-    }
+    // Debug log before creating order
+    console.log('[ORDER DEBUG]', {
+      tgId: String(tgIdBigInt),
+      itemsCount: normalizedItems.length,
+      items: normalizedItems.map(item => ({
+        title: item.title,
+        price: item.price,
+        qty: item.qty,
+      })),
+      totalPrice,
+    })
 
-    // Create order
+    // Create order - totalPrice is guaranteed to be finite positive integer
+    // tgIdBigInt is guaranteed to be valid BigInt
     const order = await prisma.order.create({
       data: {
         id: uuidv4(),
         items: orderDataJson as any,
-        total: totalPrice,
+        total: totalPrice, // Integer, guaranteed by validation above
         status: 'new',
-        tgId: tgIdBigInt,
+        tgId: tgIdBigInt, // BigInt, guaranteed by validation above
       },
     })
 
@@ -160,12 +205,19 @@ router.post('/', async (req, res) => {
       updatedAt: order.updatedAt.toISOString(),
     })
   } catch (error: any) {
-    // Handle custom validation errors
+    // Handle custom validation errors (thrown with statusCode: 400)
     if (error.statusCode === 400) {
       return res.status(400).json({ error: error.message })
     }
     
-    console.error('Error creating order:', error)
+    // Log full error for debugging
+    console.error('[POST /api/orders] Error creating order:', {
+      error: error.message || error,
+      stack: error.stack,
+      code: error.code,
+    })
+    
+    // Return 500 for unexpected errors
     res.status(500).json({ error: 'Failed to create order' })
   }
 })
