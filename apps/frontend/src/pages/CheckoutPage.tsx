@@ -89,8 +89,18 @@ export const CheckoutPage: React.FC = () => {
     setError(null)
     setIsSubmitting(true)
 
+    // Check if user is logged in
     if (!user) {
       setError('Необходимо войти в систему')
+      setIsSubmitting(false)
+      return
+    }
+
+    // Check if Telegram user is available (required for tgId)
+    const tgWebApp = (window as any).Telegram?.WebApp
+    const tgUser = tgWebApp?.initDataUnsafe?.user
+    if (!tgUser?.id) {
+      setError('Откройте приложение из Telegram для оформления заказа')
       setIsSubmitting(false)
       return
     }
@@ -98,20 +108,32 @@ export const CheckoutPage: React.FC = () => {
     try {
       // If lab order, use its items, otherwise use cart items
       const orderItems = labOrder 
-        ? labOrder.items 
+        ? labOrder.items.map((item: any) => ({
+            ...item,
+            price: Number(item.price),
+            qty: Number(item.qty),
+          }))
         : items.map(item => ({
             type: 'product' as const,
             productId: item.productId,
             title: item.title,
             article: item.article,
-            price: item.price,
-            qty: item.qty,
+            price: Number(item.price),
+            qty: Number(item.qty),
             size: item.size,
           }))
 
+      // Use tgId from Telegram.WebApp.initDataUnsafe.user.id
+      const tgId = Number(tgUser.id)
+      if (!tgId || !Number.isFinite(tgId)) {
+        setError('Не удалось получить ID пользователя Telegram')
+        setIsSubmitting(false)
+        return
+      }
+
       const orderPayload = {
         user: {
-          tgId: user.tgId,
+          tgId: tgId,
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'USER',
           username: user.username,
           photo_url: user.avatar,
@@ -132,6 +154,7 @@ export const CheckoutPage: React.FC = () => {
         method: 'POST',
         body: JSON.stringify(orderPayload),
       })
+
       setOrderId(order.id)
       setSuccess(true)
       
@@ -139,14 +162,21 @@ export const CheckoutPage: React.FC = () => {
       if (!labOrder) {
         clear()
       }
-
-      // Navigate to profile after 2 seconds
-      setTimeout(() => {
-        navigate('/app/profile', { state: { modal: true } })
-      }, 2000)
     } catch (err: any) {
       console.error('Order creation error:', err)
-      setError(err.message || 'Не удалось оформить заказ. Попробуйте позже.')
+      
+      // Extract error message from response
+      let errorMessage = 'Не удалось оформить заказ'
+      
+      // requestJson already parses error response and puts it in err.response.data
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error
+      } else if (err.message) {
+        // err.message already contains the parsed error message from requestJson
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -173,7 +203,14 @@ export const CheckoutPage: React.FC = () => {
               Номер заказа: <strong>#{orderId.slice(-6).toUpperCase()}</strong>
             </p>
           )}
-          <p>Вы будете перенаправлены в профиль...</p>
+          <p>Мы свяжемся с вами для подтверждения деталей доставки.</p>
+          <button
+            onClick={() => navigate('/app')}
+            className="checkout-submit"
+            style={{ marginTop: '24px' }}
+          >
+            В каталог
+          </button>
         </div>
       </div>
     )

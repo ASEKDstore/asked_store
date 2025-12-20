@@ -93,6 +93,33 @@ async function editMessageText(
   }
 }
 
+function formatClientOrderMessage(order: Order): string {
+  const itemsText = order.items
+    .map(item => {
+      const baseText = `• ${item.title} (${item.article})${item.size ? ` - ${item.size}` : ''} × ${item.qty} = ${item.price * item.qty} ₽`
+      if (item.type === 'lab' && item.artistName) {
+        return `${baseText}\n  👨‍🎨 Художник: ${item.artistName}`
+      }
+      return baseText
+    })
+    .join('\n')
+
+  const promoText = order.promoCode && order.discount
+    ? `\n🎟️ Промокод: ${order.promoCode}\n💰 Скидка: ${order.discount.toLocaleString('ru-RU')} ₽\n`
+    : ''
+
+  return `✅ Заказ принят!
+
+📦 Состав заказа:
+${itemsText}
+${promoText}
+💰 Итого: ${order.totalPrice.toLocaleString('ru-RU')} ₽
+
+Номер заказа: #${order.id.slice(-6).toUpperCase()}
+
+Мы свяжемся с вами для подтверждения деталей доставки.`.trim()
+}
+
 function formatOrderMessage(order: Order): string {
   const statusEmoji = {
     new: '🆕',
@@ -149,6 +176,36 @@ ${order.comment ? `💬 <b>Комментарий:</b>\n${order.comment}\n` : ''
   `.trim()
 }
 
+async function notifyClientAboutOrder(order: Order): Promise<void> {
+  try {
+    if (!BOT_TOKEN) {
+      console.warn('TELEGRAM_BOT_TOKEN not set, skipping client notification')
+      return
+    }
+
+    const clientTgId = order.user.tgId
+    if (!clientTgId || typeof clientTgId !== 'number') {
+      console.warn('Invalid client tgId, skipping client notification')
+      return
+    }
+
+    const message = formatClientOrderMessage(order)
+    const result = await sendMessage(clientTgId, message)
+
+    if (!result.success) {
+      // Log but don't throw - client might not have started the bot
+      if (result.error?.statusCode === 403 || result.error?.statusCode === 400) {
+        console.warn(`Cannot send order confirmation to client ${clientTgId}: user may not have started the bot`)
+      } else {
+        console.error(`Failed to send order confirmation to client ${clientTgId}:`, result.error)
+      }
+    }
+  } catch (error) {
+    console.error('Error notifying client about order:', error)
+    // Don't throw - notification failure should not break order creation
+  }
+}
+
 export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
   try {
     if (!BOT_TOKEN) {
@@ -187,7 +244,7 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
       if (Number.isFinite(chatId)) {
         const result = await sendMessage(chatId, message, 'HTML', keyboard)
         if (result.success) {
-          return // If chat ID is configured and message sent successfully, return
+          // Still notify individual admins if configured
         } else {
           console.warn('Failed to send to admin chat, falling back to admin IDs')
         }
@@ -199,38 +256,41 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
     // Read admin IDs from environment variable (comma-separated)
     const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
     if (!adminIdsEnv) {
-      console.warn('TELEGRAM_ADMIN_IDS not configured, skipping notification')
-      return
-    }
+      console.warn('TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
+    } else {
+      // Parse comma-separated admin IDs
+      const adminIds = adminIdsEnv
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id.length > 0)
+        .map(id => {
+          const numId = Number(id)
+          return Number.isFinite(numId) ? numId : null
+        })
+        .filter((id): id is number => id !== null)
 
-    // Parse comma-separated admin IDs
-    const adminIds = adminIdsEnv
-      .split(',')
-      .map(id => id.trim())
-      .filter(id => id.length > 0)
-      .map(id => {
-        const numId = Number(id)
-        return Number.isFinite(numId) ? numId : null
-      })
-      .filter((id): id is number => id !== null)
+      if (adminIds.length === 0) {
+        console.warn('No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
+      } else {
+        // Send to all admins (continue even if some fail)
+        const results = await Promise.allSettled(
+          adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
+        )
 
-    if (adminIds.length === 0) {
-      console.warn('No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping notification')
-      return
-    }
-
-    // Send to all admins (continue even if some fail)
-    const results = await Promise.allSettled(
-      adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
-    )
-
-    // Log results
-    results.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        console.error(`Failed to send notification to admin ${adminIds[index]}:`, result.reason)
-      } else if (result.value && !result.value.success) {
-        // Already logged in sendMessage for 403/400 cases
+        // Log results
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.error(`Failed to send notification to admin ${adminIds[index]}:`, result.reason)
+          } else if (result.value && !result.value.success) {
+            // Already logged in sendMessage for 403/400 cases
+          }
+        })
       }
+    }
+
+    // Notify client (don't wait, don't fail if it fails)
+    notifyClientAboutOrder(order).catch(error => {
+      console.error('Error in client notification (non-blocking):', error)
     })
   } catch (error) {
     console.error('Failed to notify admins about order:', error)
@@ -243,36 +303,41 @@ export async function updateOrderNotification(
   chatId: number,
   messageId: number
 ): Promise<void> {
-  const message = formatOrderMessage(order)
-  
-  // Update keyboard based on current status
-  const keyboard: InlineKeyboardMarkup = {
-    inline_keyboard: [
-      ...(order.status === 'new' ? [[
-        {
-          text: '⚙️ В работу',
-          callback_data: `order_action:${order.id}:in_progress`,
-        },
-        {
-          text: '✅ Готово',
-          callback_data: `order_action:${order.id}:done`,
-        },
-      ]] : []),
-      ...(order.status === 'in_progress' ? [[
-        {
-          text: '✅ Готово',
-          callback_data: `order_action:${order.id}:done`,
-        },
-        {
-          text: '❌ Отменить',
-          callback_data: `order_action:${order.id}:canceled`,
-        },
-      ]] : []),
-      ...(order.status === 'done' || order.status === 'canceled' ? [] : []),
-    ],
+  try {
+    const message = formatOrderMessage(order)
+    
+    // Update keyboard based on current status
+    const keyboard: InlineKeyboardMarkup = {
+      inline_keyboard: [
+        ...(order.status === 'new' ? [[
+          {
+            text: '⚙️ В работу',
+            callback_data: `order_action:${order.id}:in_progress`,
+          },
+          {
+            text: '✅ Готово',
+            callback_data: `order_action:${order.id}:done`,
+          },
+        ]] : []),
+        ...(order.status === 'in_progress' ? [[
+          {
+            text: '✅ Готово',
+            callback_data: `order_action:${order.id}:done`,
+          },
+          {
+            text: '❌ Отменить',
+            callback_data: `order_action:${order.id}:canceled`,
+          },
+        ]] : []),
+        ...(order.status === 'done' || order.status === 'canceled' ? [] : []),
+      ],
+    }
+    
+    await editMessageText(chatId, messageId, message, 'HTML', keyboard)
+  } catch (error) {
+    console.error('Failed to update order notification:', error)
+    // Don't throw - notification failure should not break order update
   }
-  
-  await editMessageText(chatId, messageId, message, 'HTML', keyboard)
 }
 
 export { sendMessage, editMessageText }

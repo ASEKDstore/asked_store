@@ -11,8 +11,22 @@ router.post('/', async (req, res) => {
   try {
     const data: CreateOrderRequest = req.body
 
-    // Validate required fields
-    if (!data.user?.tgId || !data.items?.length || !data.delivery) {
+    // Debug log (limited, no personal data)
+    console.debug('[POST /api/orders] Received order request:', {
+      hasUser: !!data.user,
+      hasTgId: !!data.user?.tgId,
+      itemsCount: data.items?.length || 0,
+      hasDelivery: !!data.delivery,
+      hasPromoCode: !!data.promoCode,
+    })
+
+    // Validate required fields - tgId
+    if (!data.user?.tgId) {
+      return res.status(400).json({ error: 'tgId is required' })
+    }
+
+    // Validate required fields - items and delivery
+    if (!data.items?.length || !data.delivery) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
@@ -22,11 +36,11 @@ router.post('/', async (req, res) => {
       const qty = Number(item.qty)
 
       if (!Number.isFinite(price) || price <= 0) {
-        throw { statusCode: 400, message: `Item ${index + 1}: invalid price (must be a positive number)` }
+        throw { statusCode: 400, message: `Invalid item price/qty: item ${index + 1} has invalid price (must be a positive number)` }
       }
 
       if (!Number.isInteger(qty) || qty <= 0) {
-        throw { statusCode: 400, message: `Item ${index + 1}: invalid quantity (must be a positive integer)` }
+        throw { statusCode: 400, message: `Invalid item price/qty: item ${index + 1} has invalid quantity (must be a positive integer)` }
       }
 
       return {
@@ -66,6 +80,11 @@ router.post('/', async (req, res) => {
     totalPrice = Math.max(0, totalPrice - discount)
     totalPrice = Math.round(totalPrice) // Ensure integer
 
+    // Final validation: totalPrice must be finite
+    if (!Number.isFinite(totalPrice)) {
+      return res.status(400).json({ error: 'Invalid total price' })
+    }
+
     // Convert normalized items to JSON-safe plain objects
     const itemsJson = normalizedItems.map(item => ({
       productId: item.productId ?? null,
@@ -99,8 +118,16 @@ router.post('/', async (req, res) => {
       discount: discount > 0 ? discount : null,
     }
 
+    // Safely parse BigInt for tgId
+    let tgIdBigInt: bigint
+    try {
+      tgIdBigInt = BigInt(data.user.tgId)
+    } catch (error) {
+      console.error('[POST /api/orders] Invalid tgId:', data.user.tgId, error)
+      return res.status(400).json({ error: 'Invalid tgId' })
+    }
+
     // Create order
-    const tgIdBigInt = BigInt(data.user.tgId)
     const order = await prisma.order.create({
       data: {
         id: uuidv4(),
@@ -111,7 +138,7 @@ router.post('/', async (req, res) => {
       },
     })
 
-    // Notify admins
+    // Notify admins and client
     try {
       const orderForNotification = {
         ...order,
