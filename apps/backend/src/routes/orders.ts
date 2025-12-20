@@ -183,7 +183,17 @@ router.post('/', async (req, res) => {
       },
     })
 
+    // Log order creation
+    console.log('[ORDER CREATED]', {
+      orderId: order.id,
+      tgId: String(tgIdBigInt),
+      total: totalPrice,
+      itemsCount: normalizedItems.length,
+      status: order.status,
+    })
+
     // Notify admins and client
+    let notifySuccess = false
     try {
       const orderForNotification = {
         ...order,
@@ -193,8 +203,10 @@ router.post('/', async (req, res) => {
         updatedAt: order.updatedAt.toISOString(),
       }
       await notifyAdminsAboutOrder(orderForNotification as any)
+      notifySuccess = true
+      console.log('[ORDER NOTIFY] success', { orderId: order.id })
     } catch (error) {
-      console.error('Failed to notify admins:', error)
+      console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
       // Don't fail the request if notification fails
     }
 
@@ -203,10 +215,10 @@ router.post('/', async (req, res) => {
       success: true,
       id: order.id,
       orderId: order.id, // Alias for compatibility
-      ...order,
-      items: order.items as any,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      status: order.status,
+      total: order.total,
     })
   } catch (error: any) {
     // Handle custom validation errors (thrown with statusCode: 400)
@@ -229,10 +241,22 @@ router.post('/', async (req, res) => {
 // GET /api/orders?tgId=... - Get orders by Telegram ID
 router.get('/', async (req, res) => {
   try {
-    const tgId = req.query.tgId ? BigInt(String(req.query.tgId)) : null
+    const tgIdRaw = req.query.tgId ? String(req.query.tgId).trim() : null
 
-    if (!tgId) {
+    if (!tgIdRaw) {
       return res.status(400).json({ error: 'tgId is required' })
+    }
+
+    // Log incoming tgId
+    console.log('[GET /api/orders] Requested tgId:', tgIdRaw)
+
+    // Parse tgId to BigInt
+    let tgId: bigint
+    try {
+      tgId = BigInt(tgIdRaw)
+    } catch (error) {
+      console.error('[GET /api/orders] Invalid tgId:', tgIdRaw, error)
+      return res.status(400).json({ error: 'Invalid tgId' })
     }
 
     const orders = await prisma.order.findMany({
@@ -240,14 +264,20 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' },
     })
     
-    res.json(orders.map(o => ({
+    // Serialize orders - convert BigInt tgId to string
+    const serializedOrders = orders.map(o => ({
       ...o,
+      tgId: String(o.tgId), // Serialize BigInt to string
       items: o.items as any,
       createdAt: o.createdAt.toISOString(),
       updatedAt: o.updatedAt.toISOString(),
-    })))
+    }))
+    
+    console.log('[GET /api/orders] Found orders:', { tgId: String(tgId), count: serializedOrders.length })
+    
+    res.json(serializedOrders)
   } catch (error: any) {
-    console.error('Error fetching orders:', error)
+    console.error('[GET /api/orders] Error fetching orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })
   }
 })

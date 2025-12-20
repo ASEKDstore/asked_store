@@ -256,37 +256,52 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
     // Read admin IDs from environment variable (comma-separated)
     const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
     if (!adminIdsEnv) {
-      console.warn('TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
-    } else {
-      // Parse comma-separated admin IDs
-      const adminIds = adminIdsEnv
-        .split(',')
-        .map(id => id.trim())
-        .filter(id => id.length > 0)
-        .map(id => {
-          const numId = Number(id)
-          return Number.isFinite(numId) ? numId : null
-        })
-        .filter((id): id is number => id !== null)
-
-      if (adminIds.length === 0) {
-        console.warn('No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
-      } else {
-        // Send to all admins (continue even if some fail)
-        const results = await Promise.allSettled(
-          adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
-        )
-
-        // Log results
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.error(`Failed to send notification to admin ${adminIds[index]}:`, result.reason)
-          } else if (result.value && !result.value.success) {
-            // Already logged in sendMessage for 403/400 cases
-          }
-        })
-      }
+      console.warn('[ORDER NOTIFY] TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
+      return
     }
+
+    // Parse comma-separated admin IDs
+    const adminIds = adminIdsEnv
+      .split(',')
+      .map(id => id.trim())
+      .filter(id => id.length > 0)
+      .map(id => {
+        const numId = Number(id)
+        return Number.isFinite(numId) ? numId : null
+      })
+      .filter((id): id is number => id !== null)
+
+    if (adminIds.length === 0) {
+      console.warn('[ORDER NOTIFY] No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
+      return
+    }
+
+    // Send to all admins (continue even if some fail)
+    const results = await Promise.allSettled(
+      adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
+    )
+
+    // Log results
+    let successCount = 0
+    let failCount = 0
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`[ORDER NOTIFY] Failed to send notification to admin ${adminIds[index]}:`, result.reason)
+        failCount++
+      } else if (result.value && result.value.success) {
+        successCount++
+      } else if (result.value && !result.value.success) {
+        // Already logged in sendMessage for 403/400 cases
+        failCount++
+      }
+    })
+
+    console.log('[ORDER NOTIFY]', {
+      orderId: order.id,
+      totalAdmins: adminIds.length,
+      success: successCount,
+      failed: failCount,
+    })
 
     // Notify client (don't wait, don't fail if it fails)
     notifyClientAboutOrder(order).catch(error => {

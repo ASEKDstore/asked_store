@@ -46,7 +46,25 @@ router.get('/', async (req, res) => {
       })
     }
     
-    res.json(filtered)
+    // Serialize orders - convert BigInt tgId to string and add totalPrice
+    const serialized = filtered.map(o => {
+      const orderData = o.items as any
+      return {
+        ...o,
+        tgId: String(o.tgId), // Serialize BigInt to string
+        items: orderData?.items || orderData || [],
+        totalPrice: o.total, // Map total to totalPrice for frontend
+        user: orderData?.user || {},
+        delivery: orderData?.delivery || {},
+        comment: orderData?.comment || null,
+        promoCode: orderData?.promoCode || null,
+        discount: orderData?.discount || null,
+        createdAt: o.createdAt.toISOString(),
+        updatedAt: o.updatedAt.toISOString(),
+      }
+    })
+    
+    res.json(serialized)
   } catch (error: any) {
     console.error('Error fetching admin orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })
@@ -65,7 +83,23 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' })
     }
     
-    res.json(order)
+    // Serialize order - convert BigInt tgId to string
+    const orderData = order.items as any
+    const serialized = {
+      ...order,
+      tgId: String(order.tgId), // Serialize BigInt to string
+      items: orderData?.items || orderData || [],
+      totalPrice: order.total, // Map total to totalPrice for frontend
+      user: orderData?.user || {},
+      delivery: orderData?.delivery || {},
+      comment: orderData?.comment || null,
+      promoCode: orderData?.promoCode || null,
+      discount: orderData?.discount || null,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    }
+    
+    res.json(serialized)
   } catch (error: any) {
     console.error('Error fetching order:', error)
     res.status(500).json({ error: 'Failed to fetch order' })
@@ -87,7 +121,23 @@ router.patch('/:id', async (req, res) => {
       data: { status },
     })
     
-    res.json(order)
+    // Serialize order - convert BigInt tgId to string
+    const orderData = order.items as any
+    const serialized = {
+      ...order,
+      tgId: String(order.tgId), // Serialize BigInt to string
+      items: orderData?.items || orderData || [],
+      totalPrice: order.total, // Map total to totalPrice for frontend
+      user: orderData?.user || {},
+      delivery: orderData?.delivery || {},
+      comment: orderData?.comment || null,
+      promoCode: orderData?.promoCode || null,
+      discount: orderData?.discount || null,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    }
+    
+    res.json(serialized)
   } catch (error: any) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Order not found' })

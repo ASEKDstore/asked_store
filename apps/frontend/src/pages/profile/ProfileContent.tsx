@@ -22,17 +22,30 @@ export const ProfileContent: React.FC = () => {
   })
 
   const loadOrders = async () => {
-    if (!user.tgId || user.source === 'guest') {
+    // Check if user has valid tgId
+    if (!user.tgId || user.source === 'guest' || user.tgId === 0) {
+      setOrdersLoading(false)
+      return
+    }
+
+    // Get tgId from Telegram WebApp if available (more reliable)
+    const tgWebApp = (window as any).Telegram?.WebApp
+    const tgUser = tgWebApp?.initDataUnsafe?.user
+    const tgId = tgUser?.id ? Number(tgUser.id) : user.tgId
+
+    if (!tgId || !Number.isFinite(tgId)) {
+      console.warn('[ProfileContent] Invalid tgId, cannot load orders')
       setOrdersLoading(false)
       return
     }
 
     try {
       setOrdersLoading(true)
-      const data = await requestJson<Order[]>(`/api/orders?tgId=${user.tgId}`)
-      setOrders(data)
+      const data = await requestJson<Order[]>(`/api/orders?tgId=${tgId}`)
+      setOrders(data || [])
     } catch (error) {
       console.error('Error loading orders:', error)
+      setOrders([])
     } finally {
       setOrdersLoading(false)
     }
