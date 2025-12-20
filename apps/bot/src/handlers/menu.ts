@@ -8,6 +8,8 @@ export enum MenuActions {
   OPEN_APP = 'OPEN_APP',
   MY_ORDERS = 'MY_ORDERS',
   ASKED_LAB = 'ASKED_LAB',
+  SUBSCRIBE_NEWS = 'SUBSCRIBE_NEWS',
+  UNSUBSCRIBE_NEWS = 'UNSUBSCRIBE_NEWS',
 }
 
 /**
@@ -51,3 +53,6 @@ export async function handleOpenApp(ctx: Context) {
     console.error('❌ Error in handleOpenApp:', error)
   }
 }
+
+// Backward-compatible exports
+export { handleSubscribeNews, handleUnsubscribeNews } from "./subscribe.js";

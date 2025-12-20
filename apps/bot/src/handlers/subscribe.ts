@@ -51,3 +51,38 @@ export async function handleStop(ctx: Context) {
     await ctx.reply('Произошла ошибка. Попробуйте позже.')
   }
 }
+
+/**
+ * Handle SUBSCRIBE_NEWS action
+ */
+export async function handleSubscribeNews(ctx: Context) {
+  try {
+    await ctx.answerCbQuery('✅ Подписка активирована!')
+    
+    const user = ctx.from
+    if (!user) return
+
+    const success = await addSubscriber(user.id, true)
+    
+    if (success) {
+      await ctx.reply('✅ Вы подписаны на новости ASKED Store!\n\nВы будете получать уведомления о дропах, новинках и акциях.')
+    } else {
+      await ctx.reply('❌ Произошла ошибка при подписке. Попробуйте позже.')
+    }
+  } catch (error) {
+    console.error('❌ Error in handleSubscribeNews:', error)
+    await ctx.answerCbQuery('❌ Ошибка при подписке')
+  }
+}
+
+/**
+ * Handle UNSUBSCRIBE_NEWS action
+ */
+export async function handleUnsubscribeNews(ctx: Context) {
+  try {
+    await ctx.answerCbQuery('Вы отписались')
+    await handleStop(ctx)
+  } catch (error) {
+    console.error('❌ Error in handleUnsubscribeNews:', error)
+  }
+}

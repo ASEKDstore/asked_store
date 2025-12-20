@@ -389,7 +389,7 @@ export async function startFlow(
         await updateUserState(tgId, {
           activeFlowId: flow.flow.id,
           activeFlowVersion: version,
-          currentNodeId: fallbackNodeId,
+          currentNodeId: guardCheck.fallbackNodeId,
           context: {},
         })
         return { node: fallbackNode }
