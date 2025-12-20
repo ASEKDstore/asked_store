@@ -1,8 +1,6 @@
 import { Telegraf } from 'telegraf'
 import { config } from './config.js'
 import { handleStart } from './handlers/start.js'
-import { handleStartWithFlow } from './handlers/flowHandler.js'
-import { handleFlowCallback } from './handlers/flowHandler.js'
 import { handleStartV2, handleFlowCallbackV2, handleFlowTextV2 } from './handlers/flowHandlerV2.js'
 import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp, handleSubscribeNews, handleUnsubscribeNews } from './handlers/menu.js'
 import { handleStop } from './handlers/subscribe.js'
@@ -18,13 +16,12 @@ if (process.env.EMOJI_CAPTURE === '1') {
 }
 
 // Register /start command handler (V2 with new FlowEngine)
-// Falls back to V1 if V2 fails
 bot.start(async (ctx) => {
   try {
     await handleStartV2(ctx)
   } catch (error) {
     console.warn('[BOT] V2 handler failed, falling back to V1:', error)
-    await handleStartWithFlow(ctx)
+    await handleStart(ctx)
   }
 })
 
@@ -35,8 +32,7 @@ bot.on('callback_query', async (ctx) => {
     try {
       await handleFlowCallbackV2(ctx)
     } catch (error) {
-      console.warn('[BOT] V2 callback handler failed, falling back to V1:', error)
-      await handleFlowCallback(ctx)
+      console.warn('[BOT] V2 callback handler failed:', error)
     }
   }
 })
@@ -54,15 +50,10 @@ bot.on('text', async (ctx) => {
 // Register /stop command handler
 bot.command('stop', handleStop)
 
-// Register /stop command handler
-bot.command('stop', handleStop)
-
 // Register menu action handlers
 bot.action(MenuActions.MY_ORDERS, handleMyOrders)
 bot.action(MenuActions.ASKED_LAB, handleAskedLab)
 bot.action(MenuActions.OPEN_APP, handleOpenApp)
-bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
-bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
 bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 
