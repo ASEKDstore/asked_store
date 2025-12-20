@@ -118,7 +118,7 @@ export async function renderNode(
           body: JSON.stringify(payload),
         })
 
-        const result = await response.json()
+        const result = (await response.json()) as any
         if (response.ok && result.ok) {
           return lastMessageId
         }
@@ -151,7 +151,7 @@ export async function renderNode(
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      const result = (await response.json()) as any
       if (response.ok && result.ok) {
         return result.result.message_id
       } else {
@@ -197,7 +197,7 @@ export async function renderNode(
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      const result = (await response.json()) as any
       if (response.ok && result.ok) {
         return result.result.message_id
       } else {

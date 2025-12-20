@@ -1,8 +1,8 @@
 import { Telegraf } from 'telegraf'
 import { config } from './config.js'
 import { handleStart } from './handlers/start.js'
-import { handleStartWithFlow } from './handlers/flowHandler.js'
-import { handleFlowCallback } from './handlers/flowHandler.js'
+
+
 import { handleStartV2, handleFlowCallbackV2, handleFlowTextV2 } from './handlers/flowHandlerV2.js'
 import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp, handleSubscribeNews, handleUnsubscribeNews } from './handlers/menu.js'
 import { handleStop } from './handlers/subscribe.js'
@@ -24,7 +24,7 @@ bot.start(async (ctx) => {
     await handleStartV2(ctx)
   } catch (error) {
     console.warn('[BOT] V2 handler failed, falling back to V1:', error)
-    await handleStartWithFlow(ctx)
+    await handleStart(ctx)
   }
 })
 
@@ -36,7 +36,7 @@ bot.on('callback_query', async (ctx) => {
       await handleFlowCallbackV2(ctx)
     } catch (error) {
       console.warn('[BOT] V2 callback handler failed, falling back to V1:', error)
-      await handleFlowCallback(ctx)
+      // Removed: V2 only
     }
   }
 })
