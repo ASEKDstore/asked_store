@@ -1,32 +1,36 @@
-import { Context } from 'telegraf'
+/**
+ * Subscribe/Unsubscribe handlers
+ */
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.API_URL || 'http://localhost:4000'
+import { Context } from 'telegraf'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 /**
- * Добавить/обновить подписчика через backend API
+ * Add or update subscriber
  */
-export async function addSubscriber(tgId: number, enabled: boolean = true): Promise<boolean> {
+export async function addSubscriber(tgId: number, isActive: boolean): Promise<boolean> {
   try {
-    const response = await fetch(`${BACKEND_API_URL}/api/admin/telegram/subscribers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tgId, enabled }),
+    await prisma.telegramSubscriber.upsert({
+      where: { tgId: BigInt(tgId) },
+      create: {
+        tgId: BigInt(tgId),
+        isActive,
+      },
+      update: {
+        isActive,
+      },
     })
-
-    if (!response.ok) {
-      console.error(`[SUBSCRIBE] Failed to add subscriber ${tgId}:`, await response.text())
-      return false
-    }
-
     return true
   } catch (error) {
-    console.error(`[SUBSCRIBE] Error adding subscriber ${tgId}:`, error)
+    console.error('[SUBSCRIBE] Error adding subscriber:', error)
     return false
   }
 }
 
 /**
- * Обработчик команды /stop
+ * Handle /stop command
  */
 export async function handleStop(ctx: Context) {
   try {
@@ -38,13 +42,12 @@ export async function handleStop(ctx: Context) {
     const success = await addSubscriber(user.id, false)
     
     if (success) {
-      await ctx.reply('✅ Вы отписались от рассылки новостей.\n\nЧтобы подписаться снова, используйте /start')
+      await ctx.reply('Вы отписались от новостей ASKED Store.')
     } else {
       await ctx.reply('❌ Произошла ошибка при отписке. Попробуйте позже.')
     }
   } catch (error) {
     console.error('❌ Error in handleStop:', error)
-    await ctx.reply('Произошла ошибка при обработке команды. Попробуйте позже.')
+    await ctx.reply('Произошла ошибка. Попробуйте позже.')
   }
 }
-

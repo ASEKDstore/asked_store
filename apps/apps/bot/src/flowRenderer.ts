@@ -118,10 +118,10 @@ export async function renderNode(
           body: JSON.stringify(payload),
         })
 
-        const result = await response.json()
-        if (response.ok && result.ok) {
-          return lastMessageId
-        }
+      const result = await response.json() as any
+      if (response.ok && result.ok) {
+        return lastMessageId
+      }
       } catch (error) {
         console.warn('[FLOW RENDERER] Edit failed, falling back to send:', error)
         // Fall through to send new message
@@ -151,7 +151,7 @@ export async function renderNode(
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      const result = await response.json() as any
       if (response.ok && result.ok) {
         return result.result.message_id
       } else {
@@ -197,7 +197,7 @@ export async function renderNode(
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      const result = await response.json() as any
       if (response.ok && result.ok) {
         return result.result.message_id
       } else {

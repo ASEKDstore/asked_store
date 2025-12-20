@@ -54,10 +54,15 @@ bot.on('text', async (ctx) => {
 // Register /stop command handler
 bot.command('stop', handleStop)
 
+// Register /stop command handler
+bot.command('stop', handleStop)
+
 // Register menu action handlers
 bot.action(MenuActions.MY_ORDERS, handleMyOrders)
 bot.action(MenuActions.ASKED_LAB, handleAskedLab)
 bot.action(MenuActions.OPEN_APP, handleOpenApp)
+bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
+bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
 bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 

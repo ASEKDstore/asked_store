@@ -110,7 +110,7 @@ export async function findFlowByEntryPoint(entryPoint: EntryPoint): Promise<BotF
     })
     
     // Filter flows that have this entry point
-    const matchingFlows = flows.filter(flow => {
+    const matchingFlows = flows.filter((flow: any) => {
       const entryPoints = flow.entryPoints as any
       if (!Array.isArray(entryPoints)) return false
       return entryPoints.includes(entryPoint)
@@ -138,7 +138,7 @@ export async function findFlowByEntryPoint(entryPoint: EntryPoint): Promise<BotF
           entryPoints: flow.entryPoints as string[],
           startNodeId: flow.startNodeId || null,
         },
-        nodes: nodes.map(n => ({
+        nodes: nodes.map((n: any) => ({
           id: n.id,
           title: n.title,
           type: n.type as any,
@@ -389,7 +389,7 @@ export async function startFlow(
         await updateUserState(tgId, {
           activeFlowId: flow.flow.id,
           activeFlowVersion: version,
-          currentNodeId: fallbackNodeId,
+          currentNodeId: guardCheck.fallbackNodeId,
           context: {},
         })
         return { node: fallbackNode }
@@ -453,7 +453,7 @@ export async function processEvent(
         entryPoints: flowRecord.entryPoints as string[],
         startNodeId: flowRecord.startNodeId || null,
       },
-      nodes: nodes.map(n => ({
+      nodes: nodes.map((n: any) => ({
         id: n.id,
         title: n.title,
         type: n.type as any,
