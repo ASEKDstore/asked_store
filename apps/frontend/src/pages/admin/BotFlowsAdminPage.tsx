@@ -1,3 +1,6 @@
+// Legacy BotFlowsAdminPage - replaced by BotFlowsAdminPageV2
+// Keeping for backward compatibility during migration
+
 import { useState, useEffect } from 'react'
 import { useAdminApi } from '../../api/adminApi'
 import './AdminPages.css'

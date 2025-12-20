@@ -1,266 +1,204 @@
-import { useUser } from '../context/UserContext'
-import { requestJson } from '../lib/apiClient'
+import { requestJson, request } from '../lib/apiClient'
 
 /**
- * Единый fetch wrapper для админки
- * Использует централизованный apiClient с автоматической авторизацией
+ * Admin API client
+ * All endpoints require admin authentication
  */
-async function adminFetch<T>(
-  endpoint: string,
-  tgId: number,
-  options: RequestInit = {},
-  timeoutMs: number = 3000
-): Promise<T> {
-  if (!tgId) {
-    throw new Error('No tgId')
-  }
 
-  // Use centralized apiClient which handles auth automatically
-  return requestJson<T>(endpoint, {
-    ...options,
-    timeoutMs,
-  })
-}
-
-export function createAdminApi(tgId: number) {
+function useAdminApi() {
   return {
-    // Orders
-    getOrders: (params?: { status?: string; q?: string; from?: string; to?: string }) => {
-      const query = new URLSearchParams()
-      if (params?.status) query.append('status', params.status)
-      if (params?.q) query.append('q', params.q)
-      if (params?.from) query.append('from', params.from)
-      if (params?.to) query.append('to', params.to)
-      const queryString = query.toString()
-      return adminFetch(`/api/admin/orders${queryString ? `?${queryString}` : ''}`, tgId)
-    },
-
-    getOrder: (id: string) =>
-      adminFetch(`/api/admin/orders/${id}`, tgId),
-
-    patchOrder: (id: string, status: string) =>
-      adminFetch(`/api/admin/orders/${id}`, tgId, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }),
-
-    // Products
-    getProducts: (params?: { q?: string; category?: string; available?: string }) => {
-      const query = new URLSearchParams()
-      if (params?.q) query.append('q', params.q)
-      if (params?.category) query.append('category', params.category)
-      if (params?.available) query.append('available', params.available)
-      const queryString = query.toString()
-      return adminFetch(`/api/admin/products${queryString ? `?${queryString}` : ''}`, tgId)
-    },
-
-    createProduct: (data: any) =>
-      adminFetch('/api/admin/products', tgId, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    updateProduct: (id: string, data: any) =>
-      adminFetch(`/api/admin/products/${id}`, tgId, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
-
-    deleteProduct: (id: string) =>
-      adminFetch(`/api/admin/products/${id}`, tgId, {
-        method: 'DELETE',
-      }),
-
-    // Promos
-    getPromos: () =>
-      adminFetch('/api/admin/promos', tgId),
-
-    createPromo: (data: any) =>
-      adminFetch('/api/admin/promos', tgId, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    generatePromos: (data: any) =>
-      adminFetch('/api/admin/promos/generate', tgId, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    updatePromo: (id: string, data: any) =>
-      adminFetch(`/api/admin/promos/${id}`, tgId, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      }),
-
-    deletePromo: (id: string) =>
-      adminFetch(`/api/admin/promos/${id}`, tgId, {
-        method: 'DELETE',
-      }),
-
-    // Admins
-    getAdmins: () =>
-      adminFetch('/api/admin/admins', tgId),
-
-    addAdmin: (newTgId: number) =>
-      adminFetch('/api/admin/admins', tgId, {
-        method: 'POST',
-        body: JSON.stringify({ tgId: newTgId }),
-      }),
-
-    removeAdmin: (tgIdToRemove: number) =>
-      adminFetch(`/api/admin/admins/${tgIdToRemove}`, tgId, {
-        method: 'DELETE',
-      }),
-
-    // Stats
-    getStats: (params?: { from?: string; to?: string }) => {
-      const query = new URLSearchParams()
-      if (params?.from) query.append('from', params.from)
-      if (params?.to) query.append('to', params.to)
-      const queryString = query.toString()
-      return adminFetch(`/api/admin/stats${queryString ? `?${queryString}` : ''}`, tgId)
-    },
-
-    // Settings
-    getSettings: () =>
-      adminFetch('/api/admin/settings', tgId),
-
-    patchSettings: (data: { maintenanceMode?: boolean; home?: { showBanners: boolean; showTiles: boolean; showLab: boolean } }) =>
-      adminFetch('/api/admin/settings', tgId, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      }),
-
-    // Telegram
-    sendTelegramPost: (data: {
-      mode: 'channel' | 'broadcast' | 'both'
-      channelChatId: string
-      text: string
-      imageUrl?: string
-      buttons?: Array<{ text: string; url: string }>
-      parseMode?: 'HTML' | 'MarkdownV2'
-      disableWebPagePreview?: boolean
-    }) =>
-      adminFetch('/api/admin/telegram/post', tgId, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    // Telegram Subscribers
-    getTelegramSubscribers: () =>
-      adminFetch('/api/admin/telegram/subscribers', tgId),
-
-    toggleTelegramSubscriber: (tgId: number) =>
-      adminFetch(`/api/admin/telegram/subscribers/${tgId}/toggle`, tgId, {
-        method: 'POST',
-      }),
-
-    // Bot Flows
+    // Bot Flows (Extended API)
     getBotFlows: () =>
-      adminFetch('/api/admin/bot/flows', tgId),
+      requestJson('/api/admin/bot/flows'),
 
     getBotFlow: (id: string) =>
-      adminFetch(`/api/admin/bot/flows/${id}`, tgId),
+      requestJson(`/api/admin/bot/flows/${id}`),
 
     createBotFlow: (data: any) =>
-      adminFetch('/api/admin/bot/flows', tgId, {
+      requestJson('/api/admin/bot/flows', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
     updateBotFlow: (id: string, data: any) =>
-      adminFetch(`/api/admin/bot/flows/${id}`, tgId, {
+      requestJson(`/api/admin/bot/flows/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
 
     deleteBotFlow: (id: string) =>
-      adminFetch(`/api/admin/bot/flows/${id}`, tgId, {
+      request(`/api/admin/bot/flows/${id}`, {
         method: 'DELETE',
       }),
 
+    duplicateBotFlow: (id: string, data?: { key?: string; name?: string }) =>
+      requestJson(`/api/admin/bot/flows/${id}/duplicate`, {
+        method: 'POST',
+        body: JSON.stringify(data || {}),
+      }),
+
+    publishBotFlow: (id: string, adminTgId: number) =>
+      requestJson(`/api/admin/bot/flows/${id}/publish`, {
+        method: 'POST',
+        body: JSON.stringify({ adminTgId }),
+      }),
+
+    rollbackBotFlow: (id: string, version: number, adminTgId: number) =>
+      requestJson(`/api/admin/bot/flows/${id}/rollback`, {
+        method: 'POST',
+        body: JSON.stringify({ version, adminTgId }),
+      }),
+
+    archiveBotFlow: (id: string) =>
+      requestJson(`/api/admin/bot/flows/${id}/archive`, {
+        method: 'POST',
+      }),
+
+    getBotFlowNodes: (flowId: string) =>
+      requestJson(`/api/admin/bot/flows/${flowId}/nodes`),
+
+    updateBotFlowNodes: (flowId: string, nodes: any[]) =>
+      requestJson(`/api/admin/bot/flows/${flowId}/nodes`, {
+        method: 'PUT',
+        body: JSON.stringify(nodes),
+      }),
+
+    // Preview
+    previewBotFlow: (data: {
+      flowId: string
+      version?: 'draft' | number
+      state?: any
+      event?: { type: 'start' | 'callback' | 'text' | 'webapp'; value?: string; payload?: any }
+      telegramUserId?: bigint
+    }) =>
+      requestJson('/api/admin/bot/preview/run', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    // Legacy (for backward compatibility)
     testBotFlow: (id: string, stepId?: string) =>
-      adminFetch(`/api/admin/bot/flows/${id}/test`, tgId, {
+      requestJson(`/api/admin/bot/flows/${id}/test`, {
         method: 'POST',
         body: JSON.stringify({ stepId }),
       }),
 
-    // Banners
+    // ... existing admin API methods ...
+    getOrders: () =>
+      requestJson('/api/admin/orders'),
+
+    getOrder: (id: string) =>
+      requestJson(`/api/admin/orders/${id}`),
+
+    updateOrderStatus: (id: string, status: string) =>
+      requestJson(`/api/admin/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      }),
+
+    getProducts: () =>
+      requestJson('/api/admin/products'),
+
+    getProduct: (id: string) =>
+      requestJson(`/api/admin/products/${id}`),
+
+    createProduct: (data: any) =>
+      requestJson('/api/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateProduct: (id: string, data: any) =>
+      requestJson(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    deleteProduct: (id: string) =>
+      request(`/api/admin/products/${id}`, {
+        method: 'DELETE',
+      }),
+
     getBanners: () =>
-      adminFetch('/api/admin/banners', tgId),
+      requestJson('/api/admin/banners'),
+
+    getBanner: (id: string) =>
+      requestJson(`/api/admin/banners/${id}`),
 
     createBanner: (data: any) =>
-      adminFetch('/api/admin/banners', tgId, {
+      requestJson('/api/admin/banners', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
     updateBanner: (id: string, data: any) =>
-      adminFetch(`/api/admin/banners/${id}`, tgId, {
+      requestJson(`/api/admin/banners/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
 
     deleteBanner: (id: string) =>
-      adminFetch(`/api/admin/banners/${id}`, tgId, {
+      request(`/api/admin/banners/${id}`, {
         method: 'DELETE',
       }),
 
-    // Lab Artists
-    getLabArtists: () =>
-      adminFetch('/api/admin/lab/artists', tgId),
+    getPromos: () =>
+      requestJson('/api/admin/promos'),
 
-    createLabArtist: (data: any) =>
-      adminFetch('/api/admin/lab/artists', tgId, {
+    getPromo: (id: string) =>
+      requestJson(`/api/admin/promos/${id}`),
+
+    createPromo: (data: any) =>
+      requestJson('/api/admin/promos', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    updateLabArtist: (id: string, data: any) =>
-      adminFetch(`/api/admin/lab/artists/${id}`, tgId, {
+    updatePromo: (id: string, data: any) =>
+      requestJson(`/api/admin/promos/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
 
-    deleteLabArtist: (id: string) =>
-      adminFetch(`/api/admin/lab/artists/${id}`, tgId, {
+    deletePromo: (id: string) =>
+      request(`/api/admin/promos/${id}`, {
         method: 'DELETE',
       }),
 
-    // Lab Products
-    getLabProducts: (artistId?: string) => {
-      const url = artistId
-        ? `/api/admin/lab/products?artistId=${artistId}`
-        : '/api/admin/lab/products'
-      return adminFetch(url, tgId)
-    },
+    getSettings: () =>
+      requestJson('/api/admin/settings'),
 
-    createLabProduct: (data: any) =>
-      adminFetch('/api/admin/lab/products', tgId, {
+    updateSetting: (key: string, value: any) =>
+      requestJson(`/api/admin/settings/${key}`, {
+        method: 'PUT',
+        body: JSON.stringify({ value }),
+      }),
+
+    getStats: () =>
+      requestJson('/api/admin/stats'),
+
+    getAdmins: () =>
+      requestJson('/api/admin/admins'),
+
+    createAdmin: (data: any) =>
+      requestJson('/api/admin/admins', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    updateLabProduct: (id: string, data: any) =>
-      adminFetch(`/api/admin/lab/products/${id}`, tgId, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
-
-    deleteLabProduct: (id: string) =>
-      adminFetch(`/api/admin/lab/products/${id}`, tgId, {
+    deleteAdmin: (tgId: number) =>
+      request(`/api/admin/admins/${tgId}`, {
         method: 'DELETE',
       }),
+
+    getTelegramSubscribers: () =>
+      requestJson('/api/admin/telegram/subscribers'),
+
+    toggleTelegramSubscriber: (tgId: number) =>
+      request(`/api/admin/telegram/subscribers/${tgId}/toggle`, {
+        method: 'POST',
+      }),
   }
 }
 
-// Hook version
-export function useAdminApi() {
-  const { user } = useUser()
-  if (!user.tgId || user.source === 'guest') {
-    throw new Error('User not authenticated')
-  }
-  return createAdminApi(user.tgId)
-}
-
+export { useAdminApi }

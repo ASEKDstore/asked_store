@@ -32,7 +32,7 @@ const AdminsAdminPage = lazy(() => import('./pages/admin/AdminsAdminPage').then(
 const SettingsAdminPage = lazy(() => import('./pages/admin/SettingsAdminPage').then(m => ({ default: m.SettingsAdminPage })))
 const HomeAdminPage = lazy(() => import('./pages/admin/HomeAdminPage').then(m => ({ default: m.HomeAdminPage })))
 const TelegramPostAdminPage = lazy(() => import('./pages/admin/TelegramPostAdminPage').then(m => ({ default: m.TelegramPostAdminPage })))
-const BotFlowsAdminPage = lazy(() => import('./pages/admin/BotFlowsAdminPage').then(m => ({ default: m.BotFlowsAdminPage })))
+const BotFlowsAdminPage = lazy(() => import('./pages/admin/BotFlowsAdminPageV2').then(m => ({ default: m.BotFlowsAdminPageV2 })))
 const LabPage = lazy(() => import('./pages/LabPage').then(m => ({ default: m.LabPage })))
 const LabOrderPage = lazy(() => import('./pages/LabOrderPage').then(m => ({ default: m.LabOrderPage })))
 const LabWorkDetailsPage = lazy(() => import('./pages/LabWorkDetailsPage').then(m => ({ default: m.LabWorkDetailsPage })))
