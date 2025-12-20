@@ -276,22 +276,77 @@ export async function requestJson<T = any>(
   const text = await response.text().catch(() => '')
   
   if (!response.ok) {
+    // Build full URL for logging
+    const url = apiUrl(path)
+    
+    // Get request payload for logging
+    const requestPayload = options.body ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)) : null
+    
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+    let errorData: any = null
+    
     try {
-      const errorData = text ? JSON.parse(text) : {}
+      errorData = text ? JSON.parse(text) : {}
+      
+      // Extract error message from response
       if (errorData.message) {
-        errorMessage = `HTTP ${response.status}: ${errorData.message}`
+        // If message is a string, use it directly
+        if (typeof errorData.message === 'string') {
+          errorMessage = errorData.message
+        } else {
+          // If message is an object/array, stringify it
+          errorMessage = JSON.stringify(errorData.message)
+        }
       } else if (errorData.error) {
-        errorMessage = `HTTP ${response.status}: ${errorData.error}`
+        // If error is a string, use it directly
+        if (typeof errorData.error === 'string') {
+          errorMessage = errorData.error
+        } else {
+          // If error is an object/array, stringify it
+          errorMessage = JSON.stringify(errorData.error)
+        }
       } else if (text) {
-        errorMessage = `HTTP ${response.status}: ${text}`
+        // If response is a string, try to parse it
+        try {
+          const parsed = JSON.parse(text)
+          if (typeof parsed === 'string') {
+            errorMessage = parsed
+          } else {
+            errorMessage = JSON.stringify(parsed)
+          }
+        } catch {
+          // If not JSON, use text as-is
+          errorMessage = text
+        }
       }
     } catch {
       if (text) {
-        errorMessage = `HTTP ${response.status}: ${text}`
+        errorMessage = text
       }
     }
-    throw new Error(errorMessage)
+    
+    // For HTTP 400, log detailed information to console
+    if (response.status === 400) {
+      console.error('[API Client] HTTP 400 Error Details:')
+      console.error('  Endpoint URL:', url)
+      console.error('  Request Payload:', requestPayload)
+      console.error('  Response Body:', text)
+      if (errorData) {
+        console.error('  Parsed Error Data:', errorData)
+      }
+    }
+    
+    // Create error object with additional context
+    const error = new Error(errorMessage) as any
+    error.response = {
+      status: response.status,
+      statusText: response.statusText,
+      data: errorData || text,
+    }
+    error.url = url
+    error.requestPayload = requestPayload
+    
+    throw error
   }
   
   return text ? JSON.parse(text) : ({} as T)

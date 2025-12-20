@@ -157,7 +157,33 @@ export const BotFlowsAdminPageV2: React.FC = () => {
       setViewMode('list')
       await loadFlows()
     } catch (err: any) {
-      setError(err.message || 'Ошибка при сохранении')
+      // Extract error message from response
+      let errorMessage = 'Ошибка при сохранении'
+      
+      if (err.response) {
+        const responseData = err.response.data
+        if (responseData) {
+          if (typeof responseData.message === 'string') {
+            errorMessage = responseData.message
+          } else if (responseData.message) {
+            errorMessage = JSON.stringify(responseData.message)
+          } else if (typeof responseData.error === 'string') {
+            errorMessage = responseData.error
+          } else if (responseData.error) {
+            errorMessage = JSON.stringify(responseData.error)
+          } else if (typeof responseData === 'string') {
+            errorMessage = responseData
+          } else {
+            errorMessage = JSON.stringify(responseData)
+          }
+        } else if (err.message) {
+          errorMessage = err.message
+        }
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
