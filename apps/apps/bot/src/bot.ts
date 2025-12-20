@@ -3,6 +3,7 @@ import { config } from './config.js'
 import { handleStart } from './handlers/start.js'
 import { handleStartWithFlow } from './handlers/flowHandler.js'
 import { handleFlowCallback } from './handlers/flowHandler.js'
+import { handleStartV2, handleFlowCallbackV2, handleFlowTextV2 } from './handlers/flowHandlerV2.js'
 import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp, handleSubscribeNews, handleUnsubscribeNews } from './handlers/menu.js'
 import { handleStop } from './handlers/subscribe.js'
 import { emojiCaptureMiddleware } from './tools/emojiCapture.js'
@@ -16,14 +17,37 @@ if (process.env.EMOJI_CAPTURE === '1') {
   console.log('📸 Emoji capture mode enabled')
 }
 
-// Register /start command handler (с поддержкой flows)
-bot.start(handleStartWithFlow)
+// Register /start command handler (V2 with new FlowEngine)
+// Falls back to V1 if V2 fails
+bot.start(async (ctx) => {
+  try {
+    await handleStartV2(ctx)
+  } catch (error) {
+    console.warn('[BOT] V2 handler failed, falling back to V1:', error)
+    await handleStartWithFlow(ctx)
+  }
+})
 
-// Register flow callback handler (обрабатывает callback_data вида flow:*)
+// Register flow callback handler (V2)
 bot.on('callback_query', async (ctx) => {
   const data = (ctx.callbackQuery as any)?.data
   if (data && typeof data === 'string' && data.startsWith('flow:')) {
-    await handleFlowCallback(ctx)
+    try {
+      await handleFlowCallbackV2(ctx)
+    } catch (error) {
+      console.warn('[BOT] V2 callback handler failed, falling back to V1:', error)
+      await handleFlowCallback(ctx)
+    }
+  }
+})
+
+// Register text handler for flow input (V2)
+bot.on('text', async (ctx) => {
+  try {
+    await handleFlowTextV2(ctx)
+  } catch (error) {
+    // Silently fail - text handler is optional
+    console.warn('[BOT] V2 text handler failed:', error)
   }
 })
 

@@ -1,99 +1,74 @@
-import { Telegraf, Markup } from 'telegraf'
-
-// Get bot token from env
-const botToken = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
-if (!botToken) {
-  console.error('❌ ERROR: BOT_TOKEN or TELEGRAM_BOT_TOKEN is not set in environment variables')
-  process.exit(1)
-}
-
-// Get WebApp URL from env
-const webAppUrl = process.env.WEBAPP_URL
-if (!webAppUrl) {
-  console.error('❌ ERROR: WEBAPP_URL is not set in environment variables')
-  // Don't exit - bot can still work, but will log error on /start
-}
+import { Telegraf } from 'telegraf'
+import { config } from './config.js'
+import { handleStart } from './handlers/start.js'
+import { handleStartWithFlow } from './handlers/flowHandler.js'
+import { handleFlowCallback } from './handlers/flowHandler.js'
+import { handleStartV2, handleFlowCallbackV2, handleFlowTextV2 } from './handlers/flowHandlerV2.js'
+import { MenuActions, handleMyOrders, handleAskedLab, handleOpenApp, handleSubscribeNews, handleUnsubscribeNews } from './handlers/menu.js'
+import { handleStop } from './handlers/subscribe.js'
+import { emojiCaptureMiddleware } from './tools/emojiCapture.js'
 
 // Create bot instance
-const bot = new Telegraf(botToken)
+const bot = new Telegraf(config.botToken)
 
-// WebApp keyboard with button
-const getWebAppKeyboard = () => {
-  if (!webAppUrl) {
-    return undefined
-  }
-  return Markup.keyboard([
-    [Markup.button.webApp('🛍 Открыть ASKED Store', webAppUrl)]
-  ]).resize()
+// Register emoji capture middleware (only if EMOJI_CAPTURE=1)
+if (process.env.EMOJI_CAPTURE === '1') {
+  bot.use(emojiCaptureMiddleware)
+  console.log('📸 Emoji capture mode enabled')
 }
 
-// /start command handler
-bot.command('start', async (ctx) => {
-  if (!webAppUrl) {
-    await ctx.reply(
-      '❌ Ошибка: WebApp URL не настроен.\n\nОбратитесь к администратору.'
-    )
-    return
+// Register /start command handler (V2 with new FlowEngine)
+// Falls back to V1 if V2 fails
+bot.start(async (ctx) => {
+  try {
+    await handleStartV2(ctx)
+  } catch (error) {
+    console.warn('[BOT] V2 handler failed, falling back to V1:', error)
+    await handleStartWithFlow(ctx)
   }
-
-  const keyboard = getWebAppKeyboard()
-  await ctx.reply(
-    'Добро пожаловать в ASKED 🖤\n\nОткройте магазин кнопкой ниже — так Telegram корректно передаст WebApp-контекст.',
-    keyboard
-  )
 })
 
-// /store command handler
-bot.command('store', async (ctx) => {
-  if (!webAppUrl) {
-    await ctx.reply(
-      '❌ Ошибка: WebApp URL не настроен.\n\nОбратитесь к администратору.'
-    )
-    return
+// Register flow callback handler (V2)
+bot.on('callback_query', async (ctx) => {
+  const data = (ctx.callbackQuery as any)?.data
+  if (data && typeof data === 'string' && data.startsWith('flow:')) {
+    try {
+      await handleFlowCallbackV2(ctx)
+    } catch (error) {
+      console.warn('[BOT] V2 callback handler failed, falling back to V1:', error)
+      await handleFlowCallback(ctx)
+    }
   }
-
-  const keyboard = getWebAppKeyboard()
-  await ctx.reply('Жми кнопку ниже 👇', keyboard)
 })
+
+// Register text handler for flow input (V2)
+bot.on('text', async (ctx) => {
+  try {
+    await handleFlowTextV2(ctx)
+  } catch (error) {
+    // Silently fail - text handler is optional
+    console.warn('[BOT] V2 text handler failed:', error)
+  }
+})
+
+// Register /stop command handler
+bot.command('stop', handleStop)
+
+// Register menu action handlers
+bot.action(MenuActions.MY_ORDERS, handleMyOrders)
+bot.action(MenuActions.ASKED_LAB, handleAskedLab)
+bot.action(MenuActions.OPEN_APP, handleOpenApp)
+bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
+bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 
 // Launch bot
-async function bootstrap() {
-  try {
-    // Delete webhook to ensure clean state
-    await bot.telegram.deleteWebhook({ drop_pending_updates: true })
-    
-    // Small delay after webhook deletion
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Launch bot with dropPendingUpdates
-    await bot.launch({ dropPendingUpdates: true })
-    
-    console.log('🤖 ASKED Store Bot is running')
-    console.log('📱 Bot is ready to receive messages')
-    console.log('✅ Version: v0.3.0')
-  } catch (error) {
-    console.error('❌ Failed to start bot:', error)
-    process.exit(1)
-  }
-}
-
-bootstrap()
+bot.launch().then(() => {
+  console.log('🤖 ASKED Store Bot is running')
+  console.log('📱 Bot is ready to receive messages')
+  console.log('✅ Version: v0.3.0')
+})
 
 // Enable graceful stop
-process.once('SIGINT', () => {
-  try {
-    bot.stop('SIGINT')
-  } catch (error) {
-    console.error('Error stopping bot:', error)
-  }
-  process.exit(0)
-})
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
-process.once('SIGTERM', () => {
-  try {
-    bot.stop('SIGTERM')
-  } catch (error) {
-    console.error('Error stopping bot:', error)
-  }
-  process.exit(0)
-})

@@ -333,19 +333,23 @@ async function validateFlowForPublish(flowId: string): Promise<{ valid: boolean;
   
   // Validate entryPoints conflicts with other PUBLISHED flows
   if (Array.isArray(flow.entryPoints) && flow.entryPoints.length > 0) {
-    const conflicting = await prisma.botFlow.findFirst({
+    // Get all published flows and check conflicts in memory
+    const publishedFlows = await prisma.botFlow.findMany({
       where: {
         id: { not: flowId },
         status: 'PUBLISHED',
-        entryPoints: {
-          path: [],
-          array_contains: flow.entryPoints,
-        },
       },
     })
     
-    if (conflicting) {
-      errors.push(`Entry points conflict with published flow "${conflicting.name}" (${conflicting.id})`)
+    for (const publishedFlow of publishedFlows) {
+      const publishedEntryPoints = publishedFlow.entryPoints as any
+      if (Array.isArray(publishedEntryPoints)) {
+        const conflict = flow.entryPoints.some((ep: string) => publishedEntryPoints.includes(ep))
+        if (conflict) {
+          errors.push(`Entry points conflict with published flow "${publishedFlow.name}" (${publishedFlow.id})`)
+          break
+        }
+      }
     }
   }
   
