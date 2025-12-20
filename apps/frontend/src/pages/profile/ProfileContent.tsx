@@ -42,13 +42,18 @@ export const ProfileContent: React.FC = () => {
 
     try {
       setOrdersLoading(true)
-      const data = await requestJson<Order[]>(`/api/orders?tgId=${tgId}`)
+      const data = await requestJson<any>(`/api/orders?tgId=${tgId}`)
       
       // Debug logging
       console.log('[ORDERS DEBUG]', data)
       
       // Normalize response - ensure it's an array
-      const list = Array.isArray(data) ? data : (data?.orders ?? [])
+      let list: Order[] = []
+      if (Array.isArray(data)) {
+        list = data
+      } else if (data && typeof data === 'object' && Array.isArray(data.orders)) {
+        list = data.orders
+      }
       console.log('[ORDERS FIRST]', list?.[0])
       
       setOrders(list)
