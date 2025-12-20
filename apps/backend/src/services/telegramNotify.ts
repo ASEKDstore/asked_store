@@ -20,10 +20,10 @@ async function sendMessage(
   text: string,
   parseMode: 'HTML' | 'Markdown' = 'HTML',
   replyMarkup?: InlineKeyboardMarkup
-) {
+): Promise<{ success: boolean; error?: any }> {
   if (!BOT_TOKEN) {
     console.warn('TELEGRAM_BOT_TOKEN not set, skipping notification')
-    return
+    return { success: false, error: 'BOT_TOKEN not set' }
   }
 
   try {
@@ -40,10 +40,22 @@ async function sendMessage(
 
     if (!response.ok) {
       const error = await response.json()
+      const statusCode = response.status
+      
+      // Handle cases where bot cannot write to user (403, 400)
+      if (statusCode === 403 || statusCode === 400) {
+        console.warn(`Cannot send message to ${chatId}: ${error.description || error.error_code || 'Forbidden'}`)
+        return { success: false, error: { statusCode, description: error.description } }
+      }
+      
       console.error('Telegram API error:', error)
+      return { success: false, error }
     }
+    
+    return { success: true }
   } catch (error) {
     console.error('Failed to send Telegram message:', error)
+    return { success: false, error }
   }
 }
 
@@ -139,6 +151,11 @@ ${order.comment ? `💬 <b>Комментарий:</b>\n${order.comment}\n` : ''
 
 export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
   try {
+    if (!BOT_TOKEN) {
+      console.warn('TELEGRAM_BOT_TOKEN not set, skipping notification')
+      return
+    }
+
     const message = formatOrderMessage(order)
     
     // Inline keyboard with action buttons
@@ -168,27 +185,53 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
     if (adminChatId) {
       const chatId = Number(adminChatId)
       if (Number.isFinite(chatId)) {
-        await sendMessage(chatId, message, 'HTML', keyboard)
-        return // If chat ID is configured, send only to chat
+        const result = await sendMessage(chatId, message, 'HTML', keyboard)
+        if (result.success) {
+          return // If chat ID is configured and message sent successfully, return
+        } else {
+          console.warn('Failed to send to admin chat, falling back to admin IDs')
+        }
       } else {
         console.warn('TELEGRAM_ADMIN_CHAT_ID is not a valid number, falling back to admin IDs')
       }
     }
 
-    // Fallback: send to individual admin IDs
-    const admins = await prisma.admin.findMany()
-    
-    if (admins.length === 0) {
-      console.warn('No admin IDs configured, skipping notification')
+    // Read admin IDs from environment variable (comma-separated)
+    const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
+    if (!adminIdsEnv) {
+      console.warn('TELEGRAM_ADMIN_IDS not configured, skipping notification')
       return
     }
-    
-    const adminIds = admins.map(a => Number(a.tgId))
 
-    // Send to all admins
-    await Promise.all(
+    // Parse comma-separated admin IDs
+    const adminIds = adminIdsEnv
+      .split(',')
+      .map(id => id.trim())
+      .filter(id => id.length > 0)
+      .map(id => {
+        const numId = Number(id)
+        return Number.isFinite(numId) ? numId : null
+      })
+      .filter((id): id is number => id !== null)
+
+    if (adminIds.length === 0) {
+      console.warn('No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping notification')
+      return
+    }
+
+    // Send to all admins (continue even if some fail)
+    const results = await Promise.allSettled(
       adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
     )
+
+    // Log results
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to send notification to admin ${adminIds[index]}:`, result.reason)
+      } else if (result.value && !result.value.success) {
+        // Already logged in sendMessage for 403/400 cases
+      }
+    })
   } catch (error) {
     console.error('Failed to notify admins about order:', error)
     // Don't throw - notification failure should not break order creation
