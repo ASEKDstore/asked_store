@@ -72,20 +72,33 @@ export const CheckoutPage: React.FC = () => {
     setPromoError(null)
 
     try {
-      const data = await requestJson<{ ok: boolean; discount?: number; error?: string }>('/api/promos/apply', {
+      const response = await fetch('/api/promos/apply', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           code: formData.promoCode,
           cartTotal: totalPrice,
         }),
       })
 
-      if (data.ok) {
+      const data = await safeReadJson(response)
+
+      if (!response.ok) {
+        const errorMessage = data?.error || data?.message || 'Промокод недействителен'
+        setPromoError(errorMessage)
+        setPromoDiscount(null)
+        setPromoApplied(false)
+        return
+      }
+
+      if (data?.ok) {
         setPromoDiscount(data.discount || null)
         setPromoApplied(true)
         setPromoError(null)
       } else {
-        setPromoError(data.error || 'Промокод недействителен')
+        setPromoError(data?.error || 'Промокод недействителен')
         setPromoDiscount(null)
         setPromoApplied(false)
       }
