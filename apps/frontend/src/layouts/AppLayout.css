@@ -13,8 +13,8 @@
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS/Telegram */
+  /* scroll-behavior: smooth removed for better performance */
   touch-action: pan-y; /* Разрешаем только вертикальный скролл */
   position: relative;
   z-index: 1;

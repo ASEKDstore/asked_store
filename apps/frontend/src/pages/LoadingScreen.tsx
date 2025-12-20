@@ -85,9 +85,20 @@ export function LoadingScreen() {
 
         {/* Низовая мета */}
         <div className="ls-meta">
-          <span>v1.16.2</span>
+          <span>v{__APP_VERSION__}</span>
           <span>разработано командой ASKED</span>
           <span>2025</span>
+        </div>
+        
+        {/* Build marker для диагностики */}
+        <div className="ls-build-marker">
+          build: v{__APP_VERSION__} · {__GIT_COMMIT__} · {new Date(__BUILD_TIME__).toLocaleString('ru-RU', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
         </div>
       </div>
     </div>

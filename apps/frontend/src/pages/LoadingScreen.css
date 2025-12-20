@@ -206,6 +206,17 @@
   white-space: nowrap;
 }
 
+/* Build marker для диагностики */
+.ls-build-marker {
+  margin-top: 8px;
+  font-size: 9px;
+  opacity: 0.4;
+  color: rgba(245, 245, 245, 0.5);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
 /* Адаптивность */
 @media (max-width: 480px) {
   .ls-content {
