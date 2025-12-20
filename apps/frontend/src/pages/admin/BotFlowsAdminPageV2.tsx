@@ -54,6 +54,7 @@ export const BotFlowsAdminPageV2: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false)
   const [previewState, setPreviewState] = useState<any>(null)
   const [showVersions, setShowVersions] = useState(false)
+  const [entryPointsInput, setEntryPointsInput] = useState<string>("")
 
   useEffect(() => {
     if (viewMode === 'list') {
@@ -83,6 +84,7 @@ export const BotFlowsAdminPageV2: React.FC = () => {
       }
       setCurrentFlow(data)
       setSelectedNodeId(data.nodes?.[0]?.id || null)
+      setEntryPointsInput(Array.isArray(data.entryPoints) ? data.entryPoints.join(', ') : '')
       setViewMode('edit')
     } catch (err: any) {
       setError(err.message || 'Ошибка при загрузке')
@@ -105,6 +107,7 @@ export const BotFlowsAdminPageV2: React.FC = () => {
     }
     setCurrentFlow(newFlow)
     setSelectedNodeId(null)
+    setEntryPointsInput('command:start')
     setViewMode('create')
   }
 
@@ -142,13 +145,11 @@ export const BotFlowsAdminPageV2: React.FC = () => {
         return
       }
 
-      // Ensure entryPoints is an array
-      const entryPoints = Array.isArray(currentFlow.entryPoints) 
-        ? currentFlow.entryPoints 
-        : currentFlow.entryPoints
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean)
+      // Form entryPoints array from input string
+      const entryPoints = entryPointsInput
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
 
       if (viewMode === 'create') {
         await api.createBotFlow({
@@ -170,13 +171,11 @@ export const BotFlowsAdminPageV2: React.FC = () => {
           })),
         })
       } else {
-        // Ensure entryPoints is an array
-        const entryPoints = Array.isArray(currentFlow.entryPoints) 
-          ? currentFlow.entryPoints 
-          : currentFlow.entryPoints
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean)
+        // Form entryPoints array from input string
+        const entryPoints = entryPointsInput
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
         
         await api.updateBotFlow(currentFlow.id, {
           name: currentFlow.name.trim(),
@@ -614,17 +613,8 @@ export const BotFlowsAdminPageV2: React.FC = () => {
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Entry Points (через запятую)</label>
                     <input
                       type="text"
-                      value={currentFlow.entryPoints.join(', ')}
-                      onChange={(e) => {
-                        const entryPointsArray = e.target.value
-                          .split(',')
-                          .map(s => s.trim())
-                          .filter(Boolean)
-                        setCurrentFlow({
-                          ...currentFlow,
-                          entryPoints: entryPointsArray,
-                        })
-                      }}
+                      value={entryPointsInput}
+                      onChange={(e) => setEntryPointsInput(e.target.value)}
                       className="admin-input"
                       placeholder="command:start, callback:menu"
                     />
