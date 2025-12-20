@@ -13,5 +13,10 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+// Build-time constants (defined in vite.config.js)
+declare const __APP_VERSION__: string
+declare const __BUILD_TIME__: string
+declare const __GIT_COMMIT__: string
+
 
 
