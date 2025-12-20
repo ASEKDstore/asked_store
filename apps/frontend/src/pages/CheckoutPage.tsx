@@ -4,7 +4,21 @@ import { useCart } from '../context/CartContext'
 import { useUser } from '../context/UserContext'
 import './checkout.css'
 
-import { requestJson } from '../lib/apiClient'
+/**
+ * Safely read JSON from Response
+ * Returns null if response is empty or invalid JSON
+ */
+async function safeReadJson(res: Response): Promise<any> {
+  const text = await res.text()
+  if (!text || text.trim().length === 0) {
+    return null
+  }
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
 
 type DeliveryMethod = 'post' | 'cdek' | 'avito'
 
@@ -190,25 +204,37 @@ export const CheckoutPage: React.FC = () => {
         body: JSON.stringify(orderPayload),
       })
 
-      // Handle response
+      // Safely read response
+      const data = await safeReadJson(response)
+
+      // Handle error response
       if (!response.ok) {
-        let errorMessage = 'Не удалось оформить заказ'
-        try {
-          const errorData = await response.json()
-          if (errorData?.error) {
-            errorMessage = errorData.error
-          }
-        } catch {
-          // If JSON parsing fails, use default message
-        }
+        const errorMessage =
+          data?.error ||
+          data?.message ||
+          'Не удалось оформить заказ'
         setError(errorMessage)
         setIsSubmitting(false)
         return
       }
 
-      const order = await response.json()
+      // Handle success response
+      // If data is null but response is ok, consider it success
+      if (data === null && response.ok) {
+        // Backend returned empty body but status is ok - order created
+        setSuccess(true)
+        if (!labOrder) {
+          clear()
+        }
+        return
+      }
 
-      setOrderId(order.id)
+      // Extract order ID from response
+      const orderId = data?.id || data?.orderId || null
+      if (orderId) {
+        setOrderId(orderId)
+      }
+
       setSuccess(true)
       
       // Clear cart only if not lab order
@@ -218,10 +244,10 @@ export const CheckoutPage: React.FC = () => {
     } catch (err: any) {
       console.error('Order creation error:', err)
       
-      // Extract error message
+      // Extract error message - filter out technical JSON errors
       let errorMessage = 'Не удалось оформить заказ'
       
-      if (err.message) {
+      if (err.message && !err.message.includes('JSON') && !err.message.includes('Unexpected end')) {
         errorMessage = err.message
       }
       
@@ -246,20 +272,28 @@ export const CheckoutPage: React.FC = () => {
       <div className={`checkout-page ${mounted ? 'is-mounted' : ''}`}>
         <div className="checkout-success">
           <div className="checkout-success-icon">✅</div>
-          <h1>Заказ успешно оформлен!</h1>
+          <h1>Заказ принят!</h1>
           {orderId && (
             <p className="checkout-order-id">
               Номер заказа: <strong>#{orderId.slice(-6).toUpperCase()}</strong>
             </p>
           )}
           <p>Мы свяжемся с вами для подтверждения деталей доставки.</p>
-          <button
-            onClick={() => navigate('/app')}
-            className="checkout-submit"
-            style={{ marginTop: '24px' }}
-          >
-            В каталог
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+            <button
+              onClick={() => navigate('/app/profile')}
+              className="checkout-submit"
+            >
+              Мои заказы
+            </button>
+            <button
+              onClick={() => navigate('/app')}
+              className="checkout-submit"
+              style={{ backgroundColor: 'transparent', border: '1px solid currentColor' }}
+            >
+              В каталог
+            </button>
+          </div>
         </div>
       </div>
     )

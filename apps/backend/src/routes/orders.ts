@@ -198,7 +198,11 @@ router.post('/', async (req, res) => {
       // Don't fail the request if notification fails
     }
 
+    // Always return valid JSON response
     res.status(201).json({
+      success: true,
+      id: order.id,
+      orderId: order.id, // Alias for compatibility
       ...order,
       items: order.items as any,
       createdAt: order.createdAt.toISOString(),
