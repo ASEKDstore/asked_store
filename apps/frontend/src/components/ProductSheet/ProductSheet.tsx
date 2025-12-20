@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { products } from '../../data/products'
+import { getUIProduct, getUIProducts, type UIProduct } from '../../api/productsApi'
 import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
 import { ProductGallery } from '../ProductGallery'
@@ -23,9 +23,47 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
   const [size, setSize] = useState<string | null>(null)
   const [showToast, setShowToast] = useState(false)
   const [sizeError, setSizeError] = useState(false)
+  const [product, setProduct] = useState<UIProduct | null>(null)
+  const [relatedProducts, setRelatedProducts] = useState<UIProduct[]>([])
+  const [loading, setLoading] = useState(false)
 
-  // Находим продукт (не хук, но вычисляем после хуков)
-  const product = productId ? products.find((p) => p.id === productId) : null
+  // Load product from API
+  useEffect(() => {
+    if (!productId || !isOpen) {
+      setProduct(null)
+      setRelatedProducts([])
+      return
+    }
+
+    const loadProduct = async () => {
+      setLoading(true)
+      try {
+        const loadedProduct = await getUIProduct(productId)
+        setProduct(loadedProduct)
+        
+        // Load related products (same category)
+        if (loadedProduct) {
+          const related = await getUIProducts({
+            categorySlug: loadedProduct.category,
+            inStock: true,
+          })
+          // Filter out current product and limit to 8
+          const filtered = related
+            .filter(p => p.id !== productId)
+            .slice(0, 8)
+          setRelatedProducts(filtered)
+        }
+      } catch (error) {
+        console.error('Failed to load product:', error)
+        setProduct(null)
+        setRelatedProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProduct()
+  }, [productId, isOpen])
 
   // ✅ useMemo вызывается ВСЕГДА, даже если product null
   // Собираем массив изображений для галереи
@@ -39,27 +77,6 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     }
     return []
   }, [product])
-
-  // ✅ useMemo вызывается ВСЕГДА, даже если product null
-  // Похожие товары (по категории или тегам)
-  const relatedProducts = useMemo(() => {
-    if (!product || !productId) return []
-    
-    const related = products
-      .filter((p) => {
-        if (p.id === productId) return false
-        // По категории
-        if (p.category === product.category) return true
-        // По тегам (хотя бы один общий)
-        if (product.tags && p.tags) {
-          return product.tags.some((tag) => p.tags.includes(tag))
-        }
-        return false
-      })
-      .slice(0, 8) // Максимум 8 товаров
-    
-    return related
-  }, [product, productId])
 
   // ✅ useEffect вызывается ВСЕГДА
   useEffect(() => {
@@ -150,8 +167,8 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
   const shouldShow = product && productId && isOpen
 
   // ✅ Только ПОСЛЕ всех хуков можно делать ранний return
-  if (!product || !productId) {
-    // Если нет продукта - рендерим пустой overlay (скрыт)
+  if (!product || !productId || loading) {
+    // Если нет продукта или загрузка - рендерим пустой overlay (скрыт)
     return (
       <div
         className={`tg-sheet-overlay ${false ? 'is-visible' : ''}`}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import type { Product } from '../data/products'
+import type { UIProduct } from '../api/productsApi'
 
 export type CartItem = {
   productId: string
@@ -13,7 +13,7 @@ export type CartItem = {
 
 type CartContextValue = {
   items: CartItem[]
-  addItem: (p: Product, opts?: { size?: string; qty?: number }) => void
+  addItem: (p: UIProduct, opts?: { size?: string; qty?: number }) => void
   removeItem: (productId: string, size?: string) => void
   setQty: (productId: string, size: string | undefined, qty: number) => void
   clear: () => void
@@ -108,6 +108,7 @@ export const useCart = () => {
   if (!ctx) throw new Error('useCart must be used within CartProvider')
   return ctx
 }
+
 
 
 

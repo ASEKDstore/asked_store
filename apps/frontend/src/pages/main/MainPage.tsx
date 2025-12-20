@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Banners } from '../../modules/banners/Banners'
 import { HomeTiles } from '../../modules/tiles/HomeTiles'
 import { ProductShowcaseCarousel } from '../../components/ProductShowcaseCarousel'
-import { getPublicProducts } from '../../api/productsApi'
+import { getUIProducts, type UIProduct } from '../../api/productsApi'
 import { TELEGRAM_CHANNEL_URL } from '../../config/links'
 import { useProductSheet } from '../../context/ProductSheetContext'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
@@ -13,29 +13,14 @@ export const MainPage = () => {
   const { openProduct } = useProductSheet()
   const featuresGridRef = useRef<HTMLDivElement>(null)
   const processGridRef = useRef<HTMLDivElement>(null)
-  const [productsToShow, setProductsToShow] = useState<Array<{
-    id: string
-    title: string
-    article?: string
-    price: number
-    image?: string
-    images?: string[]
-  }>>([])
+  const [productsToShow, setProductsToShow] = useState<UIProduct[]>([])
 
   // Load products from API
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const products = await getPublicProducts({ sort: 'newest' })
-        const formatted = products.slice(0, 6).map(p => ({
-          id: p.id,
-          title: p.title,
-          article: p.article,
-          price: p.price,
-          image: p.images?.[0],
-          images: p.images,
-        }))
-        setProductsToShow(formatted)
+        const products = await getUIProducts({ sort: 'newest' })
+        setProductsToShow(products.slice(0, 6))
       } catch (error) {
         console.error('Failed to load products:', error)
         setProductsToShow([])

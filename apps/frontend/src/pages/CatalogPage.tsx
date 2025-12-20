@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { ProductGridCard } from '../modules/products/ProductGridCard'
-import { getPublicProducts, getPublicCategories, type Product, type Category } from '../api/productsApi'
+import { getUIProducts, getPublicCategories, type UIProduct, type Category } from '../api/productsApi'
 import './catalog.css'
 
 export const CatalogPage = () => {
   const [mounted, setMounted] = useState(false)
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<UIProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -42,7 +42,7 @@ export const CatalogPage = () => {
     const loadProducts = async () => {
       setLoading(true)
       try {
-        const prods = await getPublicProducts({
+        const prods = await getUIProducts({
           categorySlug: selectedCategorySlug || undefined,
           inStock: onlyAvailable || undefined,
           search: query || undefined,
@@ -221,19 +221,7 @@ export const CatalogPage = () => {
             products.map((product) => (
               <ProductGridCard 
                 key={product.id} 
-                product={{
-                  id: product.id,
-                  article: product.article || '',
-                  title: product.title,
-                  price: product.price,
-                  image: product.images?.[0] || '',
-                  images: product.images,
-                  description: product.description,
-                  sizes: [], // TODO: add sizes to Product model
-                  category: product.categories?.[0]?.slug as any || 'custom',
-                  tags: [],
-                  available: product.isActive,
-                }} 
+                product={product}
               />
             ))
           ) : (

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
 import { useProductSheet } from '../../context/ProductSheetContext'
-import type { Product } from '../../data/products'
+import type { UIProduct } from '../../api/productsApi'
 import './product-grid-card.css'
 
 type Props = {
-  product: Product
+  product: UIProduct
 }
 
 export const ProductGridCard: React.FC<Props> = ({ product }) => {

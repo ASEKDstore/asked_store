@@ -13,7 +13,7 @@ import { AddReviewSheet } from '../components/AddReviewSheet'
 import { ReplySheet } from '../components/ReplySheet'
 import { FullscreenGallery } from '../components/FullscreenGallery'
 import type { ReviewFormData, ReactionKey, ReviewReply, ReviewMedia } from '../types/review'
-import { products } from '../data/products'
+import { getUIProducts, type UIProduct } from '../api/productsApi'
 import './reviews.css'
 
 type SortOption = 'new' | 'helpful' | 'withMedia' | 'low'
@@ -33,6 +33,7 @@ const IS_ADMIN = false // В реальном приложении из конт
 
 export const ReviewsPage = () => {
   const [reviews, setReviews] = useState<Review[]>([])
+  const [products, setProducts] = useState<UIProduct[]>([])
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
   const [filterRating, setFilterRating] = useState<FilterRating>(null)
   const [sort, setSort] = useState<SortOption>('new')
@@ -44,6 +45,18 @@ export const ReviewsPage = () => {
 
   useEffect(() => {
     setReviews(getReviews())
+  }, [])
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const prods = await getUIProducts()
+        setProducts(prods)
+      } catch (error) {
+        console.error('Failed to load products for reviews:', error)
+      }
+    }
+    loadProducts()
   }, [])
 
   // Расчёт рейтинга

@@ -1,15 +1,32 @@
-import { useState, useRef } from 'react'
-import { products } from '../../data/products'
+import { useState, useRef, useEffect } from 'react'
+import { getUIProducts, type UIProduct } from '../../api/productsApi'
 import { useProductSheet } from '../../context/ProductSheetContext'
 import './product-carousel.css'
 
 export const ProductCarousel = () => {
   const { openProduct } = useProductSheet()
   const [active, setActive] = useState(0)
+  const [products, setProducts] = useState<UIProduct[]>([])
+  const [loading, setLoading] = useState(true)
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
   const isDragging = useRef(false)
   const dragStartX = useRef<number | null>(null)
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const prods = await getUIProducts({ sort: 'newest' })
+        setProducts(prods)
+      } catch (error) {
+        console.error('Failed to load products for carousel:', error)
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
 
   const prev = () =>
     setActive((i) => (i - 1 + products.length) % products.length)
@@ -74,6 +91,10 @@ export const ProductCarousel = () => {
 
     isDragging.current = false
     dragStartX.current = null
+  }
+
+  if (loading || products.length === 0) {
+    return null
   }
 
   const items = [

@@ -1,17 +1,9 @@
 import { useState, useRef } from 'react'
+import type { UIProduct } from '../api/productsApi'
 import './product-showcase-carousel.css'
 
-export type Product = {
-  id: string
-  title: string
-  article?: string
-  price: number
-  image?: string
-  images?: string[]
-}
-
 type Props = {
-  products: Product[]
+  products: UIProduct[]
   onOpen: (id: string) => void
 }
 
@@ -72,7 +64,7 @@ export const ProductShowcaseCarousel = ({ products, onOpen }: Props) => {
     return 'is-hidden'
   }
 
-  const getImageUrl = (product: Product): string => {
+  const getImageUrl = (product: UIProduct): string => {
     return product.image || product.images?.[0] || '/assets/product-1.jpg'
   }
 
@@ -160,6 +152,7 @@ export const ProductShowcaseCarousel = ({ products, onOpen }: Props) => {
     </div>
   )
 }
+
 
 
 

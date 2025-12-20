@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { products } from '../data/products'
+import { getUIProducts, type UIProduct } from '../api/productsApi'
 import { StarRating } from './StarRating'
 import type { ReviewFormData, ReviewMedia } from '../types/review'
 import './add-review-sheet.css'
@@ -20,9 +20,25 @@ export const AddReviewSheet = ({ isOpen, onClose, onSubmit }: Props) => {
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [mediaPreviews, setMediaPreviews] = useState<ReviewMedia[]>([])
   const [productId, setProductId] = useState<string>('')
+  const [products, setProducts] = useState<UIProduct[]>([])
   const [errors, setErrors] = useState<{ rating?: string; text?: string }>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const mediaPreviewsRef = useRef<ReviewMedia[]>([])
+
+  // Load products from API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const prods = await getUIProducts()
+        setProducts(prods)
+      } catch (error) {
+        console.error('Failed to load products for review:', error)
+      }
+    }
+    if (isOpen) {
+      loadProducts()
+    }
+  }, [isOpen])
 
   // Синхронизируем ref с state
   useEffect(() => {
