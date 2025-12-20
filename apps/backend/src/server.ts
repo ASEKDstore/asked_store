@@ -19,6 +19,8 @@ import adminLabRouter from './routes/adminLabRoutes.js'
 import adminTelegramRouter from './routes/admin/telegram.js'
 import adminTelegramSubscribersRouter from './routes/admin/telegramSubscribers.js'
 import adminBotFlowsRouter from './routes/admin/botFlows.js'
+import adminBotFlowsExtendedRouter from './routes/admin/botFlowsExtended.js'
+import adminBotPreviewRouter from './routes/admin/botPreview.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { prisma } from './db/prisma.js'
 
@@ -90,6 +92,8 @@ app.use('/api/admin/lab', adminOnly, adminLabRouter)
 app.use('/api/admin/telegram', adminOnly, adminTelegramRouter)
 app.use('/api/admin/telegram/subscribers', adminOnly, adminTelegramSubscribersRouter)
 app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsRouter)
+app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsExtendedRouter) // Extended endpoints
+app.use('/api/admin/bot/preview', adminOnly, adminBotPreviewRouter)
 
 // Error handler (должен быть последним middleware)
 app.use(errorHandler)
