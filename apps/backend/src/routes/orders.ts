@@ -16,8 +16,36 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Calculate total price
-    let totalPrice = data.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
+    // Normalize and validate items
+    const normalizedItems = data.items.map((item: any, index: number) => {
+      const price = Number(item.price)
+      const qty = Number(item.qty)
+
+      if (!Number.isFinite(price) || price <= 0) {
+        throw { statusCode: 400, message: `Item ${index + 1}: invalid price (must be a positive number)` }
+      }
+
+      if (!Number.isInteger(qty) || qty <= 0) {
+        throw { statusCode: 400, message: `Item ${index + 1}: invalid quantity (must be a positive integer)` }
+      }
+
+      return {
+        ...item,
+        price,
+        qty,
+      }
+    })
+
+    // Calculate total price using normalized items
+    let totalPrice = normalizedItems.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
+    
+    // Ensure totalPrice is a valid integer
+    if (!Number.isFinite(totalPrice) || totalPrice < 0) {
+      return res.status(400).json({ error: 'Invalid total price calculated' })
+    }
+    
+    totalPrice = Math.round(totalPrice)
+    
     let discount = 0
     let promoCode = data.promoCode
 
@@ -36,16 +64,17 @@ router.post('/', async (req, res) => {
     }
 
     totalPrice = Math.max(0, totalPrice - discount)
+    totalPrice = Math.round(totalPrice) // Ensure integer
 
-    // Convert OrderItem[] to JSON-safe plain objects
-    const itemsJson = data.items.map(item => ({
+    // Convert normalized items to JSON-safe plain objects
+    const itemsJson = normalizedItems.map(item => ({
       productId: item.productId ?? null,
       labProductId: item.labProductId ?? null,
       type: item.type ?? null,
       title: item.title,
       article: item.article,
-      price: item.price,
-      qty: item.qty,
+      price: item.price, // Already normalized
+      qty: item.qty, // Already normalized
       size: item.size ?? null,
       artistName: item.artistName ?? null,
     }))
@@ -87,6 +116,7 @@ router.post('/', async (req, res) => {
       const orderForNotification = {
         ...order,
         items: order.items as any,
+        totalPrice: order.total, // Map total to totalPrice for notification
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
       }
@@ -103,6 +133,11 @@ router.post('/', async (req, res) => {
       updatedAt: order.updatedAt.toISOString(),
     })
   } catch (error: any) {
+    // Handle custom validation errors
+    if (error.statusCode === 400) {
+      return res.status(400).json({ error: error.message })
+    }
+    
     console.error('Error creating order:', error)
     res.status(500).json({ error: 'Failed to create order' })
   }

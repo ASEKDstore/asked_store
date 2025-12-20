@@ -139,15 +139,6 @@ ${order.comment ? `💬 <b>Комментарий:</b>\n${order.comment}\n` : ''
 
 export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
   try {
-    const admins = await prisma.admin.findMany()
-    
-    if (admins.length === 0) {
-      console.warn('No admin IDs configured, skipping notification')
-      return
-    }
-    
-    const adminIds = admins.map(a => Number(a.tgId))
-
     const message = formatOrderMessage(order)
     
     // Inline keyboard with action buttons
@@ -172,12 +163,35 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
       ],
     }
 
+    // Check if TELEGRAM_ADMIN_CHAT_ID is configured
+    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID
+    if (adminChatId) {
+      const chatId = Number(adminChatId)
+      if (Number.isFinite(chatId)) {
+        await sendMessage(chatId, message, 'HTML', keyboard)
+        return // If chat ID is configured, send only to chat
+      } else {
+        console.warn('TELEGRAM_ADMIN_CHAT_ID is not a valid number, falling back to admin IDs')
+      }
+    }
+
+    // Fallback: send to individual admin IDs
+    const admins = await prisma.admin.findMany()
+    
+    if (admins.length === 0) {
+      console.warn('No admin IDs configured, skipping notification')
+      return
+    }
+    
+    const adminIds = admins.map(a => Number(a.tgId))
+
     // Send to all admins
     await Promise.all(
       adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
     )
   } catch (error) {
     console.error('Failed to notify admins about order:', error)
+    // Don't throw - notification failure should not break order creation
   }
 }
 
