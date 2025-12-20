@@ -12,6 +12,8 @@ const CreateProductSchema = z.object({
   sku: z.string().optional(),
   article: z.string().optional(),
   isActive: z.boolean().default(true),
+  status: z.enum(['draft', 'published']).optional(),
+  categoryIds: z.array(z.string().uuid()).optional(),
 })
 
 const UpdateProductSchema = CreateProductSchema.partial()
@@ -29,6 +31,15 @@ router.get('/', async (req, res) => {
     
     const products = await prisma.product.findMany({
       where,
+      include: {
+        categories: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     })
     
@@ -77,6 +88,19 @@ router.post('/', async (req, res) => {
         sku: data.sku,
         article: data.article,
         isActive: data.isActive,
+        status: data.status || 'draft',
+        categories: data.categoryIds ? {
+          connect: data.categoryIds.map(id => ({ id })),
+        } : undefined,
+      },
+      include: {
+        categories: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     })
     
@@ -96,9 +120,25 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params
     const data = UpdateProductSchema.parse(req.body)
     
+    const { categoryIds, ...updateData } = data
+    
     const product = await prisma.product.update({
       where: { id },
-      data,
+      data: {
+        ...updateData,
+        categories: categoryIds !== undefined ? {
+          set: categoryIds.map(catId => ({ id: catId })),
+        } : undefined,
+      },
+      include: {
+        categories: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
     })
     
     res.json(product)

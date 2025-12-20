@@ -131,6 +131,30 @@ function useAdminApi() {
         method: 'DELETE',
       }),
 
+    // Categories
+    getCategories: () =>
+      requestJson('/api/admin/categories'),
+
+    getCategory: (id: string) =>
+      requestJson(`/api/admin/categories/${id}`),
+
+    createCategory: (data: any) =>
+      requestJson('/api/admin/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateCategory: (id: string, data: any) =>
+      requestJson(`/api/admin/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+
+    deleteCategory: (id: string) =>
+      request(`/api/admin/categories/${id}`, {
+        method: 'DELETE',
+      }),
+
     // Banners
     getBanners: () =>
       requestJson('/api/admin/banners'),
