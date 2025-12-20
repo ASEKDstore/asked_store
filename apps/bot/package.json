@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/bot.ts",
     "build": "tsc",
-    "start": "node dist/bot.js"
+    "start": "node dist/bot.js",
+    "prisma:generate": "prisma generate --schema ../backend/prisma/schema.prisma",
+    "postinstall": "npm run prisma:generate",
+    "prestart": "npm run prisma:generate"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
@@ -16,6 +19,7 @@
   "devDependencies": {
     "@types/node": "^20.10.5",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "prisma": "^5.19.0"
   }
 }
