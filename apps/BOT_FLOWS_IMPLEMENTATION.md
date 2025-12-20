@@ -43,43 +43,49 @@
   - Entry points don't conflict with other PUBLISHED flows
   - Telegram limits (text length, button count, callback_data length, animation frames)
 
-## 🔄 In Progress
+## ✅ Completed
 
 ### 4. Prisma Migration
-**Status:** Schema updated, migration needs to be created
+**Status:** SQL migration created manually
 
-**To create migration:**
+**File:** `backend/prisma/migrations/20241220000000_extend_bot_flows/migration.sql`
+
+**To apply migration:**
 ```bash
 cd apps/backend
-npm install  # Ensure dependencies are installed
-npm run migrate:dev -- --name extend_bot_flows
+npm run migrate:deploy
 ```
 
-**Note:** Migration will:
-- Add new columns to `bot_flows` table
-- Create `bot_flow_nodes`, `bot_flow_versions`, `bot_user_states` tables
-- Add indexes
-- Keep existing `bot_flow_steps` table (legacy, for backward compatibility)
+**Migration includes:**
+- Added new columns to `bot_flows` table (status, version, entryPoints, startNodeId, publishedAt)
+- Created `bot_flow_nodes` table
+- Created `bot_flow_versions` table
+- Created `bot_user_states` table
+- Added indexes and foreign keys
+- Kept existing `bot_flow_steps` table (legacy, for backward compatibility)
+
+### 5. Bot FlowEngine Implementation
+**File:** `apps/bot/src/flowEngineV2.ts` ✅
+
+**Completed:**
+- ✅ Entry point routing (command:start, callback:*, text:*, webapp:*)
+- ✅ State machine (load/save BotUserState from Prisma)
+- ✅ Node execution with guards/effects
+- ✅ Transition handling (button clicks, text input, fallback)
+- ✅ Message rendering (sendMessage, editMessageText) - `flowRenderer.ts`
+- ✅ Animation effect (editMessage with frames)
+- ✅ Auto-delete effect
+- ✅ One-message screen (prefer edit over send)
+
+**Integration:**
+- ✅ Direct Prisma access (no HTTP calls within monorepo)
+- ✅ Uses `DATABASE_URL` from env
+- ✅ Handles Telegram API errors gracefully
 
 ## 📋 TODO
 
-### 5. Bot FlowEngine Implementation
-**File:** `apps/bot/src/flowEngine.ts` (needs rewrite)
-
-**Required:**
-- [ ] Entry point routing (command:start, callback:*, text:*, webapp:*)
-- [ ] State machine (load/save BotUserState from Prisma)
-- [ ] Node execution with guards/effects
-- [ ] Transition handling (button clicks, text input, fallback)
-- [ ] Message rendering (sendMessage, editMessageText)
-- [ ] Animation effect (editMessage with frames)
-- [ ] Auto-delete effect
-- [ ] One-message screen (prefer edit over send)
-
-**Integration points:**
-- Direct Prisma access (no HTTP calls within monorepo)
-- Use `DATABASE_URL` from env
-- Handle Telegram API errors (429, 400)
+### 6. Frontend Admin Panel
+**File:** `apps/frontend/src/pages/admin/BotFlowsAdminPage.tsx` (needs update)
 
 ### 6. Frontend Admin Panel
 **File:** `apps/frontend/src/pages/admin/BotFlowsAdminPage.tsx` (needs rewrite)
