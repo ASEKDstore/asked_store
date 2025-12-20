@@ -126,31 +126,76 @@ export const BotFlowsAdminPageV2: React.FC = () => {
       }
       if (!currentFlow.nodes || currentFlow.nodes.length === 0) {
         setValidationErrors(['Добавьте хотя бы один node'])
+        setLoading(false)
         return
       }
-      if (!currentFlow.startNodeId) {
-        setValidationErrors(['Укажите start node'])
+      
+      // Auto-select first node as startNodeId if not set
+      let startNodeId = currentFlow.startNodeId
+      if (!startNodeId && currentFlow.nodes.length > 0) {
+        startNodeId = currentFlow.nodes[0].id || undefined
+      }
+      
+      if (!startNodeId) {
+        setValidationErrors(['Укажите start node или добавьте хотя бы один node'])
+        setLoading(false)
         return
       }
 
+      // Ensure entryPoints is an array
+      const entryPoints = Array.isArray(currentFlow.entryPoints) 
+        ? currentFlow.entryPoints 
+        : currentFlow.entryPoints
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
+
       if (viewMode === 'create') {
         await api.createBotFlow({
-          key: currentFlow.key,
-          name: currentFlow.name,
-          description: currentFlow.description,
-          entryPoints: currentFlow.entryPoints,
-          startNodeId: currentFlow.startNodeId,
-          nodes: currentFlow.nodes,
+          key: currentFlow.key.trim(),
+          name: currentFlow.name.trim(),
+          description: currentFlow.description?.trim(),
+          entryPoints: entryPoints,
+          startNodeId: startNodeId,
+          nodes: currentFlow.nodes.map(node => ({
+            id: node.id,
+            title: node.title,
+            type: node.type,
+            content: node.content,
+            keyboard: node.keyboard,
+            transitions: node.transitions,
+            guards: node.guards,
+            effects: node.effects,
+            order: node.order,
+          })),
         })
       } else {
+        // Ensure entryPoints is an array
+        const entryPoints = Array.isArray(currentFlow.entryPoints) 
+          ? currentFlow.entryPoints 
+          : currentFlow.entryPoints
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+        
         await api.updateBotFlow(currentFlow.id, {
-          name: currentFlow.name,
-          description: currentFlow.description,
-          entryPoints: currentFlow.entryPoints,
-          startNodeId: currentFlow.startNodeId,
+          name: currentFlow.name.trim(),
+          description: currentFlow.description?.trim(),
+          entryPoints: entryPoints,
+          startNodeId: startNodeId,
         })
         if (currentFlow.nodes) {
-          await api.updateBotFlowNodes(currentFlow.id, currentFlow.nodes)
+          await api.updateBotFlowNodes(currentFlow.id, currentFlow.nodes.map(node => ({
+            id: node.id,
+            title: node.title,
+            type: node.type,
+            content: node.content,
+            keyboard: node.keyboard,
+            transitions: node.transitions,
+            guards: node.guards,
+            effects: node.effects,
+            order: node.order,
+          })))
         }
       }
 
@@ -570,10 +615,16 @@ export const BotFlowsAdminPageV2: React.FC = () => {
                     <input
                       type="text"
                       value={currentFlow.entryPoints.join(', ')}
-                      onChange={(e) => setCurrentFlow({
-                        ...currentFlow,
-                        entryPoints: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                      })}
+                      onChange={(e) => {
+                        const entryPointsArray = e.target.value
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
+                        setCurrentFlow({
+                          ...currentFlow,
+                          entryPoints: entryPointsArray,
+                        })
+                      }}
                       className="admin-input"
                       placeholder="command:start, callback:menu"
                     />

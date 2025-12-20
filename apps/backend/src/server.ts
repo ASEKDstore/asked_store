@@ -91,8 +91,8 @@ app.use('/api/admin/banners', adminOnly, adminBannersRouter)
 app.use('/api/admin/lab', adminOnly, adminLabRouter)
 app.use('/api/admin/telegram', adminOnly, adminTelegramRouter)
 app.use('/api/admin/telegram/subscribers', adminOnly, adminTelegramSubscribersRouter)
-app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsRouter)
-app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsExtendedRouter) // Extended endpoints
+app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsExtendedRouter) // Extended endpoints (must be first)
+app.use('/api/admin/bot/flows', adminOnly, adminBotFlowsRouter) // Legacy endpoints
 app.use('/api/admin/bot/preview', adminOnly, adminBotPreviewRouter)
 
 // Error handler (должен быть последним middleware)
