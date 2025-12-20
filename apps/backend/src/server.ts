@@ -6,6 +6,7 @@ import settingsRouter from './routes/settings.js'
 import telegramRouter from './routes/telegram.js'
 import authRouter from './routes/auth.js'
 import publicLabRouter from './routes/publicLabRoutes.js'
+import bannersRouter from './routes/banners.js'
 import { adminOnly } from './middleware/adminOnly.js'
 import adminOrdersRouter from './routes/admin/orders.js'
 import adminProductsRouter from './routes/admin/products.js'
@@ -75,6 +76,7 @@ app.use('/api/settings', settingsRouter)
 app.use('/api/telegram', telegramRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/lab', publicLabRouter)
+app.use('/api/banners', bannersRouter)
 
 // Admin APIs (protected with adminOnly middleware)
 app.use('/api/admin/orders', adminOnly, adminOrdersRouter)
