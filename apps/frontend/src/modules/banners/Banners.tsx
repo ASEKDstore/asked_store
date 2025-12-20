@@ -1,16 +1,52 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
-import { banners } from '../../data/banners'
+import { requestJson } from '../../lib/apiClient'
 import './banners.css'
+
+type Banner = {
+  id: string
+  title: string
+  subtitle?: string
+  description: string
+  image: string
+  ctaText?: string
+  detailsImage?: string
+  isActive?: boolean
+  order?: number
+}
 
 export const Banners = () => {
   const safeNavigate = useSafeNavigate()
+  const [banners, setBanners] = useState<Banner[]>([])
+  const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const intervalRef = useRef<ReturnType<typeof window.setInterval> | null>(null)
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
   const navigateLockRef = useRef(false)
+
+  // Загрузка баннеров из API
+  useEffect(() => {
+    const loadBanners = async () => {
+      try {
+        setLoading(true)
+        const data = await requestJson<Banner[]>('/api/banners', {
+          skipAuth: true, // Публичный endpoint
+        })
+        // Фильтруем только активные баннеры (на всякий случай, хотя API уже фильтрует)
+        const activeBanners = data.filter(b => b.isActive !== false)
+        setBanners(activeBanners)
+        setActive(0) // Сбрасываем активный слайд
+      } catch (error) {
+        console.error('[Banners] Failed to load banners:', error)
+        setBanners([]) // При ошибке показываем пустой массив
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBanners()
+  }, [])
 
   // Автопрокрутка
   useEffect(() => {
@@ -92,6 +128,15 @@ export const Banners = () => {
     setActive(index)
     setIsPaused(true)
     setTimeout(() => setIsPaused(false), 2000)
+  }
+
+  // Если баннеров нет - не рендерить блок
+  if (loading) {
+    return null // Можно показать скелетон, но по требованию - просто не показывать
+  }
+
+  if (banners.length === 0) {
+    return null
   }
 
   return (

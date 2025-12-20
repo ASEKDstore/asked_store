@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { banners } from '../data/banners'
+import { requestJson } from '../lib/apiClient'
+import type { Banner } from '../data/banners'
 import './BannerDetailsPage.css'
 
 export const BannerDetailsPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [banner, setBanner] = useState<Banner | null>(null)
+  const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [expanded, setExpanded] = useState(false)
   
@@ -16,12 +19,44 @@ export const BannerDetailsPage = () => {
   const touchEndY = useRef<number | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const banner = banners.find((b) => b.id === id)
+  // Загрузка баннера из API
+  useEffect(() => {
+    const loadBanner = async () => {
+      if (!id) {
+        setLoading(false)
+        return
+      }
+      
+      try {
+        setLoading(true)
+        const banners = await requestJson<Banner[]>('/api/banners', {
+          skipAuth: true,
+        })
+        const foundBanner = banners.find((b) => b.id === id)
+        setBanner(foundBanner || null)
+      } catch (error) {
+        console.error('[BannerDetailsPage] Failed to load banner:', error)
+        setBanner(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBanner()
+  }, [id])
 
   // Анимация входа
   useEffect(() => {
-    requestAnimationFrame(() => setMounted(true))
-  }, [])
+    if (!loading) {
+      requestAnimationFrame(() => setMounted(true))
+    }
+  }, [loading])
+  
+  // Если баннер не найден после загрузки - редирект
+  useEffect(() => {
+    if (!loading && !banner && id) {
+      navigate('/app', { replace: true })
+    }
+  }, [loading, banner, id, navigate])
 
   // Обработка свайпа назад
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -79,20 +114,9 @@ export const BannerDetailsPage = () => {
     touchEndY.current = null
   }
 
-  if (!banner) {
-    return (
-      <div className={`banner-details-root ${mounted ? 'is-mounted' : ''}`}>
-        <div className="banner-details-card">
-          <div className="banner-details-title">Баннер не найден</div>
-          <div className="banner-details-desc">
-            Запрошенный баннер не существует.
-          </div>
-          <button className="banner-details-back" onClick={() => navigate(-1)}>
-            Назад
-          </button>
-        </div>
-      </div>
-    )
+  // Показываем loading или ничего (редирект произойдет через useEffect)
+  if (loading || !banner) {
+    return null
   }
 
   return (
