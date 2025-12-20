@@ -6,7 +6,7 @@ const router = Router()
 
 const CreateCategorySchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens').optional(),
   isActive: z.boolean().default(true),
   order: z.number().int().default(0),
 })
@@ -27,7 +27,7 @@ function generateSlug(name: string): string {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const categories = await prisma.category.findMany({
-      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     })
     res.json(categories)
   } catch (error: any) {
@@ -70,23 +70,31 @@ router.post('/', async (req: Request, res: Response) => {
       raw.slug = generateSlug(raw.name)
     }
     
+    // Validate slug format if provided
+    if (raw.slug && !/^[a-z0-9-]+$/.test(raw.slug)) {
+      return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' })
+    }
+    
     const data = CreateCategorySchema.parse(raw)
+    
+    // Ensure slug is set (either from input or generated)
+    const finalSlug = data.slug || generateSlug(data.name)
     
     // Check if slug already exists
     const existing = await prisma.category.findUnique({
-      where: { slug: data.slug },
+      where: { slug: finalSlug },
     })
     
     if (existing) {
-      return res.status(400).json({ error: `Category with slug "${data.slug}" already exists` })
+      return res.status(409).json({ error: `Category with slug "${finalSlug}" already exists` })
     }
     
     const category = await prisma.category.create({
       data: {
         name: data.name,
-        slug: data.slug,
-        isActive: data.isActive,
-        order: data.order,
+        slug: finalSlug,
+        isActive: data.isActive ?? true,
+        order: data.order ?? 0,
       },
     })
     
@@ -96,15 +104,15 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.errors })
     }
     if (error.code === 'P2002') {
-      return res.status(400).json({ error: `Category with slug "${req.body.slug}" already exists` })
+      return res.status(409).json({ error: `Category with slug "${req.body.slug || req.body.name}" already exists` })
     }
     console.error('Error creating category:', error)
     res.status(500).json({ error: 'Failed to create category' })
   }
 })
 
-// PATCH /api/admin/categories/:id
-router.patch('/:id', async (req: Request, res: Response) => {
+// PUT /api/admin/categories/:id
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
     const raw = req.body
@@ -112,6 +120,11 @@ router.patch('/:id', async (req: Request, res: Response) => {
     // Auto-generate slug if name changed and slug not provided
     if (raw.name && !raw.slug) {
       raw.slug = generateSlug(raw.name)
+    }
+    
+    // Validate slug format if provided
+    if (raw.slug && !/^[a-z0-9-]+$/.test(raw.slug)) {
+      return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' })
     }
     
     const data = UpdateCategorySchema.parse(raw)
@@ -126,7 +139,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       })
       
       if (existing) {
-        return res.status(400).json({ error: `Category with slug "${data.slug}" already exists` })
+        return res.status(409).json({ error: `Category with slug "${data.slug}" already exists` })
       }
     }
     
@@ -144,7 +157,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.errors })
     }
     if (error.code === 'P2002') {
-      return res.status(400).json({ error: `Category with slug "${req.body.slug}" already exists` })
+      return res.status(409).json({ error: `Category with slug "${req.body.slug || req.body.name}" already exists` })
     }
     console.error('Error updating category:', error)
     res.status(500).json({ error: 'Failed to update category' })
