@@ -6,6 +6,32 @@ import type { CreateOrderRequest, OrderStatus } from '../types/order.js'
 
 const router = Router()
 
+/**
+ * Normalize order for API response
+ * Extracts itemsList from items JSON payload and serializes BigInt
+ */
+function normalizeOrder(order: any) {
+  const payload = order.items as any
+  
+  // Extract items array from payload
+  const itemsList = Array.isArray(payload?.items) ? payload.items : []
+  
+  return {
+    ...order,
+    tgId: String(order.tgId), // Serialize BigInt to string
+    items: payload, // Keep full payload for backward compatibility
+    itemsList, // Add extracted items array
+    user: payload?.user || {},
+    delivery: payload?.delivery || {},
+    comment: payload?.comment || null,
+    promoCode: payload?.promoCode || null,
+    discount: payload?.discount || null,
+    totalPrice: order.total, // Map total to totalPrice
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+  }
+}
+
 // POST /api/orders - Create order
 router.post('/', async (req, res) => {
   try {
@@ -210,15 +236,13 @@ router.post('/', async (req, res) => {
       // Don't fail the request if notification fails
     }
 
-    // Always return valid JSON response
+    // Always return valid JSON response - normalize order
+    const normalizedOrder = normalizeOrder(order)
     res.status(201).json({
       success: true,
       id: order.id,
       orderId: order.id, // Alias for compatibility
-      createdAt: order.createdAt.toISOString(),
-      updatedAt: order.updatedAt.toISOString(),
-      status: order.status,
-      total: order.total,
+      ...normalizedOrder,
     })
   } catch (error: any) {
     // Handle custom validation errors (thrown with statusCode: 400)
@@ -264,18 +288,12 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' },
     })
     
-    // Serialize orders - convert BigInt tgId to string
-    const serializedOrders = orders.map(o => ({
-      ...o,
-      tgId: String(o.tgId), // Serialize BigInt to string
-      items: o.items as any,
-      createdAt: o.createdAt.toISOString(),
-      updatedAt: o.updatedAt.toISOString(),
-    }))
+    // Normalize orders - extract itemsList and serialize
+    const normalizedOrders = orders.map(o => normalizeOrder(o))
     
-    console.log('[GET /api/orders] Found orders:', { tgId: String(tgId), count: serializedOrders.length })
+    console.log('[GET /api/orders] Found orders:', { tgId: String(tgId), count: normalizedOrders.length })
     
-    res.json(serializedOrders)
+    res.json(normalizedOrders)
   } catch (error: any) {
     console.error('[GET /api/orders] Error fetching orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })

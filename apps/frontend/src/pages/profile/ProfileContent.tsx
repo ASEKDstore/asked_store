@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '../../context/UserContext'
 import { isAdminId } from '../../config/admins'
 import type { Order } from '../../types/order'
+import { getOrderLineItems } from '../../utils/normalizeOrder'
 import './ProfilePage.css'
 
 import { requestJson } from '../../lib/apiClient'
@@ -42,7 +43,15 @@ export const ProfileContent: React.FC = () => {
     try {
       setOrdersLoading(true)
       const data = await requestJson<Order[]>(`/api/orders?tgId=${tgId}`)
-      setOrders(data || [])
+      
+      // Debug logging
+      console.log('[ORDERS DEBUG]', data)
+      
+      // Normalize response - ensure it's an array
+      const list = Array.isArray(data) ? data : (data?.orders ?? [])
+      console.log('[ORDERS FIRST]', list?.[0])
+      
+      setOrders(list)
     } catch (error) {
       console.error('Error loading orders:', error)
       setOrders([])
@@ -216,7 +225,11 @@ export const ProfileContent: React.FC = () => {
           </div>
         ) : (
           <div className="profile-orders">
-            {orders.map((order, idx) => (
+            {orders.map((order, idx) => {
+              // Safely extract line items using helper
+              const lineItems = getOrderLineItems(order)
+              
+              return (
               <div
                 key={order.id}
                 className={`profile-order-card ${expandedOrderId === order.id ? 'is-expanded' : ''}`}
@@ -229,7 +242,7 @@ export const ProfileContent: React.FC = () => {
                   <div className="profile-order-info">
                     <div className="profile-order-id">
                       #{order.id.slice(-6).toUpperCase()}
-                      {order.items.some(item => item.type === 'lab') && (
+                      {lineItems.some((item: any) => item.type === 'lab') && (
                         <span style={{ marginLeft: '6px', fontSize: '12px' }}>🧪 LAB</span>
                       )}
                     </div>
@@ -251,10 +264,10 @@ export const ProfileContent: React.FC = () => {
                   </div>
                   <div className="profile-order-summary">
                     <div className="profile-order-price">
-                      {order.totalPrice.toLocaleString('ru-RU')} ₽
+                      {order.totalPrice?.toLocaleString('ru-RU') || '0'} ₽
                     </div>
                     <div className="profile-order-items-count">
-                      {order.items.length} {order.items.length === 1 ? 'позиция' : 'позиций'}
+                      {lineItems.length} {lineItems.length === 1 ? 'позиция' : 'позиций'}
                     </div>
                   </div>
                   <div className="profile-order-chevron">
@@ -265,7 +278,7 @@ export const ProfileContent: React.FC = () => {
                   <div className="profile-order-section">
                     <h3 className="profile-order-section-title">Товары</h3>
                     <div className="profile-order-items">
-                      {order.items.map((item, itemIdx) => (
+                      {lineItems.length > 0 ? lineItems.map((item: any, itemIdx: number) => (
                         <div key={itemIdx} className="profile-order-item">
                           <div className="profile-order-item-info">
                             <span className="profile-order-item-title">
@@ -287,16 +300,18 @@ export const ProfileContent: React.FC = () => {
                             {(item.price * item.qty).toLocaleString('ru-RU')} ₽
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <p style={{ opacity: 0.7 }}>Пустой заказ</p>
+                      )}
                     </div>
                   </div>
                   <div className="profile-order-section">
                     <h3 className="profile-order-section-title">Доставка</h3>
                     <div className="profile-order-delivery">
-                      <p><strong>ФИО:</strong> {order.delivery.fullName}</p>
-                      <p><strong>Телефон:</strong> {order.delivery.phone}</p>
-                      <p><strong>Адрес:</strong> {order.delivery.address}</p>
-                      <p><strong>Способ:</strong> {getDeliveryMethodName(order.delivery.method)}</p>
+                      <p><strong>ФИО:</strong> {order.delivery?.fullName || '—'}</p>
+                      <p><strong>Телефон:</strong> {order.delivery?.phone || '—'}</p>
+                      <p><strong>Адрес:</strong> {order.delivery?.address || '—'}</p>
+                      <p><strong>Способ:</strong> {order.delivery?.method ? getDeliveryMethodName(order.delivery.method) : '—'}</p>
                     </div>
                   </div>
                   {order.comment && (
@@ -307,7 +322,8 @@ export const ProfileContent: React.FC = () => {
                   )}
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

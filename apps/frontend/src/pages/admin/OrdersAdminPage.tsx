@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAdminApi } from '../../api/adminApi'
 import type { Order } from '../../types/order'
+import { getOrderLineItems } from '../../utils/normalizeOrder'
 import './AdminPages.css'
 
 export const OrdersAdminPage: React.FC = () => {
@@ -109,7 +110,8 @@ export const OrdersAdminPage: React.FC = () => {
             </thead>
             <tbody>
               {orders.map(order => {
-                const hasLabItems = order.items.some(item => item.type === 'lab')
+                const lineItems = getOrderLineItems(order)
+                const hasLabItems = lineItems.some(item => item.type === 'lab')
                 return (
                 <tr key={order.id} className={hasLabItems ? 'admin-order-lab' : ''}>
                   <td>{new Date(order.createdAt).toLocaleDateString('ru-RU')}</td>
@@ -184,17 +186,23 @@ export const OrdersAdminPage: React.FC = () => {
               </div>
               <div className="admin-detail-section">
                 <h4>Товары</h4>
-                {selectedOrder.items.map((item, idx) => (
-                  <div key={idx} className={`admin-detail-item ${item.type === 'lab' ? 'admin-detail-item-lab' : ''}`}>
-                    <div>
-                      {item.title} ({item.article})
-                      {item.type === 'lab' && <span style={{ marginLeft: '8px', fontSize: '12px', opacity: 0.7 }}>🧪 LAB</span>}
+                {(() => {
+                  const lineItems = getOrderLineItems(selectedOrder)
+                  if (lineItems.length === 0) {
+                    return <p style={{ opacity: 0.7 }}>Товары не найдены</p>
+                  }
+                  return lineItems.map((item, idx) => (
+                    <div key={idx} className={`admin-detail-item ${item.type === 'lab' ? 'admin-detail-item-lab' : ''}`}>
+                      <div>
+                        {item.title} ({item.article})
+                        {item.type === 'lab' && <span style={{ marginLeft: '8px', fontSize: '12px', opacity: 0.7 }}>🧪 LAB</span>}
+                      </div>
+                      {item.size && <div>Размер: {item.size}</div>}
+                      {item.artistName && <div><strong>Художник:</strong> {item.artistName}</div>}
+                      <div>{item.qty} × {item.price} ₽ = {(item.qty || 0) * (item.price || 0)} ₽</div>
                     </div>
-                    {item.size && <div>Размер: {item.size}</div>}
-                    {item.artistName && <div><strong>Художник:</strong> {item.artistName}</div>}
-                    <div>{item.qty} × {item.price} ₽ = {item.qty * item.price} ₽</div>
-                  </div>
-                ))}
+                  ))
+                })()}
               </div>
               <div className="admin-detail-section">
                 <h4>Доставка</h4>
