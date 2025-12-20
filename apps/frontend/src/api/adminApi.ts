@@ -31,7 +31,7 @@ function useAdminApi() {
         method: 'DELETE',
       }),
 
-    duplicateBotFlow: (id: string, data?: { key?: string; name?: string }) =>
+    duplicateBotFlow: (id: string, data?: { key?: string; name?: string }) =>   
       requestJson(`/api/admin/bot/flows/${id}/duplicate`, {
         method: 'POST',
         body: JSON.stringify(data || {}),
@@ -43,7 +43,7 @@ function useAdminApi() {
         body: JSON.stringify({ adminTgId }),
       }),
 
-    rollbackBotFlow: (id: string, version: number, adminTgId: number) =>
+    rollbackBotFlow: (id: string, version: number, adminTgId: number) =>        
       requestJson(`/api/admin/bot/flows/${id}/rollback`, {
         method: 'POST',
         body: JSON.stringify({ version, adminTgId }),
@@ -68,7 +68,7 @@ function useAdminApi() {
       flowId: string
       version?: 'draft' | number
       state?: any
-      event?: { type: 'start' | 'callback' | 'text' | 'webapp'; value?: string; payload?: any }
+      event?: { type: 'start' | 'callback' | 'text' | 'webapp'; value?: string; payload?: any }                                                                 
       telegramUserId?: bigint
     }) =>
       requestJson('/api/admin/bot/preview/run', {
@@ -83,9 +83,14 @@ function useAdminApi() {
         body: JSON.stringify({ stepId }),
       }),
 
-    // ... existing admin API methods ...
-    getOrders: () =>
-      requestJson('/api/admin/orders'),
+    // Orders
+    getOrders: (params?: { status?: string; q?: string }) => {
+      const queryParams = new URLSearchParams()
+      if (params?.status) queryParams.append('status', params.status)
+      if (params?.q) queryParams.append('q', params.q)
+      const query = queryParams.toString()
+      return requestJson(`/api/admin/orders${query ? `?${query}` : ''}`)
+    },
 
     getOrder: (id: string) =>
       requestJson(`/api/admin/orders/${id}`),
@@ -96,6 +101,13 @@ function useAdminApi() {
         body: JSON.stringify({ status }),
       }),
 
+    patchOrder: (orderId: string, status: string) =>
+      requestJson(`/api/admin/orders/${orderId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+
+    // Products
     getProducts: () =>
       requestJson('/api/admin/products'),
 
@@ -119,6 +131,7 @@ function useAdminApi() {
         method: 'DELETE',
       }),
 
+    // Banners
     getBanners: () =>
       requestJson('/api/admin/banners'),
 
@@ -142,6 +155,7 @@ function useAdminApi() {
         method: 'DELETE',
       }),
 
+    // Promos
     getPromos: () =>
       requestJson('/api/admin/promos'),
 
@@ -165,6 +179,13 @@ function useAdminApi() {
         method: 'DELETE',
       }),
 
+    generatePromos: (data: any) =>
+      requestJson('/api/admin/promos/generate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    // Settings
     getSettings: () =>
       requestJson('/api/admin/settings'),
 
@@ -174,9 +195,22 @@ function useAdminApi() {
         body: JSON.stringify({ value }),
       }),
 
-    getStats: () =>
-      requestJson('/api/admin/stats'),
+    patchSettings: (data: any) =>
+      requestJson('/api/admin/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
 
+    // Stats
+    getStats: (params?: { from?: string; to?: string }) => {
+      const queryParams = new URLSearchParams()
+      if (params?.from) queryParams.append('from', params.from)
+      if (params?.to) queryParams.append('to', params.to)
+      const query = queryParams.toString()
+      return requestJson(`/api/admin/stats${query ? `?${query}` : ''}`)
+    },
+
+    // Admins
     getAdmins: () =>
       requestJson('/api/admin/admins'),
 
@@ -186,11 +220,65 @@ function useAdminApi() {
         body: JSON.stringify(data),
       }),
 
+    addAdmin: (tgId: number) =>
+      requestJson('/api/admin/admins', {
+        method: 'POST',
+        body: JSON.stringify({ tgId }),
+      }),
+
     deleteAdmin: (tgId: number) =>
       request(`/api/admin/admins/${tgId}`, {
         method: 'DELETE',
       }),
 
+    removeAdmin: (tgId: number) =>
+      request(`/api/admin/admins/${tgId}`, {
+        method: 'DELETE',
+      }),
+
+    // Lab Artists
+    getLabArtists: () =>
+      requestJson('/api/admin/lab/artists'),
+
+    createLabArtist: (data: any) =>
+      requestJson('/api/admin/lab/artists', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateLabArtist: (id: string, data: any) =>
+      requestJson(`/api/admin/lab/artists/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    deleteLabArtist: (id: string) =>
+      request(`/api/admin/lab/artists/${id}`, {
+        method: 'DELETE',
+      }),
+
+    // Lab Products
+    getLabProducts: () =>
+      requestJson('/api/admin/lab/products'),
+
+    createLabProduct: (data: any) =>
+      requestJson('/api/admin/lab/products', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateLabProduct: (id: string, data: any) =>
+      requestJson(`/api/admin/lab/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    deleteLabProduct: (id: string) =>
+      request(`/api/admin/lab/products/${id}`, {
+        method: 'DELETE',
+      }),
+
+    // Telegram
     getTelegramSubscribers: () =>
       requestJson('/api/admin/telegram/subscribers'),
 
@@ -198,7 +286,14 @@ function useAdminApi() {
       request(`/api/admin/telegram/subscribers/${tgId}/toggle`, {
         method: 'POST',
       }),
+
+    sendTelegramPost: (data: any) =>
+      requestJson('/api/admin/telegram/posts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   }
 }
 
 export { useAdminApi }
+
