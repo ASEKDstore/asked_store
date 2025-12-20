@@ -190,6 +190,40 @@ async function seedPromos() {
   console.log('✅ Promos imported')
 }
 
+async function seedCategories() {
+  const defaultCategories = [
+    { name: 'Худи', slug: 'hoodie', order: 1 },
+    { name: 'Футболки', slug: 'tshirt', order: 2 },
+    { name: 'Брюки', slug: 'pants', order: 3 },
+    { name: 'Аксессуары', slug: 'accessories', order: 4 },
+    { name: 'Головные уборы', slug: 'headwear', order: 5 },
+    { name: 'Кастом', slug: 'custom', order: 6 },
+  ]
+
+  console.log('📥 Seeding default categories...')
+  for (const cat of defaultCategories) {
+    try {
+      await prisma.category.upsert({
+        where: { slug: cat.slug },
+        update: {
+          name: cat.name,
+          order: cat.order,
+          isActive: true,
+        },
+        create: {
+          name: cat.name,
+          slug: cat.slug,
+          order: cat.order,
+          isActive: true,
+        },
+      })
+    } catch (error: any) {
+      console.error(`Failed to seed category ${cat.slug}:`, error.message)
+    }
+  }
+  console.log('✅ Categories seeded')
+}
+
 async function seedSettings() {
   const settings = await readJsonFile<any>('settings')
   if (!settings) return
@@ -216,6 +250,7 @@ async function main() {
   try {
     await seedAdmins()
     await seedBanners()
+    await seedCategories()
     await seedProducts()
     await seedPromos()
     await seedSettings()
@@ -230,4 +265,5 @@ async function main() {
 }
 
 main()
+
 

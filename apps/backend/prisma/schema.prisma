@@ -34,19 +34,37 @@ model Banner {
   @@map("banners")
 }
 
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  isActive  Boolean   @default(true)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@map("categories")
+  @@index([slug])
+  @@index([isActive, order])
+}
+
 model Product {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   title       String
   description String
   price       Int
-  images      String[] @default([])
+  images      String[]   @default([])
   sku         String?
   article     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean    @default(true)
+  status      String?    @default("draft") // draft, published
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categories  Category[]
 
   @@map("products")
+  @@index([isActive, status])
 }
 
 model Promo {
