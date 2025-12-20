@@ -1,3 +1,5 @@
+// Legacy type - kept for backward compatibility with existing components
+// Real products are loaded from API via productsApi.ts
 export type Product = {
   id: string
   article: string // АРТИКУЛ
@@ -14,7 +16,8 @@ export type Product = {
   inStock?: boolean // Альтернативное название для available
 }
 
-export const products: Product[] = [
+// No mock products - all products are loaded from API
+export const products: Product[] = []
   {
     id: 'p-001',
     article: 'ASK-001-BLK',

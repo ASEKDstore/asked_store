@@ -1,8 +1,8 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Banners } from '../../modules/banners/Banners'
 import { HomeTiles } from '../../modules/tiles/HomeTiles'
 import { ProductShowcaseCarousel } from '../../components/ProductShowcaseCarousel'
-import { products } from '../../data/products'
+import { getPublicProducts } from '../../api/productsApi'
 import { TELEGRAM_CHANNEL_URL } from '../../config/links'
 import { useProductSheet } from '../../context/ProductSheetContext'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
@@ -13,17 +13,35 @@ export const MainPage = () => {
   const { openProduct } = useProductSheet()
   const featuresGridRef = useRef<HTMLDivElement>(null)
   const processGridRef = useRef<HTMLDivElement>(null)
+  const [productsToShow, setProductsToShow] = useState<Array<{
+    id: string
+    title: string
+    article?: string
+    price: number
+    image?: string
+    images?: string[]
+  }>>([])
 
-  // Get products for showcase (first 6 featured or first 6 available)
-  const productsToShow = useMemo(() => {
-    const available = products.filter(p => p.available).slice(0, 6)
-    return available.map(p => ({
-      id: p.id,
-      title: p.title,
-      article: p.article,
-      price: p.price,
-      image: p.image,
-    }))
+  // Load products from API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const products = await getPublicProducts({ sort: 'newest' })
+        const formatted = products.slice(0, 6).map(p => ({
+          id: p.id,
+          title: p.title,
+          article: p.article,
+          price: p.price,
+          image: p.images?.[0],
+          images: p.images,
+        }))
+        setProductsToShow(formatted)
+      } catch (error) {
+        console.error('Failed to load products:', error)
+        setProductsToShow([])
+      }
+    }
+    loadProducts()
   }, [])
 
   useEffect(() => {
@@ -213,10 +231,16 @@ export const MainPage = () => {
           <p className="showcase-sub">Выбирай из актуального. Центральная карточка — в фокусе.</p>
         </div>
 
-        <ProductShowcaseCarousel 
-          products={productsToShow} 
-          onOpen={openProduct} 
-        />
+        {productsToShow.length > 0 ? (
+          <ProductShowcaseCarousel 
+            products={productsToShow} 
+            onOpen={openProduct} 
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.7 }}>
+            <p>Скоро дроп</p>
+          </div>
+        )}
 
         <div className="home-divider" />
       </section>

@@ -1,13 +1,15 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { products } from '../data/products'
+import { useState, useEffect, useRef } from 'react'
 import { ProductGridCard } from '../modules/products/ProductGridCard'
-import type { Product } from '../data/products'
+import { getPublicProducts, getPublicCategories, type Product, type Category } from '../api/productsApi'
 import './catalog.css'
 
 export const CatalogPage = () => {
   const [mounted, setMounted] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<'all' | Product['category']>('all')
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null)
   const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [sort, setSort] = useState<'popular' | 'price_asc' | 'price_desc' | 'newest'>('popular')
   const [gridCols, setGridCols] = useState<2 | 3>(() => {
@@ -21,6 +23,47 @@ export const CatalogPage = () => {
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
   }, [])
+
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await getPublicCategories()
+        setCategories(cats)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+      }
+    }
+    loadCategories()
+  }, [])
+
+  // Load products
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true)
+      try {
+        const prods = await getPublicProducts({
+          categorySlug: selectedCategorySlug || undefined,
+          inStock: onlyAvailable || undefined,
+          search: query || undefined,
+          sort,
+        })
+        setProducts(prods)
+      } catch (error) {
+        console.error('Failed to load products:', error)
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      loadProducts()
+    }, query ? 300 : 0)
+    
+    return () => clearTimeout(timeoutId)
+  }, [selectedCategorySlug, onlyAvailable, query, sort])
 
   // Сохранение выбора в localStorage
   useEffect(() => {
@@ -56,48 +99,6 @@ export const CatalogPage = () => {
     }
   }, [viewOpen])
 
-  const filteredProducts = useMemo(() => {
-    let filtered = [...products]
-
-    // Поиск по query
-    if (query.trim()) {
-      const q = query.toLowerCase().trim()
-      filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) || p.article.toLowerCase().includes(q)
-      )
-    }
-
-    // Фильтр по категории
-    if (category !== 'all') {
-      filtered = filtered.filter((p) => p.category === category)
-    }
-
-    // Фильтр "В наличии"
-    if (onlyAvailable) {
-      filtered = filtered.filter((p) => p.available)
-    }
-
-    // Сортировка
-    switch (sort) {
-      case 'price_asc':
-        filtered.sort((a, b) => a.price - b.price)
-        break
-      case 'price_desc':
-        filtered.sort((a, b) => b.price - a.price)
-        break
-      case 'newest':
-        // Заглушка - просто обратный порядок
-        filtered.reverse()
-        break
-      case 'popular':
-      default:
-        // Заглушка - исходный порядок
-        break
-    }
-
-    return filtered
-  }, [query, category, onlyAvailable, sort])
 
   // Вычисление максимально допустимых колонок на основе ширины
   const maxAllowed =
@@ -106,15 +107,6 @@ export const CatalogPage = () => {
   // Эффективное количество колонок
   const effectiveCols = Math.min(gridCols, maxAllowed)
 
-  const categories: Array<{ value: 'all' | Product['category']; label: string }> = [
-    { value: 'all', label: 'Все' },
-    { value: 'hoodie', label: 'Худи' },
-    { value: 'tshirt', label: 'Футболки' },
-    { value: 'pants', label: 'Брюки' },
-    { value: 'custom', label: 'Кастом' },
-    { value: 'accessories', label: 'Аксессуары' },
-    { value: 'headwear', label: 'Головные уборы' },
-  ]
 
   return (
     <div className={`catalog-page ${mounted ? 'is-mounted' : ''}`}>
@@ -135,13 +127,19 @@ export const CatalogPage = () => {
 
         <div className="catalog-filters">
           <div className="catalog-categories">
+            <button
+              className={`catalog-category-chip ${selectedCategorySlug === null ? 'active' : ''}`}
+              onClick={() => setSelectedCategorySlug(null)}
+            >
+              Все
+            </button>
             {categories.map((cat) => (
               <button
-                key={cat.value}
-                className={`catalog-category-chip ${category === cat.value ? 'active' : ''}`}
-                onClick={() => setCategory(cat.value)}
+                key={cat.id}
+                className={`catalog-category-chip ${selectedCategorySlug === cat.slug ? 'active' : ''}`}
+                onClick={() => setSelectedCategorySlug(cat.slug)}
               >
-                {cat.label}
+                {cat.name}
               </button>
             ))}
           </div>
@@ -215,9 +213,28 @@ export const CatalogPage = () => {
             gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
           }}
         >
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <ProductGridCard key={product.id} product={product} />
+          {loading ? (
+            <div className="catalog-empty">
+              <p>Загрузка...</p>
+            </div>
+          ) : products.length > 0 ? (
+            products.map((product) => (
+              <ProductGridCard 
+                key={product.id} 
+                product={{
+                  id: product.id,
+                  article: product.article || '',
+                  title: product.title,
+                  price: product.price,
+                  image: product.images?.[0] || '',
+                  images: product.images,
+                  description: product.description,
+                  sizes: [], // TODO: add sizes to Product model
+                  category: product.categories?.[0]?.slug as any || 'custom',
+                  tags: [],
+                  available: product.isActive,
+                }} 
+              />
             ))
           ) : (
             <div className="catalog-empty">

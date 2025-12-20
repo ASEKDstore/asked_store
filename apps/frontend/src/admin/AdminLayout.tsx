@@ -6,6 +6,7 @@ import './AdminLayout.css'
 const tabs = [
   { path: '/app/admin/orders', label: 'Заказы', icon: '📦' },
   { path: '/app/admin/products', label: 'Товары', icon: '🛍️' },
+  { path: '/app/admin/categories', label: 'Категории', icon: '🏷️' },
   { path: '/app/admin/promos', label: 'Промокоды', icon: '🎟️' },
   { path: '/app/admin/banners', label: 'Баннеры', icon: '🖼️' },
   { path: '/app/admin/lab', label: 'LAB', icon: '🧪' },

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { productsStore } from '../store/productsStore'
+import { useAdminApi } from '../api/adminApi'
 import type { Product, ProductStatus } from '../types/adminProduct'
 import './ProductAdminSheet.css'
 
@@ -19,6 +20,7 @@ type Props = {
 
 export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, onDeleted }: Props) => {
   // ✅ ВСЕ хуки вызываются ВСЕГДА
+  const api = useAdminApi()
   const [mounted, setMounted] = useState(false)
   const [article, setArticle] = useState('')
   const [title, setTitle] = useState('')
@@ -29,6 +31,8 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
   const [tagsInput, setTagsInput] = useState('')
   const [images, setImages] = useState<string[]>([])
   const [newImageUrl, setNewImageUrl] = useState('')
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [availableCategories, setAvailableCategories] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showToast, setShowToast] = useState('')
@@ -39,6 +43,21 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
     }
     return null
   }, [mode, productId])
+
+  // Load categories
+  useEffect(() => {
+    if (isOpen) {
+      const loadCategories = async () => {
+        try {
+          const cats = await api.getCategories() as Array<{ id: string; name: string; slug: string }>
+          setAvailableCategories(cats || [])
+        } catch (error) {
+          console.error('Failed to load categories:', error)
+        }
+      }
+      loadCategories()
+    }
+  }, [isOpen, api])
 
   // Prefill form при edit
   useEffect(() => {
@@ -54,6 +73,12 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
         setDescription(product.description ?? '')
         setTagsInput(product.tags?.join(', ') ?? '')
         setImages([...(product.images ?? [])])
+        // Load categories from API if product has them
+        if ((product as any).categories) {
+          setSelectedCategoryIds((product as any).categories.map((c: any) => c.id))
+        } else {
+          setSelectedCategoryIds([])
+        }
       } else {
         // Reset для create
         setArticle('')
@@ -64,6 +89,7 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
         setDescription('')
         setTagsInput('')
         setImages([])
+        setSelectedCategoryIds([])
       }
       setErrors({})
       setNewImageUrl('')
@@ -137,7 +163,7 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return
 
     const priceNum = parseFloat(price)
@@ -147,44 +173,46 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
       .map((t) => safeTrim(t))
       .filter((t) => t.length > 0)
 
-    if (mode === 'create') {
-      const newProduct: Product = {
-        id: `prod-${Date.now()}`,
-        article: safeTrim(article),
-        title: safeTrim(title),
-        price: priceNum,
-        oldPrice: oldPriceNum,
-        description: safeTrim(description) || undefined,
-        images: images.filter((url) => safeTrim(url).length > 0),
-        tags: tags.length > 0 ? tags : undefined,
-        status,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+    try {
+      if (mode === 'create') {
+        await api.createProduct({
+          title: safeTrim(title),
+          description: safeTrim(description) || '',
+          price: priceNum,
+          images: images.filter((url) => safeTrim(url).length > 0),
+          article: safeTrim(article) || undefined,
+          isActive: status === 'published',
+          status: status,
+          categoryIds: selectedCategoryIds,
+        })
+        setShowToast('Сохранено')
+        setTimeout(() => {
+          setShowToast('')
+          onClose()
+          onSaved?.()
+        }, 1000)
+      } else if (mode === 'edit' && productId) {
+        await api.updateProduct(productId, {
+          title: safeTrim(title),
+          description: safeTrim(description) || '',
+          price: priceNum,
+          images: images.filter((url) => safeTrim(url).length > 0),
+          article: safeTrim(article) || undefined,
+          isActive: status === 'published',
+          status: status,
+          categoryIds: selectedCategoryIds,
+        })
+        setShowToast('Сохранено')
+        setTimeout(() => {
+          setShowToast('')
+          onClose()
+          onSaved?.()
+        }, 1000)
       }
-      productsStore.addProduct(newProduct)
-      setShowToast('Сохранено')
-      setTimeout(() => {
-        setShowToast('')
-        onClose()
-        onSaved?.()
-      }, 1000)
-    } else if (mode === 'edit' && productId) {
-      productsStore.updateProduct(productId, {
-        article: safeTrim(article),
-        title: safeTrim(title),
-        price: priceNum,
-        oldPrice: oldPriceNum,
-        description: safeTrim(description) || undefined,
-        images: images.filter((url) => safeTrim(url).length > 0),
-        tags: tags.length > 0 ? tags : undefined,
-        status,
-      })
-      setShowToast('Сохранено')
-      setTimeout(() => {
-        setShowToast('')
-        onClose()
-        onSaved?.()
-      }, 1000)
+    } catch (error: any) {
+      console.error('Failed to save product:', error)
+      setShowToast('Ошибка при сохранении')
+      setTimeout(() => setShowToast(''), 3000)
     }
   }
 
@@ -369,6 +397,43 @@ export const ProductAdminSheet = ({ isOpen, mode, productId, onClose, onSaved, o
                   onChange={(e) => setTagsInput(e.target.value)}
                   placeholder="tag1, tag2, tag3"
                 />
+              </section>
+
+              {/* Categories */}
+              <section className="tg-card">
+                <div className="tg-card-title">Категории</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                  {availableCategories.map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        if (selectedCategoryIds.includes(cat.id)) {
+                          setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== cat.id))
+                        } else {
+                          setSelectedCategoryIds([...selectedCategoryIds, cat.id])
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        border: '1px solid',
+                        borderColor: selectedCategoryIds.includes(cat.id) ? '#4caf50' : 'rgba(255, 255, 255, 0.2)',
+                        background: selectedCategoryIds.includes(cat.id) ? 'rgba(76, 175, 80, 0.2)' : 'transparent',
+                        color: '#f5f5f5',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                      }}
+                    >
+                      {cat.name} {selectedCategoryIds.includes(cat.id) && '✓'}
+                    </button>
+                  ))}
+                </div>
+                {availableCategories.length === 0 && (
+                  <div style={{ marginTop: '8px', opacity: 0.7, fontSize: '14px' }}>
+                    Категории не загружены. Создайте категории в разделе "Категории".
+                  </div>
+                )}
               </section>
 
               {/* Images */}

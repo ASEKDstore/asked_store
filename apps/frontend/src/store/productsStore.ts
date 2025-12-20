@@ -33,53 +33,16 @@ function persistDebounced(items: Product[]): void {
   }, PERSIST_DEBOUNCE_MS)
 }
 
+// No demo products - all products are loaded from API
 function seedDemoProducts(): Product[] {
-  // Seed данные только для dev (если localStorage пустой)
-  return [
-    {
-      id: 'prod-demo-1',
-      article: 'ASK-001-BLK',
-      title: 'ASKED Hoodie Black',
-      price: 8990,
-      oldPrice: 11990,
-      description: 'Премиум худи из качественного материала',
-      images: ['/assets/product-1.jpg'],
-      tags: ['hoodie', 'black', 'premium'],
-      status: 'published',
-      createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-      updatedAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    },
-    {
-      id: 'prod-demo-2',
-      article: 'ASK-002-WHT',
-      title: 'ASKED T-Shirt White',
-      price: 2990,
-      description: 'Классическая белая футболка',
-      images: ['/assets/product-2.jpg'],
-      tags: ['tshirt', 'white'],
-      status: 'draft',
-      createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-      updatedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    },
-  ]
+  return []
 }
 
 function hydrate(): Product[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) {
-      // Seed demo products только если localStorage пустой (dev mode)
-      if (process.env.NODE_ENV === 'development') {
-        const seed = seedDemoProducts()
-        if (seed.length > 0) {
-          const data: ProductsPersistV1 = {
-            schemaVersion: SCHEMA_VERSION,
-            items: seed,
-          }
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-          return seed
-        }
-      }
+      // No demo products - return empty array
       return []
     }
 

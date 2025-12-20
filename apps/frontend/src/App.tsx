@@ -24,6 +24,7 @@ import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 // Lazy load heavy pages (admin, lab, reviews)
 const OrdersAdminPage = lazy(() => import('./pages/admin/OrdersAdminPage').then(m => ({ default: m.OrdersAdminPage })))
 const ProductsAdminPage = lazy(() => import('./pages/admin/ProductsAdminPage').then(m => ({ default: m.ProductsAdminPage })))
+const CategoriesAdminPage = lazy(() => import('./pages/admin/CategoriesAdminPage').then(m => ({ default: m.CategoriesAdminPage })))
 const PromosAdminPage = lazy(() => import('./pages/admin/PromosAdminPage').then(m => ({ default: m.PromosAdminPage })))
 const BannersAdminPage = lazy(() => import('./pages/admin/BannersAdminPage').then(m => ({ default: m.BannersAdminPage })))
 const LabAdminPage = lazy(() => import('./pages/admin/LabAdminPage').then(m => ({ default: m.LabAdminPage })))
@@ -116,6 +117,11 @@ function AppContent() {
         <Route path="products" element={
           <Suspense fallback={<PageLoader />}>
             <ProductsAdminPage />
+          </Suspense>
+        } />
+        <Route path="categories" element={
+          <Suspense fallback={<PageLoader />}>
+            <CategoriesAdminPage />
           </Suspense>
         } />
         <Route path="promos" element={
