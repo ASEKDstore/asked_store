@@ -57,6 +57,18 @@ export const OrdersAdminPage: React.FC = () => {
         </button>
       </div>
 
+      <div style={{ 
+        marginBottom: '16px', 
+        padding: '12px', 
+        backgroundColor: '#1a1a1a', 
+        borderRadius: '8px',
+        border: '1px solid #333',
+        fontSize: '14px',
+        color: '#ccc'
+      }}>
+        💡 <strong>Важно:</strong> Админы должны нажать <strong>Start</strong> боту в Telegram, чтобы получать уведомления о новых заказах в личку.
+      </div>
+
       <div className="admin-filters">
         <input
           type="text"
