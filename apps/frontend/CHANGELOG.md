@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [1.16.3] - 2024-12-19
 
+### Banners Integration
+
+- **Banners on home page are now fully driven by Admin Panel:**
+  - Removed all static/mock banner data from `data/banners.ts`
+  - Banners component now loads data from public API endpoint `/api/banners`
+  - Only active banners (`isActive: true`) are displayed
+  - If no banners exist, the banner section is not rendered at all
+  - Banner details page also loads from API instead of static data
+  - Increased banner height for better visual impact:
+    - Desktop: 280px (was 200px)
+    - Tablet: 220px (was 170px)
+    - Mobile: 200px (was 160px)
+
 ### Performance & UI Improvements
 
 - **Removed global performance-heavy effects:**
