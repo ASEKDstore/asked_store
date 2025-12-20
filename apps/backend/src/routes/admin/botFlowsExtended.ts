@@ -6,7 +6,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../../db/prisma.js'
 import { z } from 'zod'
-import { adminOnly } from '../../middleware/adminOnly.js'
 
 const router = Router()
 
@@ -106,7 +105,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = CreateFlowSchema.parse(req.body)
-    const user = (req as any).user // From adminOnly middleware
+    const user = (req as any).user // From adminOnly middleware (applied in server.ts)
     
     const flow = await prisma.botFlow.create({
       data: {

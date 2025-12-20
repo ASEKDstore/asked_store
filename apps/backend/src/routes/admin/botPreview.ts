@@ -6,7 +6,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../../db/prisma.js'
 import { z } from 'zod'
-import { adminOnly } from '../../middleware/adminOnly.js'
 
 const router = Router()
 
