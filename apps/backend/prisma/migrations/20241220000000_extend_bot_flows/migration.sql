@@ -1,21 +1,41 @@
--- AlterTable: Add new columns to bot_flows
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "description" TEXT;
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'DRAFT';
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "version" INTEGER DEFAULT 0;
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "entryPoints" JSONB DEFAULT '[]';
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "startNodeId" TEXT;
-ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "publishedAt" TIMESTAMP(3);
-
--- CreateEnum: BotFlowStatus
+-- CreateEnum: BotFlowStatus (must be created first)
 DO $$ BEGIN
  CREATE TYPE "BotFlowStatus" AS ENUM('DRAFT', 'PUBLISHED', 'ARCHIVED');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
--- Update status column to use enum
-ALTER TABLE "bot_flows" ALTER COLUMN "status" TYPE "BotFlowStatus" USING "status"::"BotFlowStatus";
-ALTER TABLE "bot_flows" ALTER COLUMN "status" SET DEFAULT 'DRAFT';
+-- AlterTable: Add new columns to bot_flows
+ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "description" TEXT;
+ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "version" INTEGER DEFAULT 0;
+ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "entryPoints" JSONB DEFAULT '[]';
+ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "startNodeId" TEXT;
+ALTER TABLE "bot_flows" ADD COLUMN IF NOT EXISTS "publishedAt" TIMESTAMP(3);
+
+-- Add status column with enum type (or alter if exists)
+DO $$ 
+BEGIN
+  -- Check if status column exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'bot_flows' AND column_name = 'status'
+  ) THEN
+    -- Column exists, alter it
+    ALTER TABLE "bot_flows" 
+      ALTER COLUMN "status" DROP DEFAULT,
+      ALTER COLUMN "status" TYPE "BotFlowStatus" USING 
+        CASE 
+          WHEN "status"::text = 'DRAFT' THEN 'DRAFT'::"BotFlowStatus"
+          WHEN "status"::text = 'PUBLISHED' THEN 'PUBLISHED'::"BotFlowStatus"
+          WHEN "status"::text = 'ARCHIVED' THEN 'ARCHIVED'::"BotFlowStatus"
+          ELSE 'DRAFT'::"BotFlowStatus"
+        END;
+    ALTER TABLE "bot_flows" ALTER COLUMN "status" SET DEFAULT 'DRAFT'::"BotFlowStatus";
+  ELSE
+    -- Column doesn't exist, add it
+    ALTER TABLE "bot_flows" ADD COLUMN "status" "BotFlowStatus" DEFAULT 'DRAFT'::"BotFlowStatus";
+  END IF;
+END $$;
 
 -- CreateTable: bot_flow_nodes
 CREATE TABLE IF NOT EXISTS "bot_flow_nodes" (
