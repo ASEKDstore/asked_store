@@ -359,5 +359,78 @@ export async function updateOrderNotification(
   }
 }
 
+/**
+ * Test notification to all admins
+ * Sends a test message to verify notification setup
+ */
+export async function testAdminNotifications(): Promise<{ success: number; failed: number; total: number }> {
+  console.log('[TEST NOTIFY] start')
+  
+  if (!BOT_TOKEN) {
+    console.warn('[TEST NOTIFY] TELEGRAM_BOT_TOKEN not set')
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
+  if (!adminIdsEnv) {
+    console.warn('[TEST NOTIFY] TELEGRAM_ADMIN_IDS not configured')
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  const adminIds = adminIdsEnv
+    .split(',')
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
+    .map(id => {
+      const numId = Number(id)
+      return Number.isFinite(numId) && numId > 0 ? numId : null
+    })
+    .filter((id): id is number => id !== null)
+
+  if (adminIds.length === 0) {
+    console.warn('[TEST NOTIFY] No valid admin IDs found')
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  const testMessage = `🧪 <b>Тест уведомлений</b>
+
+Это тестовое сообщение для проверки настройки уведомлений о заказах.
+
+Если вы видите это сообщение, значит уведомления работают корректно! ✅
+
+<b>Важно:</b> Если бот не может отправить вам сообщение, нажмите /start в боте.`
+
+  const results = await Promise.allSettled(
+    adminIds.map(adminId => sendMessage(adminId, testMessage, 'HTML'))
+  )
+
+  let successCount = 0
+  let failCount = 0
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.error(`[TEST NOTIFY] Failed to send to admin ${adminIds[index]}:`, result.reason)
+      failCount++
+    } else if (result.value && result.value.success) {
+      successCount++
+    } else if (result.value && !result.value.success) {
+      const error = result.value.error
+      if (error?.statusCode === 403) {
+        console.warn(`[TEST NOTIFY] Admin ${adminIds[index]} must press Start in bot`)
+      } else {
+        console.error(`[TEST NOTIFY] Failed to send to admin ${adminIds[index]}:`, error)
+      }
+      failCount++
+    }
+  })
+
+  console.log('[TEST NOTIFY] complete', {
+    total: adminIds.length,
+    success: successCount,
+    failed: failCount,
+  })
+
+  return { success: successCount, failed: failCount, total: adminIds.length }
+}
+
 export { sendMessage, editMessageText }
 
