@@ -217,18 +217,23 @@ async function notifyClientAboutOrder(order: Order): Promise<void> {
 }
 
 export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: number; failed: number }> {
-  console.log('[ORDER NOTIFY] start', { orderId: order.id })
+  const requestId = (order as any).requestId || 'unknown'
+  console.log('[ORDER NOTIFY] START', {
+    requestId,
+    orderId: order.id,
+    timestamp: new Date().toISOString(),
+  })
   
   try {
     if (!BOT_TOKEN) {
-      console.warn('[ORDER NOTIFY] TELEGRAM_BOT_TOKEN not set, skipping notification')
+      console.warn('[ORDER NOTIFY] TELEGRAM_BOT_TOKEN not set', { requestId, orderId: order.id })
       return { success: 0, failed: 0 }
     }
 
     // Read admin IDs from environment variable (comma-separated)
     const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
     if (!adminIdsEnv) {
-      console.warn('[ORDER NOTIFY] TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
+      console.warn('[ORDER NOTIFY] TELEGRAM_ADMIN_IDS not configured', { requestId, orderId: order.id })
       return { success: 0, failed: 0 }
     }
 
@@ -244,9 +249,16 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: n
       .filter((id): id is number => id !== null)
 
     if (adminIds.length === 0) {
-      console.warn('[ORDER NOTIFY] No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
+      console.warn('[ORDER NOTIFY] No valid admin IDs found', { requestId, orderId: order.id, raw: adminIdsEnv })
       return { success: 0, failed: 0 }
     }
+
+    console.log('[ORDER NOTIFY] ADMIN_IDS', {
+      requestId,
+      orderId: order.id,
+      adminIds,
+      count: adminIds.length,
+    })
 
     const message = formatOrderMessage(order)
     
@@ -277,27 +289,49 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: n
       adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
     )
 
-    // Log results
+    // Log results with requestId
     let successCount = 0
     let failCount = 0
     results.forEach((result, index) => {
+      const adminId = adminIds[index]
       if (result.status === 'rejected') {
-        console.error(`[ORDER NOTIFY] Failed to send notification to admin ${adminIds[index]}:`, result.reason)
+        console.error('[ORDER NOTIFY] SEND_FAILED', {
+          requestId,
+          orderId: order.id,
+          adminId,
+          error: result.reason,
+        })
         failCount++
       } else if (result.value && result.value.success) {
+        console.log('[ORDER NOTIFY] SENT', {
+          requestId,
+          orderId: order.id,
+          adminId,
+        })
         successCount++
       } else if (result.value && !result.value.success) {
         const error = result.value.error
         if (error?.statusCode === 403) {
-          console.warn(`[ORDER NOTIFY] Admin ${adminIds[index]} must press Start in bot`)
+          console.warn('[ORDER NOTIFY] ADMIN_MUST_START', {
+            requestId,
+            orderId: order.id,
+            adminId,
+            error: 'Admin must press Start in bot',
+          })
         } else {
-          console.error(`[ORDER NOTIFY] Failed to send to admin ${adminIds[index]}:`, error)
+          console.error('[ORDER NOTIFY] SEND_FAILED', {
+            requestId,
+            orderId: order.id,
+            adminId,
+            error,
+          })
         }
         failCount++
       }
     })
 
-    console.log('[ORDER NOTIFY] success', {
+    console.log('[ORDER NOTIFY] COMPLETE', {
+      requestId,
       orderId: order.id,
       totalAdmins: adminIds.length,
       success: successCount,
@@ -308,8 +342,14 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: n
     // (see backend/src/routes/orders.ts)
 
     return { success: successCount, failed: failCount }
-  } catch (error) {
-    console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
+  } catch (error: any) {
+    const requestId = (order as any).requestId || 'unknown'
+    console.error('[ORDER NOTIFY] EXCEPTION', {
+      requestId,
+      orderId: order.id,
+      error: error.message || error,
+      stack: error.stack,
+    })
     // Don't throw - notification failure should not break order creation
     return { success: 0, failed: 0 }
   }

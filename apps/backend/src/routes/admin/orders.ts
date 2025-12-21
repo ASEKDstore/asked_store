@@ -25,9 +25,17 @@ router.get('/', async (req, res) => {
       where.createdAt = { ...where.createdAt, lte: toDate }
     }
     
+    // Admin panel: show ALL orders (no status filter by default, no soft-delete)
+    // Only filter if status is explicitly provided
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+    })
+    
+    console.log('[ADMIN/ORDERS] Fetch result:', {
+      filterStatus: status || 'all',
+      count: orders.length,
+      recentIds: orders.slice(0, 5).map(o => ({ id: o.id, status: o.status, createdAt: o.createdAt })),
     })
     
     // Search filter (can be optimized with Prisma full-text search)

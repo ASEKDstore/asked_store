@@ -86,6 +86,100 @@ app.use('/api/public/products', publicProductsRouter)
 app.use('/api/public/categories', publicCategoriesRouter)
 app.use('/api/banners', bannersRouter)
 
+// Health check endpoints (public, for monitoring)
+app.get('/health/db', async (req, res) => {
+  try {
+    const serviceName = process.env.RENDER_SERVICE_NAME || process.env.SERVICE_NAME || 'unknown'
+    
+    // Extract DB info (mask password)
+    let dbHost = 'unknown'
+    let dbName = 'unknown'
+    try {
+      const dbUrl = process.env.DATABASE_URL || ''
+      if (dbUrl) {
+        const url = new URL(dbUrl)
+        dbHost = url.hostname
+        dbName = url.pathname.replace(/^\//, '').split('?')[0]
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // Get order count and last order
+    const orderCount = await prisma.order.count()
+    const lastOrder = await prisma.order.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        total: true,
+        tgId: true,
+        createdAt: true,
+      },
+    })
+
+    res.json({
+      service: serviceName,
+      db: {
+        host: dbHost,
+        name: dbName,
+        url: `${dbHost}/${dbName}`, // Masked URL
+      },
+      timestamp: new Date().toISOString(),
+      orders: {
+        count: orderCount,
+        lastOrder: lastOrder ? {
+          id: lastOrder.id,
+          status: lastOrder.status,
+          total: lastOrder.total,
+          tgId: lastOrder.tgId ? String(lastOrder.tgId) : null,
+          createdAt: lastOrder.createdAt.toISOString(),
+        } : null,
+      },
+    })
+  } catch (error: any) {
+    console.error('[HEALTH/DB] Error:', error)
+    res.status(500).json({
+      error: 'Database health check failed',
+      message: error.message,
+    })
+  }
+})
+
+// Debug endpoint for recent orders (admin only, or remove in production)
+app.get('/debug/orders/recent', adminOnly, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20
+    const orders = await prisma.order.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        total: true,
+        tgId: true,
+        createdAt: true,
+        notifyUserStatus: true,
+      },
+    })
+
+    res.json({
+      count: orders.length,
+      orders: orders.map(o => ({
+        id: o.id,
+        status: o.status,
+        total: o.total,
+        tgId: o.tgId ? String(o.tgId) : null,
+        createdAt: o.createdAt.toISOString(),
+        notifyUserStatus: o.notifyUserStatus,
+      })),
+    })
+  } catch (error: any) {
+    console.error('[DEBUG/ORDERS] Error:', error)
+    res.status(500).json({ error: 'Failed to fetch recent orders', message: error.message })
+  }
+})
+
 // Admin APIs (protected with adminOnly middleware)
 app.use('/api/admin/orders', adminOnly, adminOrdersRouter)
 app.use('/api/admin/notifications', adminOnly, adminNotificationsRouter)

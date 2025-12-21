@@ -35,16 +35,44 @@ function normalizeOrder(order: any) {
 
 // POST /api/orders - Create order
 router.post('/', async (req, res) => {
+  // Generate requestId for trace
+  const requestId = uuidv4()
+  const startTime = Date.now()
+  
+  // Extract environment info
+  const nodeEnv = process.env.NODE_ENV || 'unknown'
+  const serviceName = process.env.RENDER_SERVICE_NAME || process.env.SERVICE_NAME || 'unknown'
+  
+  // Extract DATABASE_URL info (mask password)
+  let dbInfo = 'unknown'
+  try {
+    const dbUrl = process.env.DATABASE_URL || ''
+    if (dbUrl) {
+      const url = new URL(dbUrl)
+      dbInfo = `${url.hostname}/${url.pathname.replace(/^\//, '')}`
+    }
+  } catch (e) {
+    // Ignore
+  }
+
   try {
     const data: CreateOrderRequest = req.body
 
-    // Debug log (limited, no personal data)
-    console.debug('[POST /api/orders] Received order request:', {
-      hasUser: !!data.user,
-      hasTgId: !!data.user?.tgId,
+    // Extract telegram user info from initData (if available)
+    const initDataUnsafe = (req as any).initDataUnsafe || {}
+    const tgUserId = initDataUnsafe.user?.id || data.user?.tgId || null
+
+    // Comprehensive trace log at start
+    console.log('[ORDER CREATE] START', {
+      requestId,
+      env: nodeEnv,
+      service: serviceName,
+      db: dbInfo,
+      tgUserId: tgUserId ? String(tgUserId) : null,
       itemsCount: data.items?.length || 0,
       hasDelivery: !!data.delivery,
       hasPromoCode: !!data.promoCode,
+      timestamp: new Date().toISOString(),
     })
 
     // Validate required fields - tgId
@@ -206,11 +234,14 @@ router.post('/', async (req, res) => {
     const userTelegramId = tgIdBigInt
     const userTelegramIdStr = String(userTelegramId)
 
-    // Log order creation
-    console.log('[order] created', {
+    // Log before creating order
+    console.log('[ORDER CREATE] BEFORE_DB', {
+      requestId,
       orderId,
-      userId: userTelegramIdStr,
-      telegramId: userTelegramIdStr,
+      tgId: String(tgIdBigInt),
+      totalPrice,
+      itemsCount: normalizedItems.length,
+      status: 'new',
     })
 
     // Initialize notification status
@@ -277,49 +308,98 @@ router.post('/', async (req, res) => {
     }
 
     // Create order with notification status
-    const order = await prisma.order.create({
-      data: {
-        id: orderId,
-        items: orderDataJson as any,
-        total: totalPrice,
-        status: 'new',
-        tgId: tgIdBigInt,
-        notifyUserStatus,
-        notifyUserError,
-        notifyUserTgId: userTelegramId,
-      },
-    })
+    let order
+    try {
+      order = await prisma.order.create({
+        data: {
+          id: orderId,
+          items: orderDataJson as any,
+          total: totalPrice,
+          status: 'new',
+          tgId: tgIdBigInt,
+          notifyUserStatus,
+          notifyUserError,
+          notifyUserTgId: userTelegramId,
+        },
+      })
 
-    // Notify admins immediately after order creation
-    // CRITICAL: This must be called AFTER successful order.create
-    // Do NOT wait for it, but do NOT swallow errors silently
-    console.log('[ORDER NOTIFY] start', { orderId: order.id })
+      // CRITICAL: Log immediately after successful DB write
+      console.log('[ORDER CREATED] requestId=%s orderId=%s status=%s tgId=%s userId=%s total=%d', 
+        requestId, order.id, order.status, String(tgIdBigInt), String(userTelegramId), order.total)
+      console.log('[ORDER CREATED] DETAILS', {
+        requestId,
+        orderId: order.id,
+        status: order.status,
+        tgId: String(tgIdBigInt),
+        userId: String(userTelegramId),
+        total: order.total,
+        createdAt: order.createdAt.toISOString(),
+        notifyUserStatus,
+        dbTime: Date.now() - startTime,
+      })
+    } catch (dbError: any) {
+      // Log Prisma/DB error with full details
+      console.error('[ORDER CREATE] DB_ERROR', {
+        requestId,
+        orderId,
+        error: dbError.message || dbError,
+        stack: dbError.stack,
+        code: dbError.code,
+        meta: dbError.meta,
+      })
+      throw dbError // Re-throw to be caught by outer catch
+    }
+
+    // Notify admins immediately after order creation - SYNCHRONOUS with logging
+    // CRITICAL: This must be called AFTER successful order.create, in the same request context
+    console.log('[ORDER NOTIFY] START', {
+      requestId,
+      orderId: order.id,
+      timestamp: new Date().toISOString(),
+    })
+    
     const orderForNotification = {
       ...order,
       items: order.items as any,
       totalPrice: order.total,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      requestId, // Pass requestId to notification function for trace
     }
     
-    // Fire and forget - don't block response, but log result
-    notifyAdminsAboutOrder(orderForNotification as any)
-      .then((notifyResult) => {
-        console.log('[ORDER NOTIFY] success', { 
-          orderId: order.id, 
-          sent: notifyResult.success, 
-          failed: notifyResult.failed 
-        })
+    // AWAIT notification - don't fire-and-forget, we need to see errors
+    try {
+      const notifyResult = await notifyAdminsAboutOrder(orderForNotification as any)
+      console.log('[ORDER NOTIFY] SUCCESS', {
+        requestId,
+        orderId: order.id,
+        sent: notifyResult.success,
+        failed: notifyResult.failed,
+        totalAdmins: (notifyResult.success || 0) + (notifyResult.failed || 0),
       })
-      .catch((error) => {
-        console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
-        // Don't fail the request, but log the error
+    } catch (notifyError: any) {
+      // Log notification error, but don't fail the request
+      console.error('[ORDER NOTIFY] ERROR', {
+        requestId,
+        orderId: order.id,
+        error: notifyError.message || notifyError,
+        stack: notifyError.stack,
       })
+    }
 
     // Return 201 with order info and user notification status
+    const responseTime = Date.now() - startTime
+    console.log('[ORDER CREATE] COMPLETE', {
+      requestId,
+      orderId: order.id,
+      responseTime,
+      status: 201,
+    })
+    
     res.status(201).json({
       success: true,
       orderId: order.id,
+      requestId, // Include requestId in response for debugging
       tgId: String(tgIdBigInt),
       createdAt: order.createdAt.toISOString(),
       userNotify: {
@@ -329,20 +409,36 @@ router.post('/', async (req, res) => {
       },
     })
   } catch (error: any) {
+    const responseTime = Date.now() - startTime
+    
     // Handle custom validation errors (thrown with statusCode: 400)
     if (error.statusCode === 400) {
-      return res.status(400).json({ error: error.message })
+      console.error('[ORDER CREATE] VALIDATION_ERROR', {
+        requestId,
+        error: error.message,
+        responseTime,
+      })
+      return res.status(400).json({ error: error.message, requestId })
     }
     
-    // Log full error for debugging
-    console.error('[POST /api/orders] Error creating order:', {
+    // Log full error for debugging with requestId
+    console.error('[ORDER CREATE] ERROR', {
+      requestId,
+      env: nodeEnv,
+      service: serviceName,
+      db: dbInfo,
       error: error.message || error,
       stack: error.stack,
       code: error.code,
+      meta: error.meta,
+      responseTime,
     })
     
-    // Return 500 for unexpected errors
-    res.status(500).json({ error: 'Failed to create order' })
+    // Return 500 with requestId for debugging
+    res.status(500).json({ 
+      error: 'Failed to create order',
+      requestId, // Include requestId so we can find it in logs
+    })
   }
 })
 
@@ -375,7 +471,16 @@ router.get('/', async (req, res) => {
     // Normalize orders - extract itemsList and serialize BigInt and dates
     const normalizedOrders = orders.map(o => normalizeOrder(o))
     
-    console.log('[GET /api/orders] Found orders:', { tgId: String(tgId), count: normalizedOrders.length })
+    console.log('[GET /api/orders] Found orders:', {
+      tgId: String(tgId),
+      count: normalizedOrders.length,
+      orders: normalizedOrders.slice(0, 10).map(o => ({
+        id: o.id,
+        status: o.status || 'unknown',
+        createdAt: o.createdAt,
+        total: (o as any).totalPrice || (o as any).total,
+      })),
+    })
     
     // Always return JSON array (even if empty)
     res.json(normalizedOrders)
