@@ -2,9 +2,9 @@
  * Unified API base URL utility
  * 
  * In development: uses Vite proxy (API_BASE = "")
- * In production: uses VITE_API_URL or VITE_API_BASE env variable
+ * In production: uses VITE_API_BASE_URL env variable or fallback to backend URL
  */
-const API_BASE = (import.meta as any).env?.VITE_API_URL ?? (import.meta as any).env?.VITE_API_BASE ?? ''
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'https://asked-store-backend.onrender.com'
 
 /**
  * Constructs full API URL
@@ -53,6 +53,17 @@ export async function fetchWithTimeout(
     }
     throw error
   }
+}
+
+/**
+ * Fetch helper that uses API_BASE
+ * @param path - API path (e.g., "/api/orders")
+ * @param init - Fetch options
+ * @returns Promise<Response>
+ */
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const url = apiUrl(path)
+  return fetch(url, init)
 }
 
 export default apiUrl

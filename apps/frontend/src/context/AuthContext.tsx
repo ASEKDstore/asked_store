@@ -150,29 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // We have valid context, proceed with authentication
       setPhase('tg_data_ok')
 
-      // Get backend URL - check VITE_BACKEND_URL first
-      const envBackendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
+      // Get backend URL - use VITE_API_BASE_URL with fallback
+      const envBackendUrl = (import.meta as any).env?.VITE_API_BASE_URL || 
+                            (import.meta as any).env?.VITE_BACKEND_URL || 
                             (import.meta as any).env?.VITE_API_URL || 
-                            (import.meta as any).env?.VITE_API_BASE
-      
-      if (!envBackendUrl) {
-        const errorMsg = 'Не настроен VITE_API_URL'
-        console.warn('[ASKED BOOT]', errorMsg)
-        setPhase('error')
-        setState({
-          status: 'error',
-          displayName: unsafeUser ? (unsafeUser.first_name || unsafeUser.username || null) : null,
-          error: errorMsg,
-          errorStatus: null,
-          errorDetails: null,
-          token: null,
-          role: null,
-          phase: 'error',
-          requestId,
-          retry: performBootstrap,
-        })
-        return
-      }
+                            (import.meta as any).env?.VITE_API_BASE ||
+                            'https://asked-store-backend.onrender.com'
 
       // Normalize backend URL
       let backendUrl = envBackendUrl.trim()

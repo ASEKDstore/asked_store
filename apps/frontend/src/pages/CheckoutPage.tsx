@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useUser } from '../context/UserContext'
+import { apiFetch } from '../utils/api'
 import './checkout.css'
 
 /**
@@ -72,7 +73,7 @@ export const CheckoutPage: React.FC = () => {
     setPromoError(null)
 
     try {
-      const response = await fetch('/api/promos/apply', {
+      const response = await apiFetch('/api/promos/apply', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +210,7 @@ export const CheckoutPage: React.FC = () => {
       }
 
       // Send order
-      const response = await fetch('/api/orders', {
+      const response = await apiFetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -82,9 +82,11 @@ async function performAuth(): Promise<string | null> {
       return null
     }
     
-    const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
+    const backendUrl = (import.meta as any).env?.VITE_API_BASE_URL || 
+                      (import.meta as any).env?.VITE_BACKEND_URL || 
                       (import.meta as any).env?.VITE_API_URL || 
-                      (import.meta as any).env?.VITE_API_BASE || ''
+                      (import.meta as any).env?.VITE_API_BASE ||
+                      'https://asked-store-backend.onrender.com'
     
     if (!backendUrl) {
       console.warn('[apiClient] No backend URL configured for auth retry')
