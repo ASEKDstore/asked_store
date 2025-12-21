@@ -1,8 +1,7 @@
 import { Router } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { prisma } from '../db/prisma.js'
-import { notifyAdminsAboutOrder } from '../services/telegramNotify.js'
-import { notifyUserAboutOrder, needsUserStart } from '../services/botClient.js'
+import { notifyUserAboutOrder, needsUserStart, notifyAdminsAboutOrderViaBot } from '../services/botClient.js'
 import type { CreateOrderRequest, OrderStatus } from '../types/order.js'
 
 const router = Router()
@@ -234,6 +233,38 @@ router.post('/', async (req, res) => {
     const userTelegramId = tgIdBigInt
     const userTelegramIdStr = String(userTelegramId)
 
+    // CRITICAL: Ensure user exists in database (upsert TelegramSubscriber)
+    // This creates/updates the user record so orders can be properly linked
+    try {
+      await prisma.telegramSubscriber.upsert({
+        where: { tgId: tgIdBigInt },
+        update: {
+          username: data.user.username || null,
+          firstName: data.user.name?.split(' ')[0] || null,
+          lastName: data.user.name?.split(' ').slice(1).join(' ') || null,
+          isActive: true,
+        },
+        create: {
+          tgId: tgIdBigInt,
+          username: data.user.username || null,
+          firstName: data.user.name?.split(' ')[0] || null,
+          lastName: data.user.name?.split(' ').slice(1).join(' ') || null,
+          isActive: true,
+        },
+      })
+      console.log('[ORDER CREATE] USER_UPSERTED', {
+        requestId,
+        tgId: String(tgIdBigInt),
+      })
+    } catch (userError: any) {
+      console.error('[ORDER CREATE] USER_UPSERT_ERROR', {
+        requestId,
+        tgId: String(tgIdBigInt),
+        error: userError.message || userError,
+      })
+      // Continue anyway - user might not exist in schema yet, but order should still be created
+    }
+
     // Log before creating order
     console.log('[ORDER CREATE] BEFORE_DB', {
       requestId,
@@ -350,32 +381,38 @@ router.post('/', async (req, res) => {
       throw dbError // Re-throw to be caught by outer catch
     }
 
-    // Notify admins immediately after order creation - SYNCHRONOUS with logging
-    // CRITICAL: This must be called AFTER successful order.create, in the same request context
+    // Notify admins immediately after order creation - via bot internal endpoint
+    // CRITICAL: This must be called AFTER successful order.create, using bot endpoint (same as test notifications)
     console.log('[ORDER NOTIFY] START', {
       requestId,
       orderId: order.id,
       timestamp: new Date().toISOString(),
     })
     
+    // Extract order data for notification
+    const orderData = order.items as any
     const orderForNotification = {
-      ...order,
-      items: order.items as any,
+      id: order.id,
+      status: order.status,
       totalPrice: order.total,
+      items: orderData,
+      user: orderData?.user || { name: 'Unknown', tgId: Number(tgIdBigInt) },
+      delivery: orderData?.delivery || {},
+      comment: orderData?.comment || null,
+      promoCode: orderData?.promoCode || null,
+      discount: orderData?.discount || null,
       createdAt: order.createdAt.toISOString(),
-      updatedAt: order.updatedAt.toISOString(),
-      requestId, // Pass requestId to notification function for trace
     }
     
-    // AWAIT notification - don't fire-and-forget, we need to see errors
+    // AWAIT notification via bot endpoint - same path as test notifications
     try {
-      const notifyResult = await notifyAdminsAboutOrder(orderForNotification as any)
+      const notifyResult = await notifyAdminsAboutOrderViaBot(orderForNotification, requestId)
       console.log('[ORDER NOTIFY] SUCCESS', {
         requestId,
         orderId: order.id,
         sent: notifyResult.success,
         failed: notifyResult.failed,
-        totalAdmins: (notifyResult.success || 0) + (notifyResult.failed || 0),
+        totalAdmins: notifyResult.total,
       })
     } catch (notifyError: any) {
       // Log notification error, but don't fail the request
@@ -396,9 +433,17 @@ router.post('/', async (req, res) => {
       status: 201,
     })
     
+    // Always return 201 with order info
     res.status(201).json({
       success: true,
-      orderId: order.id,
+      ok: true, // Explicit ok flag
+      order: {
+        id: order.id,
+        status: order.status,
+        total: order.total,
+        createdAt: order.createdAt.toISOString(),
+      },
+      orderId: order.id, // Keep for backward compatibility
       requestId, // Include requestId in response for debugging
       tgId: String(tgIdBigInt),
       createdAt: order.createdAt.toISOString(),

@@ -97,6 +97,75 @@ export async function notifyUserAboutOrder(
 }
 
 /**
+ * Notify admins about order via bot-service internal endpoint
+ * This ensures admin notifications use the same path as test notifications
+ */
+export async function notifyAdminsAboutOrderViaBot(
+  order: {
+    id: string
+    status: string
+    totalPrice: number
+    items: any
+    user: { name: string; username?: string; tgId: number }
+    delivery: { fullName: string; phone: string; address: string; method: string }
+    comment?: string
+    promoCode?: string
+    discount?: number
+    createdAt: string
+  },
+  requestId: string
+): Promise<{ success: number; failed: number; total: number }> {
+  if (!BOT_INTERNAL_URL) {
+    console.warn('[BOT CLIENT] BOT_INTERNAL_URL not configured for admin notifications')
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  if (!BOT_INTERNAL_KEY) {
+    console.warn('[BOT CLIENT] BOT_INTERNAL_KEY not configured for admin notifications')
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  try {
+    const response = await fetch(`${BOT_INTERNAL_URL}/internal/notify-admins-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-key': BOT_INTERNAL_KEY,
+      },
+      body: JSON.stringify({
+        order,
+        requestId,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error')
+      console.error('[BOT CLIENT] HTTP error for admin notifications', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        requestId,
+      })
+      return { success: 0, failed: 0, total: 0 }
+    }
+
+    const result = await response.json()
+    return {
+      success: result.success || 0,
+      failed: result.failed || 0,
+      total: result.total || 0,
+    }
+  } catch (error: any) {
+    console.error('[BOT CLIENT] Request failed for admin notifications', {
+      error: error.message,
+      stack: error.stack,
+      requestId,
+    })
+    return { success: 0, failed: 0, total: 0 }
+  }
+}
+
+/**
  * Check if error indicates user needs to start bot
  */
 export function needsUserStart(errorCode?: number, errorDesc?: string): boolean {

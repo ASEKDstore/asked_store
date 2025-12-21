@@ -57,7 +57,7 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    version: '1.16.1',
+    version: '1.16.4',
     message: 'ASKED Store Backend is running'
   })
 })
@@ -70,7 +70,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     message: 'ASKED Store API',
-    version: '1.16.1',
+    version: '1.16.4',
     changelog: 'Backend: LAB API (artists + labProducts), admin CRUD + public endpoints'
   })
 })
