@@ -107,6 +107,20 @@ function useAdminApi() {
         body: JSON.stringify({ status }),
       }),
 
+    getOrderStats: () =>
+      requestJson('/api/admin/orders/stats'),
+
+    clearOrders: (mode: 'all' | 'beforeDate' | 'testOnly', before?: string) =>
+      requestJson('/api/admin/orders/clear', {
+        method: 'POST',
+        body: JSON.stringify({ mode, before, confirm: 'DELETE' }),
+      }),
+
+    testNotifications: () =>
+      requestJson('/api/admin/notifications/test-order', {
+        method: 'POST',
+      }),
+
     // Products
     getProducts: () =>
       requestJson('/api/admin/products'),

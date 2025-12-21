@@ -11,6 +11,7 @@ import publicCategoriesRouter from './routes/public/categories.js'
 import bannersRouter from './routes/banners.js'
 import { adminOnly } from './middleware/adminOnly.js'
 import adminOrdersRouter from './routes/admin/orders.js'
+import adminNotificationsRouter from './routes/admin/notifications.js'
 import adminProductsRouter from './routes/admin/products.js'
 import adminCategoriesRouter from './routes/admin/categories.js'
 import adminPromosRouter from './routes/admin/promos.js'
@@ -87,6 +88,7 @@ app.use('/api/banners', bannersRouter)
 
 // Admin APIs (protected with adminOnly middleware)
 app.use('/api/admin/orders', adminOnly, adminOrdersRouter)
+app.use('/api/admin/notifications', adminOnly, adminNotificationsRouter)
 app.use('/api/admin/products', adminOnly, adminProductsRouter)
 app.use('/api/admin/categories', adminOnly, adminCategoriesRouter)
 app.use('/api/admin/promos', adminOnly, adminPromosRouter)

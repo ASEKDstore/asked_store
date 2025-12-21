@@ -22,7 +22,7 @@ async function sendMessage(
   replyMarkup?: InlineKeyboardMarkup
 ): Promise<{ success: boolean; error?: any }> {
   if (!BOT_TOKEN) {
-    console.warn('TELEGRAM_BOT_TOKEN not set, skipping notification')
+    console.warn('[TELEGRAM NOTIFY] TELEGRAM_BOT_TOKEN not set, skipping notification')
     return { success: false, error: 'BOT_TOKEN not set' }
   }
 
@@ -39,22 +39,32 @@ async function sendMessage(
     })
 
     if (!response.ok) {
-      const error = await response.json()
+      const errorData = await response.json().catch(() => ({}))
       const statusCode = response.status
       
       // Handle cases where bot cannot write to user (403, 400)
-      if (statusCode === 403 || statusCode === 400) {
-        console.warn(`Cannot send message to ${chatId}: ${error.description || error.error_code || 'Forbidden'}`)
-        return { success: false, error: { statusCode, description: error.description } }
+      if (statusCode === 403) {
+        console.warn(`[TELEGRAM NOTIFY] Cannot send message to ${chatId}: Admin must press Start in bot`)
+        return { success: false, error: { statusCode, description: 'Admin must press Start' } }
       }
       
-      console.error('Telegram API error:', error)
-      return { success: false, error }
+      if (statusCode === 400) {
+        const errorDesc = errorData.description || errorData.error_code || 'Bad Request'
+        console.warn(`[TELEGRAM NOTIFY] Cannot send message to ${chatId}: ${errorDesc}`)
+        return { success: false, error: { statusCode, description: errorDesc } }
+      }
+      
+      console.error(`[TELEGRAM NOTIFY] Telegram API error for ${chatId}:`, {
+        status: statusCode,
+        statusText: response.statusText,
+        error: errorData,
+      })
+      return { success: false, error: { statusCode, ...errorData } }
     }
     
     return { success: true }
   } catch (error) {
-    console.error('Failed to send Telegram message:', error)
+    console.error(`[TELEGRAM NOTIFY] Failed to send message to ${chatId}:`, error)
     return { success: false, error }
   }
 }
@@ -206,11 +216,36 @@ async function notifyClientAboutOrder(order: Order): Promise<void> {
   }
 }
 
-export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
+export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: number; failed: number }> {
+  console.log('[ORDER NOTIFY] start', { orderId: order.id })
+  
   try {
     if (!BOT_TOKEN) {
-      console.warn('TELEGRAM_BOT_TOKEN not set, skipping notification')
-      return
+      console.warn('[ORDER NOTIFY] TELEGRAM_BOT_TOKEN not set, skipping notification')
+      return { success: 0, failed: 0 }
+    }
+
+    // Read admin IDs from environment variable (comma-separated)
+    const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
+    if (!adminIdsEnv) {
+      console.warn('[ORDER NOTIFY] TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
+      return { success: 0, failed: 0 }
+    }
+
+    // Parse comma-separated admin IDs
+    const adminIds = adminIdsEnv
+      .split(',')
+      .map(id => id.trim())
+      .filter(id => id.length > 0)
+      .map(id => {
+        const numId = Number(id)
+        return Number.isFinite(numId) && numId > 0 ? numId : null
+      })
+      .filter((id): id is number => id !== null)
+
+    if (adminIds.length === 0) {
+      console.warn('[ORDER NOTIFY] No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
+      return { success: 0, failed: 0 }
     }
 
     const message = formatOrderMessage(order)
@@ -237,45 +272,6 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
       ],
     }
 
-    // Check if TELEGRAM_ADMIN_CHAT_ID is configured
-    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID
-    if (adminChatId) {
-      const chatId = Number(adminChatId)
-      if (Number.isFinite(chatId)) {
-        const result = await sendMessage(chatId, message, 'HTML', keyboard)
-        if (result.success) {
-          // Still notify individual admins if configured
-        } else {
-          console.warn('Failed to send to admin chat, falling back to admin IDs')
-        }
-      } else {
-        console.warn('TELEGRAM_ADMIN_CHAT_ID is not a valid number, falling back to admin IDs')
-      }
-    }
-
-    // Read admin IDs from environment variable (comma-separated)
-    const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
-    if (!adminIdsEnv) {
-      console.warn('[ORDER NOTIFY] TELEGRAM_ADMIN_IDS not configured, skipping admin notification')
-      return
-    }
-
-    // Parse comma-separated admin IDs
-    const adminIds = adminIdsEnv
-      .split(',')
-      .map(id => id.trim())
-      .filter(id => id.length > 0)
-      .map(id => {
-        const numId = Number(id)
-        return Number.isFinite(numId) ? numId : null
-      })
-      .filter((id): id is number => id !== null)
-
-    if (adminIds.length === 0) {
-      console.warn('[ORDER NOTIFY] No valid admin IDs found in TELEGRAM_ADMIN_IDS, skipping admin notification')
-      return
-    }
-
     // Send to all admins (continue even if some fail)
     const results = await Promise.allSettled(
       adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
@@ -291,12 +287,17 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
       } else if (result.value && result.value.success) {
         successCount++
       } else if (result.value && !result.value.success) {
-        // Already logged in sendMessage for 403/400 cases
+        const error = result.value.error
+        if (error?.statusCode === 403) {
+          console.warn(`[ORDER NOTIFY] Admin ${adminIds[index]} must press Start in bot`)
+        } else {
+          console.error(`[ORDER NOTIFY] Failed to send to admin ${adminIds[index]}:`, error)
+        }
         failCount++
       }
     })
 
-    console.log('[ORDER NOTIFY]', {
+    console.log('[ORDER NOTIFY] success', {
       orderId: order.id,
       totalAdmins: adminIds.length,
       success: successCount,
@@ -305,11 +306,14 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<void> {
 
     // Notify client (don't wait, don't fail if it fails)
     notifyClientAboutOrder(order).catch(error => {
-      console.error('Error in client notification (non-blocking):', error)
+      console.error('[ORDER NOTIFY] Error in client notification (non-blocking):', error)
     })
+
+    return { success: successCount, failed: failCount }
   } catch (error) {
-    console.error('Failed to notify admins about order:', error)
+    console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
     // Don't throw - notification failure should not break order creation
+    return { success: 0, failed: 0 }
   }
 }
 

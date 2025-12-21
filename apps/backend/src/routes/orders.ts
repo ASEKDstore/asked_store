@@ -217,7 +217,7 @@ router.post('/', async (req, res) => {
     })
 
     // Notify admins and client
-    let notifySuccess = false
+    console.log('[ORDER NOTIFY] start', { orderId: order.id })
     try {
       const orderForNotification = {
         ...order,
@@ -226,9 +226,12 @@ router.post('/', async (req, res) => {
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
       }
-      await notifyAdminsAboutOrder(orderForNotification as any)
-      notifySuccess = true
-      console.log('[ORDER NOTIFY] success', { orderId: order.id })
+      const notifyResult = await notifyAdminsAboutOrder(orderForNotification as any)
+      console.log('[ORDER NOTIFY] success', { 
+        orderId: order.id, 
+        sent: notifyResult.success, 
+        failed: notifyResult.failed 
+      })
     } catch (error) {
       console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
       // Don't fail the request if notification fails
