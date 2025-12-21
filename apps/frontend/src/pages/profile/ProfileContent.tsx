@@ -47,14 +47,20 @@ export const ProfileContent: React.FC = () => {
       // Debug logging
       console.log('[ORDERS DEBUG]', data)
       
-      // Normalize response - ensure it's an array
+      // Normalize response - handle new format { ok: true, orders: [...] } or legacy array
       let list: Order[] = []
       if (Array.isArray(data)) {
+        // Legacy format: array
         list = data
-      } else if (data && typeof data === 'object' && Array.isArray(data.orders)) {
-        list = data.orders
+      } else if (data && typeof data === 'object') {
+        // New format: { ok: true, orders: [...] }
+        if (data.ok && Array.isArray(data.orders)) {
+          list = data.orders
+        } else if (Array.isArray(data.orders)) {
+          list = data.orders
+        }
       }
-      console.log('[ORDERS FIRST]', list?.[0])
+      console.log('[ORDERS FIRST]', list?.[0], 'Total:', list.length)
       
       setOrders(list)
     } catch (error) {

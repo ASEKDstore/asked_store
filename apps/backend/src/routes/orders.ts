@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { prisma } from '../db/prisma.js'
-import { notifyUserAboutOrder, needsUserStart, notifyAdminsAboutOrderViaBot } from '../services/botClient.js'
+import { notifyUserAboutOrder, needsUserStart } from '../services/botClient.js'
+import { notifyAdminsDirectTelegram } from '../services/telegramNotify.js'
 import type { CreateOrderRequest, OrderStatus } from '../types/order.js'
 
 const router = Router()
@@ -381,17 +382,17 @@ router.post('/', async (req, res) => {
       throw dbError // Re-throw to be caught by outer catch
     }
 
-    // Notify admins immediately after order creation - via bot internal endpoint
-    // CRITICAL: This must be called AFTER successful order.create, using bot endpoint (same as test notifications)
+    // Notify admins immediately after order creation - DIRECT Telegram API (same as test notifications)
+    // CRITICAL: This must be called AFTER successful order.create
     console.log('[ORDER NOTIFY] START', {
       requestId,
       orderId: order.id,
       timestamp: new Date().toISOString(),
     })
     
-    // Extract order data for notification
+    // Extract order data for notification (match Order type from telegramNotify.ts)
     const orderData = order.items as any
-    const orderForNotification = {
+    const orderForNotification: any = {
       id: order.id,
       status: order.status,
       totalPrice: order.total,
@@ -404,25 +405,26 @@ router.post('/', async (req, res) => {
       createdAt: order.createdAt.toISOString(),
     }
     
-    // AWAIT notification via bot endpoint - same path as test notifications
-    try {
-      const notifyResult = await notifyAdminsAboutOrderViaBot(orderForNotification, requestId)
-      console.log('[ORDER NOTIFY] SUCCESS', {
-        requestId,
-        orderId: order.id,
-        sent: notifyResult.success,
-        failed: notifyResult.failed,
-        totalAdmins: notifyResult.total,
+    // Fire-and-forget: don't block response, but log result
+    notifyAdminsDirectTelegram(orderForNotification, requestId)
+      .then((notifyResult) => {
+        console.log('[ORDER NOTIFY] SUCCESS', {
+          requestId,
+          orderId: order.id,
+          sent: notifyResult.success,
+          failed: notifyResult.failed,
+          totalAdmins: notifyResult.success + notifyResult.failed,
+        })
       })
-    } catch (notifyError: any) {
-      // Log notification error, but don't fail the request
-      console.error('[ORDER NOTIFY] ERROR', {
-        requestId,
-        orderId: order.id,
-        error: notifyError.message || notifyError,
-        stack: notifyError.stack,
+      .catch((notifyError: any) => {
+        // Log notification error, but don't fail the request
+        console.error('[ORDER NOTIFY] ERROR', {
+          requestId,
+          orderId: order.id,
+          error: notifyError.message || notifyError,
+          stack: notifyError.stack,
+        })
       })
-    }
 
     // Return 201 with order info and user notification status
     const responseTime = Date.now() - startTime
@@ -481,6 +483,7 @@ router.post('/', async (req, res) => {
     
     // Return 500 with requestId for debugging
     res.status(500).json({ 
+      ok: false,
       error: 'Failed to create order',
       requestId, // Include requestId so we can find it in logs
     })
@@ -527,8 +530,13 @@ router.get('/', async (req, res) => {
       })),
     })
     
-    // Always return JSON array (even if empty)
-    res.json(normalizedOrders)
+    // Return standardized format: { ok: true, orders: [...] }
+    // For backward compatibility, support ?raw=1 to return array
+    if (req.query.raw === '1') {
+      res.json(normalizedOrders)
+    } else {
+      res.json({ ok: true, orders: normalizedOrders })
+    }
   } catch (error: any) {
     console.error('[GET /api/orders] Error fetching orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })

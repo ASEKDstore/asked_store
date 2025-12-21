@@ -42,10 +42,14 @@ export const OrdersAdminPage: React.FC = () => {
       const data = await api.getOrders({
         status: statusFilter || undefined,
         q: searchQuery || undefined,
-      }) as Order[]
-      setOrders(data)
+      }) as any
+      
+      // Handle new format: { ok: true, orders: [...] } or legacy array
+      const orders = Array.isArray(data) ? data : (data?.ok && data?.orders ? data.orders : data?.orders || [])
+      setOrders(orders)
     } catch (error: any) {
       console.error('Failed to load orders:', error)
+      setOrders([])
     } finally {
       setLoading(false)
     }

@@ -31,6 +31,21 @@ import { prisma } from './db/prisma.js'
 const app = express()
 const PORT = Number(process.env.PORT || 4000)
 
+// Validate notification environment variables at startup
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const ADMIN_IDS = process.env.TELEGRAM_ADMIN_IDS
+
+if (!BOT_TOKEN) {
+  console.warn('[STARTUP] ⚠️  TELEGRAM_BOT_TOKEN not set - admin notifications will be disabled')
+}
+
+if (!ADMIN_IDS) {
+  console.warn('[STARTUP] ⚠️  TELEGRAM_ADMIN_IDS not set - admin notifications will be disabled')
+} else {
+  const adminIds = ADMIN_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
+  console.log(`[STARTUP] ✅ Admin notifications configured for ${adminIds.length} admin(s)`)
+}
+
 // CORS configuration
 const frontendUrl = process.env.FRONTEND_URL || '*'
 const allowedOrigins = frontendUrl.includes(',') 
@@ -119,6 +134,7 @@ app.get('/health/db', async (req, res) => {
     })
 
     res.json({
+      ok: true,
       service: serviceName,
       db: {
         host: dbHost,
@@ -126,20 +142,21 @@ app.get('/health/db', async (req, res) => {
         url: `${dbHost}/${dbName}`, // Masked URL
       },
       timestamp: new Date().toISOString(),
-      orders: {
-        count: orderCount,
-        lastOrder: lastOrder ? {
-          id: lastOrder.id,
-          status: lastOrder.status,
-          total: lastOrder.total,
-          tgId: lastOrder.tgId ? String(lastOrder.tgId) : null,
-          createdAt: lastOrder.createdAt.toISOString(),
-        } : null,
-      },
+      countOrders: orderCount,
+      lastOrderId: lastOrder?.id || null,
+      lastOrderCreatedAt: lastOrder?.createdAt.toISOString() || null,
+      lastOrder: lastOrder ? {
+        id: lastOrder.id,
+        status: lastOrder.status,
+        total: lastOrder.total,
+        tgId: lastOrder.tgId ? String(lastOrder.tgId) : null,
+        createdAt: lastOrder.createdAt.toISOString(),
+      } : null,
     })
   } catch (error: any) {
     console.error('[HEALTH/DB] Error:', error)
     res.status(500).json({
+      ok: false,
       error: 'Database health check failed',
       message: error.message,
     })

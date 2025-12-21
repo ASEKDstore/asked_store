@@ -69,6 +69,218 @@ async function sendMessage(
   }
 }
 
+/**
+ * Format order message for admin notifications
+ */
+function formatOrderMessageForAdmin(order: {
+  id: string
+  status: string
+  totalPrice: number
+  items: any
+  user: { name: string; username?: string; tgId: number }
+  delivery: { fullName: string; phone: string; address: string; method: string }
+  comment?: string
+  promoCode?: string
+  discount?: number
+  createdAt: string
+}): string {
+  const statusEmoji: Record<string, string> = {
+    new: '🆕',
+    in_progress: '⚙️',
+    done: '✅',
+    canceled: '❌',
+  }
+
+  const deliveryMethodNames: Record<string, string> = {
+    post: 'Почта России',
+    cdek: 'СДЭК',
+    avito: 'Авито',
+  }
+
+  // Extract items from nested structure
+  const itemsArray = Array.isArray(order.items?.items) ? order.items.items : (Array.isArray(order.items) ? order.items : [])
+  const hasLabItems = itemsArray.some((item: any) => item.type === 'lab')
+  const orderTypeLabel = hasLabItems ? '🧪 LAB ORDER' : 'Новый заказ'
+  
+  const itemsText = itemsArray
+    .map((item: any) => {
+      const baseText = `  • ${item.title}${item.article ? ` (${item.article})` : ''}${item.size ? ` - ${item.size}` : ''} × ${item.qty} = ${item.price * item.qty} ₽`
+      if (item.type === 'lab' && item.artistName) {
+        return `${baseText}\n    👨‍🎨 Художник: ${item.artistName}`
+      }
+      return baseText
+    })
+    .join('\n')
+
+  const promoText = order.promoCode && order.discount
+    ? `\n🎟️ <b>Промокод:</b> ${order.promoCode}\n💰 <b>Скидка:</b> ${order.discount.toLocaleString('ru-RU')} ₽\n`
+    : ''
+
+  return `
+<b>${statusEmoji[order.status] || '📦'} ${orderTypeLabel} #${order.id.slice(-6).toUpperCase()}</b>
+
+👤 <b>Покупатель:</b>
+  Имя: ${order.user.name}
+  ${order.user.username ? `@${order.user.username}` : ''}
+  Telegram ID: ${order.user.tgId}
+
+📦 <b>Товары:</b>
+${itemsText}
+${promoText}
+💰 <b>Итого:</b> ${order.totalPrice.toLocaleString('ru-RU')} ₽
+
+🚚 <b>Доставка:</b>
+  ${order.delivery.fullName}
+  ${order.delivery.phone}
+  ${order.delivery.address}
+  ${deliveryMethodNames[order.delivery.method] || order.delivery.method}
+
+${order.comment ? `💬 <b>Комментарий:</b>\n${order.comment}\n` : ''}
+📅 ${new Date(order.createdAt).toLocaleString('ru-RU')}
+  `.trim()
+}
+
+/**
+ * Direct Telegram API notification to admins (simplified, reliable)
+ * Uses Telegram HTTP API directly from backend (same as test notifications)
+ */
+export async function notifyAdminsDirectTelegram(
+  order: {
+    id: string
+    status: string
+    totalPrice: number
+    items: any
+    user: { name: string; username?: string; tgId: number }
+    delivery: { fullName: string; phone: string; address: string; method: string }
+    comment?: string
+    promoCode?: string
+    discount?: number
+    createdAt: string
+  },
+  requestId: string
+): Promise<{ success: number; failed: number }> {
+  console.log('[NOTIFY ADMINS DIRECT] START', {
+    requestId,
+    orderId: order.id,
+    timestamp: new Date().toISOString(),
+  })
+
+  if (!BOT_TOKEN) {
+    console.warn('[NOTIFY ADMINS DIRECT] TELEGRAM_BOT_TOKEN not set', { requestId, orderId: order.id })
+    return { success: 0, failed: 0 }
+  }
+
+  const adminIdsEnv = process.env.TELEGRAM_ADMIN_IDS
+  if (!adminIdsEnv) {
+    console.warn('[NOTIFY ADMINS DIRECT] TELEGRAM_ADMIN_IDS not configured', { requestId, orderId: order.id })
+    return { success: 0, failed: 0 }
+  }
+
+  // Parse admin IDs
+  const adminIds = adminIdsEnv
+    .split(',')
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
+    .map(id => {
+      const numId = Number(id)
+      return Number.isFinite(numId) && numId > 0 ? numId : null
+    })
+    .filter((id): id is number => id !== null)
+
+  if (adminIds.length === 0) {
+    console.warn('[NOTIFY ADMINS DIRECT] No valid admin IDs found', { requestId, orderId: order.id, raw: adminIdsEnv })
+    return { success: 0, failed: 0 }
+  }
+
+  console.log('[NOTIFY ADMINS DIRECT] ADMIN_IDS', {
+    requestId,
+    orderId: order.id,
+    adminIds,
+    count: adminIds.length,
+  })
+
+  // Format message
+  const message = formatOrderMessageForAdmin(order)
+
+  // Inline keyboard with action buttons
+  const keyboard: InlineKeyboardMarkup = {
+    inline_keyboard: [
+      [
+        {
+          text: '⚙️ В работу',
+          callback_data: `order_action:${order.id}:in_progress`,
+        },
+        {
+          text: '✅ Готово',
+          callback_data: `order_action:${order.id}:done`,
+        },
+      ],
+      [
+        {
+          text: '❌ Отменить',
+          callback_data: `order_action:${order.id}:canceled`,
+        },
+      ],
+    ],
+  }
+
+  // Send to all admins
+  const results = await Promise.allSettled(
+    adminIds.map(adminId => sendMessage(adminId, message, 'HTML', keyboard))
+  )
+
+  // Count results
+  let successCount = 0
+  let failCount = 0
+  results.forEach((result, index) => {
+    const adminId = adminIds[index]
+    if (result.status === 'rejected') {
+      console.error('[NOTIFY ADMINS DIRECT] SEND_FAILED', {
+        requestId,
+        orderId: order.id,
+        adminId,
+        error: result.reason,
+      })
+      failCount++
+    } else if (result.value && result.value.success) {
+      console.log('[NOTIFY ADMINS DIRECT] SENT', {
+        requestId,
+        orderId: order.id,
+        adminId,
+      })
+      successCount++
+    } else if (result.value && !result.value.success) {
+      const error = result.value.error
+      if (error?.statusCode === 403) {
+        console.warn('[NOTIFY ADMINS DIRECT] ADMIN_MUST_START', {
+          requestId,
+          orderId: order.id,
+          adminId,
+          error: 'Admin must press Start in bot',
+        })
+      } else {
+        console.error('[NOTIFY ADMINS DIRECT] SEND_FAILED', {
+          requestId,
+          orderId: order.id,
+          adminId,
+          error,
+        })
+      }
+      failCount++
+    }
+  })
+
+  console.log('[NOTIFY ADMINS DIRECT] COMPLETE', {
+    requestId,
+    orderId: order.id,
+    totalAdmins: adminIds.length,
+    success: successCount,
+    failed: failCount,
+  })
+
+  return { success: successCount, failed: failCount }
+}
+
 async function editMessageText(
   chatId: number,
   messageId: number,

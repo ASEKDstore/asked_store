@@ -73,10 +73,11 @@ router.get('/', async (req, res) => {
       }
     })
     
-    res.json(serialized)
+    // Return standardized format: { ok: true, orders: [...] }
+    res.json({ ok: true, orders: serialized })
   } catch (error: any) {
     console.error('Error fetching admin orders:', error)
-    res.status(500).json({ error: 'Failed to fetch orders' })
+    res.status(500).json({ ok: false, error: 'Failed to fetch orders' })
   }
 })
 
