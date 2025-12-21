@@ -83,8 +83,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Token exists but no user data - set guest
         setUser({ source: 'guest', tgId: 0 })
       }
-    } else if (status === 'error') {
-      // Error state - set guest
+    } else if (status === 'error' || status === 'no_tg_context') {
+      // Error state or no Telegram context - set guest
       setUser({ source: 'guest', tgId: 0 })
     }
   }, [status, token, role])

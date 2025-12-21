@@ -1,8 +1,10 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
 import { LoadingScreen } from './pages/LoadingScreen'
 import { AppLayout } from './layouts/AppLayout'
 import { TgDebugPanel } from './components/TgDebugPanel'
+import { NoTgContextScreen } from './components/NoTgContextScreen'
 import { MainPage } from './pages/main/MainPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { ProfileContent } from './pages/profile/ProfileContent'
@@ -178,6 +180,16 @@ function AppContent() {
 function App() {
   // Auth logic is now in AuthProvider (context)
   // This component just renders the app structure
+  const { status } = useAuth()
+  
+  // If no Telegram context, show NoTgContextScreen and don't render App
+  if (status === 'no_tg_context') {
+    return (
+      <ErrorBoundary>
+        <NoTgContextScreen />
+      </ErrorBoundary>
+    )
+  }
   
   return (
     <ErrorBoundary>

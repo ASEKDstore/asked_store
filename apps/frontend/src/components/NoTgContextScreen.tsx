@@ -16,7 +16,7 @@ export function NoTgContextScreen() {
     <div className="no-tg-context-screen">
       <div className="no-tg-context-content">
         <div className="no-tg-context-icon">📱</div>
-        <h1 className="no-tg-context-title">Открой через Telegram</h1>
+        <h1 className="no-tg-context-title">Открой приложение из Telegram</h1>
         <p className="no-tg-context-message">
           Приложение должно быть открыто через кнопку в Telegram боте.
           <br />
