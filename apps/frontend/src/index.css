@@ -8,6 +8,10 @@
    ============================================ */
 
 :root {
+  /* Viewport & Layout */
+  --app-height: 100dvh; /* Fallback, updated by useTgViewport hook */
+  --footer-h: 72px; /* Default footer height, updated by AppShell */
+  
   /* Typography */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;

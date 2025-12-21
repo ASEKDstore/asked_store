@@ -304,10 +304,8 @@ export async function notifyAdminsAboutOrder(order: Order): Promise<{ success: n
       failed: failCount,
     })
 
-    // Notify client (don't wait, don't fail if it fails)
-    notifyClientAboutOrder(order).catch(error => {
-      console.error('[ORDER NOTIFY] Error in client notification (non-blocking):', error)
-    })
+    // Note: User notifications are now handled separately via bot-service internal API
+    // (see backend/src/routes/orders.ts)
 
     return { success: successCount, failed: failCount }
   } catch (error) {

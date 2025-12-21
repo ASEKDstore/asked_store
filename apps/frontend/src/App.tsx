@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useTgViewport } from './hooks/useTgViewport'
 import { LoadingScreen } from './pages/LoadingScreen'
 import { AppLayout } from './layouts/AppLayout'
 import { TgDebugPanel } from './components/TgDebugPanel'
@@ -178,6 +179,9 @@ function AppContent() {
 }
 
 function App() {
+  // Initialize Telegram viewport height management
+  useTgViewport()
+  
   // Auth logic is now in AuthProvider (context)
   // This component just renders the app structure
   const { status } = useAuth()

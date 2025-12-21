@@ -33,6 +33,7 @@ export const CheckoutPage: React.FC = () => {
   const [success, setSuccess] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [needsStart, setNeedsStart] = useState(false)
   
   // Check if this is a LAB order from LabOrderPage
   const labOrder = (location.state as any)?.labOrder
@@ -251,6 +252,11 @@ export const CheckoutPage: React.FC = () => {
 
       setOrderId(orderId)
       setSuccess(true)
+
+      // Check if user needs to start bot
+      if (data?.userNotify?.needsStart) {
+        setNeedsStart(true)
+      }
       
       // Clear cart only if not lab order
       if (!labOrder) {
@@ -286,6 +292,12 @@ export const CheckoutPage: React.FC = () => {
   }
 
   if (success) {
+    // Get bot username from env or use default
+    const botUsername = (import.meta as any).env?.VITE_BOT_USERNAME || 
+                       (import.meta as any).env?.WEBAPP_BOT_USERNAME ||
+                       'asked_store_bot' // fallback
+    const botStartUrl = `https://t.me/${botUsername}?start=shop`
+
     return (
       <div className={`checkout-page ${mounted ? 'is-mounted' : ''}`}>
         <div className="checkout-success">
@@ -297,6 +309,39 @@ export const CheckoutPage: React.FC = () => {
             </p>
           )}
           <p>Мы свяжемся с вами для подтверждения деталей доставки.</p>
+          
+          {needsStart && (
+            <div style={{
+              marginTop: '20px',
+              padding: '16px',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px',
+              border: '1px solid #ffa500',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>📱</div>
+              <p style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>
+                Чтобы получать уведомления о заказе, нажмите Start в боте
+              </p>
+              <a
+                href={botStartUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-block',
+                  padding: '12px 24px',
+                  backgroundColor: '#0088cc',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                }}
+              >
+                Открыть бота
+              </a>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
             <button
               onClick={() => navigate('/app/profile')}

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { prisma } from '../db/prisma.js'
 import { notifyAdminsAboutOrder } from '../services/telegramNotify.js'
+import { notifyUserAboutOrder, needsUserStart } from '../services/botClient.js'
 import type { CreateOrderRequest, OrderStatus } from '../types/order.js'
 
 const router = Router()
@@ -197,32 +198,105 @@ router.post('/', async (req, res) => {
       totalPrice,
     })
 
-    // Create order - totalPrice is guaranteed to be finite positive integer
-    // tgIdBigInt is guaranteed to be valid BigInt
+    // Generate order ID once
+    const orderId = uuidv4()
+
+    // Extract telegramId from user data - use the tgId from request, not from DB lookup
+    // The tgId is already validated and converted to BigInt above
+    const userTelegramId = tgIdBigInt
+    const userTelegramIdStr = String(userTelegramId)
+
+    // Log order creation
+    console.log('[order] created', {
+      orderId,
+      userId: userTelegramIdStr,
+      telegramId: userTelegramIdStr,
+    })
+
+    // Initialize notification status
+    let notifyUserStatus: 'PENDING' | 'SENT' | 'FAILED' = 'PENDING'
+    let notifyUserError: string | null = null
+    let userNotifyNeedsStart = false
+
+    // Try to notify user if telegramId exists
+    if (userTelegramId) {
+      try {
+        const orderForUserNotification = {
+          id: orderId,
+          total: totalPrice,
+          items: normalizedItems.map(item => ({
+            title: item.title,
+            article: item.article ?? undefined,
+            size: item.size ?? undefined,
+            qty: item.qty,
+            price: item.price,
+            type: item.type ?? undefined,
+            artistName: item.artistName ?? undefined,
+          })),
+          promoCode: promoCode ?? undefined,
+          discount: discount > 0 ? discount : undefined,
+          createdAt: new Date().toISOString(),
+          userName: data.user.name,
+        }
+
+        // Convert BigInt to string for HTTP call (Telegram accepts both number and string)
+        const telegramIdForNotify = String(userTelegramId)
+        const notifyResult = await notifyUserAboutOrder(telegramIdForNotify, orderForUserNotification)
+
+        if (notifyResult.ok) {
+          notifyUserStatus = 'SENT'
+          console.log('[order] notifyUser result', {
+            status: 'SENT',
+            needsStart: false,
+          })
+        } else {
+          notifyUserStatus = 'FAILED'
+          notifyUserError = `${notifyResult.code || 'UNKNOWN'}: ${notifyResult.desc || 'Unknown error'}`
+          userNotifyNeedsStart = needsUserStart(notifyResult.code, notifyResult.desc)
+
+          console.log('[order] notifyUser result', {
+            status: 'FAILED',
+            needsStart: userNotifyNeedsStart,
+            error: notifyUserError,
+          })
+        }
+      } catch (error: any) {
+        notifyUserStatus = 'FAILED'
+        notifyUserError = `EXCEPTION: ${error.message || 'Unknown exception'}`
+        console.error('[order] notifyUser exception', { error: error.message })
+      }
+    } else {
+      notifyUserStatus = 'FAILED'
+      notifyUserError = 'NO_TELEGRAM_ID'
+      userNotifyNeedsStart = true
+      console.log('[order] notifyUser result', {
+        status: 'FAILED',
+        needsStart: true,
+        error: 'NO_TELEGRAM_ID',
+      })
+    }
+
+    // Create order with notification status
     const order = await prisma.order.create({
       data: {
-        id: uuidv4(),
+        id: orderId,
         items: orderDataJson as any,
-        total: totalPrice, // Integer, guaranteed by validation above
+        total: totalPrice,
         status: 'new',
-        tgId: tgIdBigInt, // BigInt, guaranteed by validation above
+        tgId: tgIdBigInt,
+        notifyUserStatus,
+        notifyUserError,
+        notifyUserTgId: userTelegramId,
       },
     })
 
-    // Log order creation
-    console.log('[ORDER CREATED]', {
-      id: order.id,
-      tgId: String(tgIdBigInt),
-      total: totalPrice,
-    })
-
-    // Notify admins and client
+    // Notify admins (don't wait, don't fail if it fails)
     console.log('[ORDER NOTIFY] start', { orderId: order.id })
     try {
       const orderForNotification = {
         ...order,
         items: order.items as any,
-        totalPrice: order.total, // Map total to totalPrice for notification
+        totalPrice: order.total,
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
       }
@@ -237,12 +311,17 @@ router.post('/', async (req, res) => {
       // Don't fail the request if notification fails
     }
 
-    // Always return 201 with simple JSON response
+    // Return 201 with order info and user notification status
     res.status(201).json({
       success: true,
       orderId: order.id,
       tgId: String(tgIdBigInt),
       createdAt: order.createdAt.toISOString(),
+      userNotify: {
+        status: notifyUserStatus,
+        needsStart: userNotifyNeedsStart,
+        error: notifyUserError || undefined,
+      },
     })
   } catch (error: any) {
     // Handle custom validation errors (thrown with statusCode: 400)
