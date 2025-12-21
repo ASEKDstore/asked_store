@@ -67,11 +67,11 @@ bot.launch().then(async () => {
   // Set menu button with WebApp URL
   if (config.webappUrl) {
     try {
-      await bot.telegram.setChatMenuButton({
-        menu_button: {
+      await bot.api.setChatMenuButton({
+        menuButton: {
           type: 'web_app',
           text: '🛍 ASKED Store',
-          web_app: {
+          webApp: {
             url: config.webappUrl,
           },
         },
