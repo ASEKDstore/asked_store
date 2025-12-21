@@ -69,6 +69,20 @@ export const ProfileContent: React.FC = () => {
     loadOrders()
   }, [user.tgId])
 
+  // Listen for order creation events to refresh orders
+  useEffect(() => {
+    const handleOrderCreated = () => {
+      console.log('[ProfileContent] Order created event received, refreshing orders')
+      loadOrders()
+    }
+
+    window.addEventListener('orderCreated', handleOrderCreated)
+    return () => {
+      window.removeEventListener('orderCreated', handleOrderCreated)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // loadOrders is stable, no need to include it
+
   const toggleOrder = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId)
   }

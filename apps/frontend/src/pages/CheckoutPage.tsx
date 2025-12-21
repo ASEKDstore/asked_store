@@ -231,29 +231,33 @@ export const CheckoutPage: React.FC = () => {
         return
       }
 
-      // Handle success response
-      // If data is null but response is ok, consider it success
-      if (data === null && response.ok) {
-        // Backend returned empty body but status is ok - order created
-        setSuccess(true)
-        if (!labOrder) {
-          clear()
-        }
+      // Handle success response - ONLY if status is 201
+      if (response.status !== 201) {
+        const errorMessage = data?.error || data?.message || 'Не удалось оформить заказ'
+        setError(errorMessage)
+        setIsSubmitting(false)
         return
       }
 
       // Extract order ID from response
-      const orderId = data?.id || data?.orderId || null
-      if (orderId) {
-        setOrderId(orderId)
+      const orderId = data?.orderId || data?.id || null
+      if (!orderId) {
+        console.error('[CheckoutPage] No orderId in response:', data)
+        setError('Заказ создан, но не получен ID заказа')
+        setIsSubmitting(false)
+        return
       }
 
+      setOrderId(orderId)
       setSuccess(true)
       
       // Clear cart only if not lab order
       if (!labOrder) {
         clear()
       }
+
+      // Trigger orders refresh event for ProfileContent
+      window.dispatchEvent(new CustomEvent('orderCreated', { detail: { orderId } }))
     } catch (err: any) {
       console.error('Order creation error:', err)
       

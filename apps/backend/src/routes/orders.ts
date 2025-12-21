@@ -211,11 +211,9 @@ router.post('/', async (req, res) => {
 
     // Log order creation
     console.log('[ORDER CREATED]', {
-      orderId: order.id,
+      id: order.id,
       tgId: String(tgIdBigInt),
       total: totalPrice,
-      itemsCount: normalizedItems.length,
-      status: order.status,
     })
 
     // Notify admins and client
@@ -236,13 +234,12 @@ router.post('/', async (req, res) => {
       // Don't fail the request if notification fails
     }
 
-    // Always return valid JSON response - normalize order
-    const normalizedOrder = normalizeOrder(order)
+    // Always return 201 with simple JSON response
     res.status(201).json({
       success: true,
-      id: order.id,
-      orderId: order.id, // Alias for compatibility
-      ...normalizedOrder,
+      orderId: order.id,
+      tgId: String(tgIdBigInt),
+      createdAt: order.createdAt.toISOString(),
     })
   } catch (error: any) {
     // Handle custom validation errors (thrown with statusCode: 400)
@@ -288,11 +285,12 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' },
     })
     
-    // Normalize orders - extract itemsList and serialize
+    // Normalize orders - extract itemsList and serialize BigInt and dates
     const normalizedOrders = orders.map(o => normalizeOrder(o))
     
     console.log('[GET /api/orders] Found orders:', { tgId: String(tgId), count: normalizedOrders.length })
     
+    // Always return JSON array (even if empty)
     res.json(normalizedOrders)
   } catch (error: any) {
     console.error('[GET /api/orders] Error fetching orders:', error)
