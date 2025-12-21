@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLoadingProgress } from '../hooks/useLoadingProgress'
 import { ErrorScreen } from '../components/ErrorScreen'
+import { NoTgContextScreen } from '../components/NoTgContextScreen'
 import './LoadingScreen.css'
 
 export function LoadingScreen() {
@@ -15,6 +16,11 @@ export function LoadingScreen() {
     status === 'ready' ? 'authenticated' : status === 'authing' ? 'authenticating' : 'unauthenticated'
   
   const progress = useLoadingProgress(authState)
+  
+  // Show NoTgContextScreen if Telegram context is missing
+  if (status === 'no_tg_context') {
+    return <NoTgContextScreen />
+  }
   
   // Show error screen if error (after hooks)
   if (status === 'error') {

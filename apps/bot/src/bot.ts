@@ -62,10 +62,28 @@ bot.action(MenuActions.SUBSCRIBE_NEWS, handleSubscribeNews)
 bot.action(MenuActions.UNSUBSCRIBE_NEWS, handleUnsubscribeNews)
 
 // Launch bot
-bot.launch().then(() => {
+bot.launch().then(async () => {
   console.log('🤖 ASKED Store Bot is running')
   console.log('📱 Bot is ready to receive messages')
   console.log('✅ Version: v0.3.0')
+  
+  // Set menu button with WebApp URL
+  if (config.webappUrl) {
+    try {
+      await bot.telegram.setChatMenuButton({
+        menu_button: {
+          type: 'web_app',
+          text: '🛍 ASKED Store',
+          web_app: {
+            url: config.webappUrl,
+          },
+        },
+      })
+      console.log('✅ Menu button set with URL:', config.webappUrl)
+    } catch (error) {
+      console.warn('⚠️ Failed to set menu button:', error)
+    }
+  }
 })
 
 // Enable graceful stop

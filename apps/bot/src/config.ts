@@ -58,7 +58,7 @@ if (!botToken) {
 }
 
 // Get webapp URL from environment variables with fallback
-const webappUrl = process.env.WEBAPP_URL ?? process.env.FRONTEND_URL ?? 'https://asked-store-frontend.onrender.com/'
+const webappUrl = process.env.WEBAPP_URL || 'https://asked-store-frontend.onrender.com/?v=1.16.4'
 
 export const config = {
   botToken: botToken.trim(),

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 // Note: AuthContext uses direct fetch for auth endpoint to avoid circular dependency
 // We implement timeout manually using AbortController
 
-export type AuthStatus = 'booting' | 'authing' | 'ready' | 'error'
+export type AuthStatus = 'booting' | 'authing' | 'ready' | 'error' | 'no_tg_context'
 
 export type BootPhase = 'start' | 'tg_ready' | 'tg_data_ok' | 'auth_request' | 'auth_ok' | 'boot_done' | 'error'
 
@@ -117,21 +117,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[ASKED BOOT] initDataPreview', initDataPreview)
       console.log('[ASKED BOOT] tg.initDataUnsafe.user?.id', unsafeUser?.id)
       
-      // Set display name for greeting (from unsafeUser)
-      if (unsafeUser) {
-        const displayName = unsafeUser.first_name || unsafeUser.username || null
-        setState(prev => ({ ...prev, displayName }))
-      }
-
-      if (initData.length > 0 && unsafeUser) {
-        setPhase('tg_data_ok')
-      } else if (initData.length === 0 && unsafeUser) {
-        // We have user but no initData - can't authenticate
+      // STRICT CHECK: hasTgContext
+      // Must have: tg.WebApp exists, initData is not empty, user.id exists
+      const hasTgContext = !!tg && 
+                          initData.length > 0 && 
+                          !!unsafeUser?.id
+      
+      console.log('[ASKED BOOT] hasTgContext', hasTgContext)
+      
+      // If no valid Telegram context, stop here and show NoTgContextScreen
+      if (!hasTgContext) {
         setPhase('error')
         setState(prev => ({
           ...prev,
-          status: 'error',
-          error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
+          status: 'no_tg_context',
+          error: 'Открой приложение через Telegram',
           errorStatus: null,
           errorDetails: null,
           role: null,
@@ -140,6 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }))
         return
       }
+      
+      // Set display name for greeting (from unsafeUser)
+      if (unsafeUser) {
+        const displayName = unsafeUser.first_name || unsafeUser.username || null
+        setState(prev => ({ ...prev, displayName }))
+      }
+
+      // We have valid context, proceed with authentication
+      setPhase('tg_data_ok')
 
       // Get backend URL - check VITE_BACKEND_URL first
       const envBackendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 
@@ -327,34 +336,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             retry: performBootstrap,
           }))
         }
-      } else {
-        // No initData - can't authenticate
-        setPhase('error')
-        if (!unsafeUser) {
-          setState(prev => ({
-            ...prev,
-            status: 'error',
-            error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
-            errorStatus: null,
-            errorDetails: null,
-            role: null,
-            requestId,
-            retry: performBootstrap,
-          }))
-        } else {
-          // We have unsafeUser but no initData - show greeting but mark as error
-          setState(prev => ({
-            ...prev,
-            status: 'error',
-            error: 'Не удалось получить данные Telegram. Перезапусти через /start.',
-            errorStatus: null,
-            errorDetails: null,
-            role: null,
-            requestId,
-            retry: performBootstrap,
-          }))
-        }
       }
+      // Note: If we reach here, hasTgContext check above already handled the no-context case
     } catch (error) {
       console.error('[ASKED BOOT] Error:', error)
       setPhase('error')
