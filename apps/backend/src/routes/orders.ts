@@ -290,26 +290,31 @@ router.post('/', async (req, res) => {
       },
     })
 
-    // Notify admins (don't wait, don't fail if it fails)
+    // Notify admins immediately after order creation
+    // CRITICAL: This must be called AFTER successful order.create
+    // Do NOT wait for it, but do NOT swallow errors silently
     console.log('[ORDER NOTIFY] start', { orderId: order.id })
-    try {
-      const orderForNotification = {
-        ...order,
-        items: order.items as any,
-        totalPrice: order.total,
-        createdAt: order.createdAt.toISOString(),
-        updatedAt: order.updatedAt.toISOString(),
-      }
-      const notifyResult = await notifyAdminsAboutOrder(orderForNotification as any)
-      console.log('[ORDER NOTIFY] success', { 
-        orderId: order.id, 
-        sent: notifyResult.success, 
-        failed: notifyResult.failed 
-      })
-    } catch (error) {
-      console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
-      // Don't fail the request if notification fails
+    const orderForNotification = {
+      ...order,
+      items: order.items as any,
+      totalPrice: order.total,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
     }
+    
+    // Fire and forget - don't block response, but log result
+    notifyAdminsAboutOrder(orderForNotification as any)
+      .then((notifyResult) => {
+        console.log('[ORDER NOTIFY] success', { 
+          orderId: order.id, 
+          sent: notifyResult.success, 
+          failed: notifyResult.failed 
+        })
+      })
+      .catch((error) => {
+        console.error('[ORDER NOTIFY] fail', { orderId: order.id, error })
+        // Don't fail the request, but log the error
+      })
 
     // Return 201 with order info and user notification status
     res.status(201).json({

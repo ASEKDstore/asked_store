@@ -12,19 +12,23 @@ export function useTgViewport() {
       let height: number
 
       if (tg) {
-        // Prefer viewportStableHeight (doesn't change with keyboard)
-        // Fallback to viewportHeight
+        // Prefer viewportStableHeight (doesn't change with keyboard) - iOS fix
+        // Fallback to viewportHeight, then window.innerHeight
         height = tg.viewportStableHeight || tg.viewportHeight || window.innerHeight
       } else {
         // Fallback for non-Telegram environment
         height = window.innerHeight
       }
 
-      // Set CSS variable
+      // Set CSS variable for min-height
       document.documentElement.style.setProperty('--app-height', `${height}px`)
       
       if (import.meta.env.DEV) {
-        console.log('[TG VIEWPORT] Updated --app-height:', height)
+        console.log('[TG VIEWPORT] Updated --app-height:', height, {
+          viewportStableHeight: tg?.viewportStableHeight,
+          viewportHeight: tg?.viewportHeight,
+          innerHeight: window.innerHeight,
+        })
       }
     }
 

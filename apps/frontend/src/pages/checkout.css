@@ -1,11 +1,11 @@
 .checkout-page {
-  min-height: 100vh;
-  padding: 72px 16px 24px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 0.4s ease, transform 0.4s ease;
-  max-width: 600px;
-  margin: 0 auto;
 }
 
 .checkout-page.is-mounted {
@@ -233,10 +233,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 60vh;
+  justify-content: flex-start;
   text-align: center;
   padding: 40px 20px;
+  min-height: auto;
 }
 
 .checkout-success-icon {
@@ -271,7 +271,7 @@
 /* Responsive */
 @media (max-width: 480px) {
   .checkout-page {
-    padding: 72px 12px 24px;
+    padding: 0;
   }
 
   .checkout-title {

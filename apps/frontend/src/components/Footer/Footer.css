@@ -1,8 +1,11 @@
 .app-footer {
+  position: static;
   margin-top: auto;
   padding: 24px 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .app-footer-content {
@@ -55,4 +58,7 @@
     text-align: center;
   }
 }
+
+
+
 

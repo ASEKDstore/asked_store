@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useUser } from '../context/UserContext'
@@ -37,6 +37,13 @@ export const CheckoutPage: React.FC = () => {
   
   // Check if this is a LAB order from LabOrderPage
   const labOrder = (location.state as any)?.labOrder
+
+  // Handle input focus - scroll into view to avoid footer overlap
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    requestAnimationFrame(() => {
+      e.target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+  }
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -423,6 +430,7 @@ export const CheckoutPage: React.FC = () => {
             required
             value={formData.fullName}
             onChange={handleChange}
+            onFocus={handleInputFocus}
             placeholder="Иванов Иван Иванович"
           />
         </div>
@@ -436,6 +444,7 @@ export const CheckoutPage: React.FC = () => {
             required
             value={formData.phone}
             onChange={handleChange}
+            onFocus={handleInputFocus}
             placeholder="+7 (999) 123-45-67"
           />
         </div>
@@ -449,6 +458,7 @@ export const CheckoutPage: React.FC = () => {
             required
             value={formData.address}
             onChange={handleChange}
+            onFocus={handleInputFocus}
             placeholder="Город, улица, дом, квартира"
           />
         </div>
@@ -461,6 +471,7 @@ export const CheckoutPage: React.FC = () => {
             required
             value={formData.method}
             onChange={handleChange}
+            onFocus={handleInputFocus}
           >
             <option value="post">Почта России</option>
             <option value="cdek">СДЭК</option>
@@ -477,6 +488,7 @@ export const CheckoutPage: React.FC = () => {
               type="text"
               value={formData.promoCode}
               onChange={handleChange}
+              onFocus={handleInputFocus}
               placeholder="Введите промокод"
               disabled={promoApplied}
               style={{ flex: 1 }}
@@ -510,6 +522,7 @@ export const CheckoutPage: React.FC = () => {
             rows={3}
             value={formData.comment}
             onChange={handleChange}
+            onFocus={handleInputFocus}
             placeholder="Дополнительная информация для доставки"
           />
         </div>
