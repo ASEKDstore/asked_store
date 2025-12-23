@@ -99,24 +99,15 @@ export const AddReviewSheet = ({ isOpen, onClose, onSubmit }: Props) => {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [isOpen, onClose])
 
-  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    if (!scroller) return
-
     if (isOpen) {
-      scroller.classList.add('scroll-lock')
+      pushLayer('AddReviewSheet')
     } else {
-      scroller.classList.remove('scroll-lock')
+      popLayer('AddReviewSheet')
     }
-
-    // Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[scroll-lock] AddReviewSheet', { isOpen, className: scroller.className })
-    }
-
     return () => {
-      scroller.classList.remove('scroll-lock')
+      popLayer('AddReviewSheet')
     }
   }, [isOpen])
 

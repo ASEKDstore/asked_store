@@ -38,24 +38,15 @@ export const ReplySheet = ({ isOpen, onClose, onSubmit, isAdmin = false, reviewA
     return () => document.removeEventListener('keydown', handleEscape)
   }, [isOpen, onClose])
 
-  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    if (!scroller) return
-
     if (isOpen) {
-      scroller.classList.add('scroll-lock')
+      pushLayer('ReplySheet')
     } else {
-      scroller.classList.remove('scroll-lock')
+      popLayer('ReplySheet')
     }
-
-    // Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[scroll-lock] ReplySheet', { isOpen, className: scroller.className })
-    }
-
     return () => {
-      scroller.classList.remove('scroll-lock')
+      popLayer('ReplySheet')
     }
   }, [isOpen])
 

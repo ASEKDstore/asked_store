@@ -11,26 +11,16 @@ export const ProductSheetWrapper = () => {
   const previousPathRef = useRef<string>('/app')
   const isNavigatingRef = useRef(false)
 
-  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    if (!scroller) return
-
     const isSheetOpen = isOpen && productId !== null
-
     if (isSheetOpen) {
-      scroller.classList.add('scroll-lock')
+      pushLayer('ProductSheetWrapper')
     } else {
-      scroller.classList.remove('scroll-lock')
+      popLayer('ProductSheetWrapper')
     }
-
-    // Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[scroll-lock] ProductSheetWrapper', { isSheetOpen, className: scroller.className })
-    }
-
     return () => {
-      scroller.classList.remove('scroll-lock')
+      popLayer('ProductSheetWrapper')
     }
   }, [isOpen, productId])
 

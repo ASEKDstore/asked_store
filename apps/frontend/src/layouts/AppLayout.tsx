@@ -11,6 +11,7 @@ import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { TgDebugOverlay } from '../components/TgDebugOverlay'
 import { AppShell } from '../components/layout/AppShell'
+import { clearLayers } from '../shared/layerManager'
 import './AppLayout.css'
 
 export const AppLayout = () => {
@@ -37,6 +38,10 @@ export const AppLayout = () => {
         closeProduct()
       }
     }
+    
+    // Safety net: очищаем все слои при смене route
+    // Это гарантирует, что scroll-lock не залипнет при навигации
+    clearLayers()
   }, [location.pathname, isOpen, closeProduct])
 
   useEffect(() => {

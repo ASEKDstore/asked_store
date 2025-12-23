@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../../context/UserContext'
 import { useCart } from '../../context/CartContext'
 import { MiniCartDrawer } from '../cart/MiniCartDrawer'
+import { pushLayer, popLayer } from '../../shared/layerManager'
 import './header.css'
 
 export const Header: React.FC = () => {
@@ -28,20 +29,15 @@ export const Header: React.FC = () => {
     setOpen(false)
   }
 
-  // Блокируем скролл при открытом меню (foundation: используем .app-content или .app-scroll для совместимости)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    const scrollElement = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    if (scrollElement) {
-      if (open) {
-        scrollElement.classList.add('scroll-lock')
-      } else {
-        scrollElement.classList.remove('scroll-lock')
-      }
+    if (open) {
+      pushLayer('HeaderMenu')
+    } else {
+      popLayer('HeaderMenu')
     }
     return () => {
-      if (scrollElement) {
-        scrollElement.classList.remove('scroll-lock')
-      }
+      popLayer('HeaderMenu')
     }
   }, [open])
 

@@ -21,31 +21,18 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const isDraggingRef = useRef(false)
 
   useEffect(() => {
-    // Блокировка скролла (foundation: используем .app-content или .app-scroll для совместимости)
-    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    
+    // Layer management: управление scroll-lock через LayerManager
     if (open) {
-      if (scroller) {
-        scroller.classList.add('scroll-lock')
-      }
+      pushLayer('BottomSheet')
       // Trigger animation
       requestAnimationFrame(() => setIsVisible(true))
     } else {
       setIsVisible(false)
-      if (scroller) {
-        scroller.classList.remove('scroll-lock')
-      }
-    }
-
-    // Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[scroll-lock] BottomSheet', { open, className: scroller?.className })
+      popLayer('BottomSheet')
     }
 
     return () => {
-      if (scroller) {
-        scroller.classList.remove('scroll-lock')
-      }
+      popLayer('BottomSheet')
     }
   }, [open])
 

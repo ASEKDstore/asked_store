@@ -245,6 +245,11 @@ a:active,
   touch-action: none;
 }
 
+/* Layer management: pointer-events для активных слоёв */
+body.layer-active {
+  pointer-events: auto;
+}
+
 /* ============================================
    UNIVERSEAL PAGE BLOCKS
    ============================================ */

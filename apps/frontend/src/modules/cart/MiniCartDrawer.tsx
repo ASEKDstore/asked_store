@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
+import { pushLayer, popLayer } from '../../shared/layerManager'
 import './mini-cart.css'
 
 type Props = {
@@ -25,25 +26,15 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
     return () => document.removeEventListener('keydown', handleEsc)
   }, [open, onClose])
 
-  // Блокируем скролл body при открытом drawer
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
     if (open) {
-      // Block scroll using .app-content (foundation)
-      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
-      if (scrollElement) {
-        scrollElement.classList.add('scroll-lock')
-      }
+      pushLayer('MiniCartDrawer')
     } else {
-      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
-      if (scrollElement) {
-        scrollElement.classList.remove('scroll-lock')
-      }
+      popLayer('MiniCartDrawer')
     }
     return () => {
-      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
-      if (scrollElement) {
-        scrollElement.classList.remove('scroll-lock')
-      }
+      popLayer('MiniCartDrawer')
     }
   }, [open])
 

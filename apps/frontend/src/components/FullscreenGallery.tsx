@@ -121,25 +121,15 @@ export const FullscreenGallery = ({ images, startIndex, isOpen, onClose }: Props
     }
   }, [isOpen, startIndex])
 
-  // Body scroll lock
-  // Блокировка скролла при открытом fullscreen gallery (foundation: используем .app-content или .app-scroll для совместимости)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
-    if (!scroller) return
-
     if (isOpen) {
-      scroller.classList.add('scroll-lock')
+      pushLayer('FullscreenGallery')
     } else {
-      scroller.classList.remove('scroll-lock')
+      popLayer('FullscreenGallery')
     }
-
-    // Диагностика в dev
-    if (import.meta.env.DEV) {
-      console.log('[scroll-lock] FullscreenGallery', { isOpen, className: scroller.className })
-    }
-
     return () => {
-      scroller.classList.remove('scroll-lock')
+      popLayer('FullscreenGallery')
     }
   }, [isOpen])
 

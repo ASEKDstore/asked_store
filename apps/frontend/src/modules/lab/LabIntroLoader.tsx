@@ -146,26 +146,18 @@ export const LabIntroLoader = ({
     }
   }, [active, minMs, maxMs, onDone, dataReady, prefersReducedMotion])
 
-  // Блокируем скролл при активном лоадере (foundation: используем .app-content)
+  // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
     if (typeof document === 'undefined') return
     
-    const scrollElement = document.querySelector('.app-content') as HTMLElement | null
-    
     if (isVisible && active) {
-      if (scrollElement) {
-        scrollElement.classList.add('scroll-lock')
-      }
+      pushLayer('LabIntroLoader')
     } else {
-      if (scrollElement) {
-        scrollElement.classList.remove('scroll-lock')
-      }
+      popLayer('LabIntroLoader')
     }
 
     return () => {
-      if (scrollElement) {
-        scrollElement.classList.remove('scroll-lock')
-      }
+      popLayer('LabIntroLoader')
     }
   }, [isVisible, active])
 
