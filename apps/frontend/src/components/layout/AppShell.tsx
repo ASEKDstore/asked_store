@@ -10,13 +10,12 @@ interface AppShellProps {
 }
 
 /**
- * Unified App Shell component
- * Provides consistent layout structure for all pages:
- * - Flex column layout
- * - Header (optional, fixed height)
- * - Main content (scrollable)
- * - Footer (sticky, not fixed)
- * - Safe area padding
+ * Unified App Shell component (Foundation)
+ * Provides consistent layout structure for all WebApp pages:
+ * - Flex column layout with fixed header
+ * - Single scroll container for content (.app-content)
+ * - Predictable height via 100dvh and safe-area
+ * - NO global body overflow: hidden
  * - Telegram viewport height management
  */
 export const AppShell: React.FC<AppShellProps> = ({
@@ -25,6 +24,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   children,
   className = '',
 }) => {
+  const contentRef = useRef<HTMLElement>(null)
   const footerRef = useRef<HTMLElement>(null)
 
   // Initialize Telegram viewport height
@@ -56,10 +56,12 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   return (
     <div className={`app-shell ${className}`}>
-      {header && <header className="app-shell-header">{header}</header>}
-      <main className="app-shell-main">{children}</main>
+      {header && <div className="app-header">{header}</div>}
+      <main ref={contentRef} className="app-content">
+        {children}
+      </main>
       {footer && (
-        <footer ref={footerRef} className="app-shell-footer">
+        <footer ref={footerRef} className="app-footer">
           {footer}
         </footer>
       )}

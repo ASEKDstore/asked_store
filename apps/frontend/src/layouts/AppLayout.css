@@ -1,47 +1,21 @@
 .app-layout {
-  min-height: var(--app-height, 100%);
-  display: flex;
-  flex-direction: column;
   position: relative;
-  color: #f5f5f5;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
-    'Inter', sans-serif;
-  padding-top: env(safe-area-inset-top, 0);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
 }
 
 /* Background layer is now a separate component (BackgroundLayer.tsx) */
 
-/* Main content area - scrolls with page */
-.app-layout-main {
-  flex: 1 1 auto;
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px;
-  padding-top: 72px; /* Header height (56px) + air (16px) */
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
-}
-
-/* Admin pages get wider container */
-.app-layout-main.admin-main-wrapper {
-  max-width: 1400px;
-  padding: 0;
-}
-
-/* Admin shell - fullscreen mode */
+/* Admin pages - use separate layout */
 .app-layout.admin-shell {
-  min-height: var(--app-height, 100%);
+  height: 100%;
+  min-height: 100dvh;
 }
 
 .app-layout-main.admin-main-wrapper {
-  max-width: 1400px;
+  height: 100%;
+  max-width: none;
   padding: 0;
-}
-
-/* Admin shell - убираем padding-top */
-.admin-shell .app-layout-main {
-  padding-top: 0;
+  margin: 0;
 }
 

@@ -10,9 +10,9 @@ export const ProductSheetWrapper = () => {
   const previousPathRef = useRef<string>('/app')
   const isNavigatingRef = useRef(false)
 
-  // Блокировка скролла при открытом sheet (только .app-scroll, не body)
+  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
   useEffect(() => {
-    const scroller = document.querySelector('.app-scroll') as HTMLElement | null
+    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     if (!scroller) return
 
     const isSheetOpen = isOpen && productId !== null
@@ -25,7 +25,7 @@ export const ProductSheetWrapper = () => {
 
     // Диагностика в dev
     if (import.meta.env.DEV) {
-      console.log('[scroll-lock]', { isSheetOpen, className: scroller.className })
+      console.log('[scroll-lock] ProductSheetWrapper', { isSheetOpen, className: scroller.className })
     }
 
     return () => {

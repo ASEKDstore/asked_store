@@ -99,9 +99,9 @@ export const AddReviewSheet = ({ isOpen, onClose, onSubmit }: Props) => {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [isOpen, onClose])
 
-  // Блокировка скролла при открытом sheet (только .app-scroll, не body)
+  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
   useEffect(() => {
-    const scroller = document.querySelector('.app-scroll') as HTMLElement | null
+    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     if (!scroller) return
 
     if (isOpen) {

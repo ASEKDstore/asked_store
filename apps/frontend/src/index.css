@@ -10,6 +10,8 @@
 :root {
   /* Viewport & Layout */
   --app-height: 100dvh; /* Fallback, updated by useTgViewport hook */
+  --app-header-h: 56px; /* Header height */
+  --app-gutter: 16px; /* Base gutter/spacing */
   --footer-h: 72px; /* Default footer height, updated by AppShell */
   
   /* Typography */
@@ -95,13 +97,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
-  /* Allow page scroll - no overflow hidden */
-  min-height: var(--app-height, 100%);
+  /* Allow page scroll - НЕТ overflow: hidden для обычных страниц */
+  /* Блокировка скролла применяется только локально (модалки, админка) */
+  min-height: 100dvh;
+  /* Safe-area support */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 #root {
   width: 100%;
-  min-height: var(--app-height, 100%);
+  height: 100%;
+  min-height: 100dvh;
 }
 
 /* ============================================
@@ -167,7 +174,7 @@ a:active,
 }
 
 /* ============================================
-   LAYOUT
+   FOUNDATION LAYOUT
    ============================================ */
 
 /* Корневой контейнер приложения */
@@ -176,20 +183,106 @@ a:active,
   position: relative;
 }
 
-/* Скролл-контейнер приложения - ЕДИНСТВЕННЫЙ скролл */
+/* App Shell - единый layout для WebApp */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* Фиксированная верхняя панель (header) */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-header-h);
+  z-index: 100;
+  /* Safe-area для iOS */
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Header должен учитывать safe-area для высоты */
+.app-header > * {
+  height: var(--app-header-h);
+}
+
+/* Скролл-контейнер контента - ЕДИНСТВЕННЫЙ скролл */
+.app-content {
+  flex: 1 1 auto;
+  min-height: 0; /* Важно для flex children */
+  min-width: 0; /* Важно для flex children */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS/Telegram */
+  touch-action: pan-y; /* Разрешаем только вертикальный скролл */
+  padding-top: calc(var(--app-header-h) + var(--app-gutter));
+  padding-bottom: calc(var(--app-gutter) + env(safe-area-inset-bottom, 0));
+}
+
+/* Блокировка скролла при открытом overlay/sheet */
+.app-content.scroll-lock {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+/* Совместимость: .app-scroll -> .app-content */
 .app-scroll {
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS/Telegram */
-  /* scroll-behavior: smooth removed for better performance */
-  touch-action: pan-y; /* Разрешаем только вертикальный скролл, не блокируем свайп */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  min-height: 0;
+  min-width: 0;
 }
 
-/* Блокировка скролла при открытом overlay/sheet */
 .app-scroll.scroll-lock {
   overflow: hidden !important;
   touch-action: none;
+}
+
+/* ============================================
+   UNIVERSEAL PAGE BLOCKS
+   ============================================ */
+
+/* Page container */
+.page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--app-gutter);
+}
+
+/* Content container */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--app-gutter);
+}
+
+/* Card component */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-stroke);
+  border-radius: var(--radius-md);
+  padding: var(--app-gutter);
+}
+
+/* Table wrapper for horizontal scroll */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0; /* Важно для flex детей */
+}
+
+.table-wrap table {
+  min-width: 600px;
+  width: 100%;
 }
 
 /* ============================================

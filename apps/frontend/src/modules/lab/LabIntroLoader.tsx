@@ -146,18 +146,26 @@ export const LabIntroLoader = ({
     }
   }, [active, minMs, maxMs, onDone, dataReady, prefersReducedMotion])
 
-  // Блокируем скролл body при активном лоадере
+  // Блокируем скролл при активном лоадере (foundation: используем .app-content)
   useEffect(() => {
     if (typeof document === 'undefined') return
     
+    const scrollElement = document.querySelector('.app-content') as HTMLElement | null
+    
     if (isVisible && active) {
-      document.body.style.overflow = 'hidden'
+      if (scrollElement) {
+        scrollElement.classList.add('scroll-lock')
+      }
     } else {
-      document.body.style.overflow = ''
+      if (scrollElement) {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
 
     return () => {
-      document.body.style.overflow = ''
+      if (scrollElement) {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
   }, [isVisible, active])
 

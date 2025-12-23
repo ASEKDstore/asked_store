@@ -28,9 +28,9 @@ export const Header: React.FC = () => {
     setOpen(false)
   }
 
-  // Блокируем скролл .app-scroll при открытом меню
+  // Блокируем скролл при открытом меню (foundation: используем .app-content или .app-scroll для совместимости)
   useEffect(() => {
-    const scrollElement = document.querySelector('.app-scroll') as HTMLElement | null
+    const scrollElement = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     if (scrollElement) {
       if (open) {
         scrollElement.classList.add('scroll-lock')

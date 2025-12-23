@@ -110,9 +110,9 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
   }, [isOpen, onClose])
 
   // ✅ useEffect вызывается ВСЕГДА
-  // Блокировка скролла при открытом sheet (только .app-scroll, не body)
+  // Блокировка скролла при открытом sheet (foundation: используем .app-content или .app-scroll для совместимости)
   useEffect(() => {
-    const scroller = document.querySelector('.app-scroll') as HTMLElement | null
+    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     if (!scroller) return
 
     if (isOpen) {

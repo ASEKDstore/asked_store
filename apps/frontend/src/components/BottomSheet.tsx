@@ -21,8 +21,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const isDraggingRef = useRef(false)
 
   useEffect(() => {
-    // Блокировка скролла только у .app-scroll, не body (для стабильности в Telegram)
-    const scroller = document.querySelector('.app-scroll') as HTMLElement | null
+    // Блокировка скролла (foundation: используем .app-content или .app-scroll для совместимости)
+    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     
     if (open) {
       if (scroller) {

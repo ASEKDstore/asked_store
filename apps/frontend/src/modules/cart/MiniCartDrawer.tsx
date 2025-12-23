@@ -27,12 +27,22 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
   // Блокируем скролл body при открытом drawer
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden'
+      // Block scroll using .app-content (foundation)
+      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
+      if (scrollElement) {
+        scrollElement.classList.add('scroll-lock')
+      }
     } else {
-      document.body.style.overflow = ''
+      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
+      if (scrollElement) {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
     return () => {
-      document.body.style.overflow = ''
+      const scrollElement = document.querySelector('.app-content') as HTMLElement | null
+      if (scrollElement) {
+        scrollElement.classList.remove('scroll-lock')
+      }
     }
   }, [open])
 

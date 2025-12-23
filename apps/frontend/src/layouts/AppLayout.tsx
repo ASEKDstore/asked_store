@@ -10,6 +10,7 @@ import { Footer } from '../components/Footer/Footer'
 import { RouteTransitionWrapper } from '../components/RouteTransitionWrapper'
 import { BackgroundLayer } from '../components/BackgroundLayer'
 import { TgDebugOverlay } from '../components/TgDebugOverlay'
+import { AppShell } from '../components/layout/AppShell'
 import './AppLayout.css'
 
 export const AppLayout = () => {
@@ -49,56 +50,61 @@ export const AppLayout = () => {
   // Don't block admin routes
   const isAdminRoute = location.pathname.startsWith('/app/admin')
 
+  // Admin routes use their own layout
+  if (isAdminRoute) {
+    return (
+      <div className="app-layout app-root admin-shell">
+        <BackgroundLayer />
+        <main className="app-layout-main admin-main-wrapper">
+          <RouteTransitionWrapper>
+            <Outlet />
+          </RouteTransitionWrapper>
+        </main>
+        <ProductRouteHandler />
+        <ProductSheetWrapper />
+      </div>
+    )
+  }
+
+  // Loading state
   if (loading) {
     return (
-      <div className={`app-layout app-root ${isAdminRoute ? 'admin-shell' : ''}`}>
+      <div className="app-layout app-root app-shell">
         <BackgroundLayer />
-        {!isAdminRoute && <Header />}
-        <main className={`app-layout-main ${isAdminRoute ? 'admin-main-wrapper' : ''}`}>
+        <AppShell header={<Header />} footer={<Footer />}>
           <div style={{ padding: '48px', textAlign: 'center', color: '#f5f5f5' }}>
             Загрузка...
           </div>
-        </main>
-        <Footer />
+        </AppShell>
         <ProductRouteHandler />
         <ProductSheetWrapper />
       </div>
     )
   }
 
-  if (shouldBlock && !isAdminRoute) {
+  // Maintenance mode
+  if (shouldBlock) {
     return (
-      <div className="app-layout app-root">
+      <div className="app-layout app-root app-shell">
         <BackgroundLayer />
-        <Header />
-        <main className="app-layout-main">
+        <AppShell header={<Header />} footer={<Footer />}>
           <MaintenancePage />
-        </main>
-        <Footer />
+        </AppShell>
         <ProductRouteHandler />
         <ProductSheetWrapper />
       </div>
     )
   }
 
+  // Normal app shell layout
   return (
-    <div className={`app-layout app-root ${isAdminRoute ? 'admin-shell' : ''}`}>
-      {/* Fixed background layer */}
+    <div className="app-layout app-root app-shell">
       <BackgroundLayer />
-      
-      {/* Header */}
-      {!isAdminRoute && <Header />}
-      
-      {/* Main content - scrolls with page */}
-      <main className={`app-layout-main ${isAdminRoute ? 'admin-main-wrapper' : ''}`}>
+      <AppShell header={<Header />} footer={<Footer />}>
         <RouteTransitionWrapper>
           <Outlet />
         </RouteTransitionWrapper>
-      </main>
-      
-      {/* Footer - always at the end of page */}
-      <Footer />
-      
+      </AppShell>
       <ProductRouteHandler />
       <ProductSheetWrapper />
       <TgDebugOverlay />

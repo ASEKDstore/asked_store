@@ -122,9 +122,9 @@ export const FullscreenGallery = ({ images, startIndex, isOpen, onClose }: Props
   }, [isOpen, startIndex])
 
   // Body scroll lock
-  // Блокировка скролла при открытом fullscreen gallery (только .app-scroll, не body)
+  // Блокировка скролла при открытом fullscreen gallery (foundation: используем .app-content или .app-scroll для совместимости)
   useEffect(() => {
-    const scroller = document.querySelector('.app-scroll') as HTMLElement | null
+    const scroller = document.querySelector('.app-content') || document.querySelector('.app-scroll') as HTMLElement | null
     if (!scroller) return
 
     if (isOpen) {
