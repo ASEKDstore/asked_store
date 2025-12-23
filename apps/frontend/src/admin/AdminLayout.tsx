@@ -36,7 +36,15 @@ export const AdminLayout: React.FC = () => {
 
   const toggleMenu = () => setSidebarOpen((v) => !v)
 
-  // Блокируем скролл body при открытом меню
+  // Блокируем скролл body только в админке
+  React.useEffect(() => {
+    document.body.classList.add('admin-lock-scroll')
+    return () => {
+      document.body.classList.remove('admin-lock-scroll')
+    }
+  }, [])
+
+  // Блокируем скролл body при открытом меню (дополнительно)
   React.useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden'

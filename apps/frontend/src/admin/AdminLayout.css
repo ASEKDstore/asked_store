@@ -11,8 +11,10 @@ body,
   height: 100%;
 }
 
-body {
+/* Lock body scroll only in admin mode */
+body.admin-lock-scroll {
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Root layout */
