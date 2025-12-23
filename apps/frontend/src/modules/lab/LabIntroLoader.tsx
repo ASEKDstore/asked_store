@@ -174,7 +174,7 @@ export const LabIntroLoader = ({
           <div className="lab-intro-progress-track" />
           <div 
             className="lab-intro-progress-thumb" 
-            style={{ left: `${progress * 100}%` }}
+            style={{ left: `clamp(0px, calc(${progress * 100}% - 90px), calc(100% - 90px))` }}
           />
         </div>
 
