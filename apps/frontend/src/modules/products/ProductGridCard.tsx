@@ -45,7 +45,18 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
   }
 
   return (
-    <div className="product-grid-card" onClick={handleCardClick}>
+    <div 
+      className="product-grid-card" 
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleCardClick()
+        }
+      }}
+    >
       <div className="product-grid-card-image-wrapper">
         <div
           className="product-grid-card-image"

@@ -71,6 +71,11 @@ export const ProductSheetWrapper = () => {
       }
   }, [isOpen, productId, location.pathname, navigate])
 
+  // Show Telegram BackButton when sheet is open
+  useTelegramBackButton(() => {
+    closeProduct()
+  }, isOpen && productId !== null)
+
   // ВСЕГДА рендерим ProductSheet, даже если productId null
   // ProductSheet сам обработает состояние через isOpen и productId
   // Это гарантирует, что компонент всегда смонтирован и не ломает навигацию

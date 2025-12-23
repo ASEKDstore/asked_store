@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
 import './mini-cart.css'
 
 type Props = {
@@ -55,6 +56,11 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
     onClose()
     navigate('/app/checkout')
   }
+
+  // Show Telegram BackButton when drawer is open
+  useTelegramBackButton(() => {
+    onClose()
+  }, open)
 
   return (
     <>

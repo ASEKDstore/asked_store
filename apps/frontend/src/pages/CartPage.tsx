@@ -1,16 +1,30 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useEffect, useState } from 'react'
+import { useTelegramBackButton } from '../hooks/useTelegramBackButton'
 import './cart.css'
 
 export const CartPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { items, removeItem, setQty, totalQty, totalPrice } = useCart()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
   }, [])
+
+  // Back button handler with fallback
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+    } else {
+      navigate('/app')
+    }
+  }
+
+  // Show Telegram BackButton
+  useTelegramBackButton(handleBack, true)
 
   if (items.length === 0) {
     return (
@@ -32,7 +46,16 @@ export const CartPage = () => {
 
   return (
     <div className={`cart-page ${mounted ? 'is-mounted' : ''}`}>
-      <h1 className="cart-title">Корзина</h1>
+      <div className="cart-header">
+        <button
+          className="cart-back-btn"
+          onClick={handleBack}
+          aria-label="Назад"
+        >
+          ← Назад
+        </button>
+        <h1 className="cart-title">Корзина</h1>
+      </div>
 
       <div className="cart-items">
         {items.map((item, idx) => (
