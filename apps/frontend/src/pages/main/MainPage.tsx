@@ -25,18 +25,28 @@ export const MainPage = () => {
   const processGridRef = useRef<HTMLDivElement>(null)
   const [productsToShow, setProductsToShow] = useState<UIProduct[]>([])
 
-  // Load products from API
+  // Load products from API with abort controller
   useEffect(() => {
+    const abortController = new AbortController()
+    
     const loadProducts = async () => {
       try {
         const products = await getUIProducts({ sort: 'newest' })
-        setProductsToShow(products.slice(0, 6))
+        if (!abortController.signal.aborted) {
+          setProductsToShow(products.slice(0, 6))
+        }
       } catch (error) {
-        console.error('Failed to load products:', error)
-        setProductsToShow([])
+        if (!abortController.signal.aborted) {
+          console.error('Failed to load products:', error)
+          setProductsToShow([])
+        }
       }
     }
     loadProducts()
+    
+    return () => {
+      abortController.abort()
+    }
   }, [])
 
   useEffect(() => {

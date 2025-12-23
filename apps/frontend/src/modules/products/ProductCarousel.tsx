@@ -14,18 +14,30 @@ export const ProductCarousel = () => {
   const dragStartX = useRef<number | null>(null)
 
   useEffect(() => {
+    const abortController = new AbortController()
+    
     const loadProducts = async () => {
       try {
         const prods = await getUIProducts({ sort: 'newest' })
-        setProducts(prods)
+        if (!abortController.signal.aborted) {
+          setProducts(prods)
+        }
       } catch (error) {
-        console.error('Failed to load products for carousel:', error)
-        setProducts([])
+        if (!abortController.signal.aborted) {
+          console.error('Failed to load products for carousel:', error)
+          setProducts([])
+        }
       } finally {
-        setLoading(false)
+        if (!abortController.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
     loadProducts()
+    
+    return () => {
+      abortController.abort()
+    }
   }, [])
 
   const prev = () =>

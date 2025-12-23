@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
@@ -9,12 +9,12 @@ type Props = {
   product: UIProduct
 }
 
-export const ProductGridCard: React.FC<Props> = ({ product }) => {
+const ProductGridCard: React.FC<Props> = ({ product }) => {
   const navigate = useNavigate()
   const { addItem } = useCart()
   const [showSizes, setShowSizes] = useState(false)
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     if (!product?.id) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('[ProductGridCard] Cannot navigate: product.id is missing', product)
@@ -22,9 +22,9 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
       return
     }
     navigate(`/app/product/${product.id}`)
-  }
+  }, [product?.id, navigate])
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
+  const handleQuickAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
 
     if (product.sizes.length === 1) {
@@ -35,14 +35,25 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
       // Если несколько размеров - показываем выбор
       setShowSizes(true)
     }
-  }
+  }, [product, addItem])
 
-  const handleSizeSelect = (size: string, e: React.MouseEvent) => {
+  const handleSizeSelect = useCallback((size: string, e: React.MouseEvent) => {
     e.stopPropagation()
     addItem(product, { size })
     flyToCart({ imageUrl: product.image, fromEl: e.currentTarget as HTMLElement })
     setShowSizes(false)
-  }
+  }, [product, addItem])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleCardClick()
+    }
+  }, [handleCardClick])
+
+  const handleSizeClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
 
   return (
     <div 
@@ -50,12 +61,7 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleCardClick()
-        }
-      }}
+      onKeyDown={handleKeyDown}
     >
       <div className="product-grid-card-image-wrapper">
         <div
@@ -77,7 +83,7 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
 
       <div className="product-grid-card-actions">
         {showSizes ? (
-          <div className="product-grid-card-sizes show" onClick={(e) => e.stopPropagation()}>
+          <div className="product-grid-card-sizes show" onClick={handleSizeClick}>
             {product.sizes.map((size) => (
               <button
                 key={size}
@@ -101,4 +107,7 @@ export const ProductGridCard: React.FC<Props> = ({ product }) => {
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(ProductGridCard)
 

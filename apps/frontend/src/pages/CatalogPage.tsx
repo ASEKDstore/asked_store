@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { ProductGridCard } from '../modules/products/ProductGridCard'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import ProductGridCard from '../modules/products/ProductGridCard'
 import { getUIProducts, getPublicCategories, type UIProduct, type Category } from '../api/productsApi'
 import './catalog.css'
 

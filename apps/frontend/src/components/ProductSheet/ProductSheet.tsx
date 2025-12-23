@@ -27,7 +27,7 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
   const [relatedProducts, setRelatedProducts] = useState<UIProduct[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Load product from API
+  // Load product from API with abort controller
   useEffect(() => {
     if (!productId || !isOpen) {
       setProduct(null)
@@ -35,34 +35,49 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
       return
     }
 
+    const abortController = new AbortController()
+
     const loadProduct = async () => {
       setLoading(true)
       try {
         const loadedProduct = await getUIProduct(productId)
-        setProduct(loadedProduct)
         
-        // Load related products (same category)
-        if (loadedProduct) {
-          const related = await getUIProducts({
-            categorySlug: loadedProduct.category,
-            inStock: true,
-          })
-          // Filter out current product and limit to 8
-          const filtered = related
-            .filter(p => p.id !== productId)
-            .slice(0, 8)
-          setRelatedProducts(filtered)
+        if (!abortController.signal.aborted) {
+          setProduct(loadedProduct)
+          
+          // Load related products (same category)
+          if (loadedProduct) {
+            const related = await getUIProducts({
+              categorySlug: loadedProduct.category,
+              inStock: true,
+            })
+            // Filter out current product and limit to 8
+            if (!abortController.signal.aborted) {
+              const filtered = related
+                .filter(p => p.id !== productId)
+                .slice(0, 8)
+              setRelatedProducts(filtered)
+            }
+          }
         }
       } catch (error) {
-        console.error('Failed to load product:', error)
-        setProduct(null)
-        setRelatedProducts([])
+        if (!abortController.signal.aborted) {
+          console.error('Failed to load product:', error)
+          setProduct(null)
+          setRelatedProducts([])
+        }
       } finally {
-        setLoading(false)
+        if (!abortController.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
 
     loadProduct()
+    
+    return () => {
+      abortController.abort()
+    }
   }, [productId, isOpen])
 
   // ✅ useMemo вызывается ВСЕГДА, даже если product null

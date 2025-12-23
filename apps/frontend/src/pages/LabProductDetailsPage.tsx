@@ -85,6 +85,7 @@ export const LabProductDetailsPage = () => {
                 <img
                   src={selectedImage || allImages[0]}
                   alt={product.title}
+                  loading="eager"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/assets/placeholder.jpg'
                   }}
@@ -101,6 +102,7 @@ export const LabProductDetailsPage = () => {
                       <img
                         src={image}
                         alt={`${product.title} ${idx + 1}`}
+                        loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/assets/placeholder.jpg'
                         }}

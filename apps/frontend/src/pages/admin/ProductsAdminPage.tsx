@@ -171,6 +171,7 @@ export const ProductsAdminPage: React.FC = () => {
                 <img
                   src={(product.images && product.images[0]) || '/assets/placeholder-product.jpg'}
                   alt={product.title ?? 'Товар'}
+                  loading="lazy"
                   onError={(e) => {
                     ;(e.target as HTMLImageElement).src = '/assets/placeholder-product.jpg'
                   }}

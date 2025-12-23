@@ -19,11 +19,6 @@ export const OrdersAdminPage: React.FC = () => {
   const [clearing, setClearing] = useState(false)
   const [testingNotifications, setTestingNotifications] = useState(false)
 
-  useEffect(() => {
-    loadOrders()
-    loadStats()
-  }, [statusFilter, searchQuery])
-
   const loadStats = async () => {
     try {
       setStatsLoading(true)
@@ -54,6 +49,12 @@ export const OrdersAdminPage: React.FC = () => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadOrders()
+    loadStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, searchQuery])
 
   const handleStatusChange = async (orderId: string, status: string) => {
     try {

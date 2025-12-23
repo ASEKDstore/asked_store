@@ -48,15 +48,25 @@ export const ReviewsPage = () => {
   }, [])
 
   useEffect(() => {
+    const abortController = new AbortController()
+    
     const loadProducts = async () => {
       try {
         const prods = await getUIProducts()
-        setProducts(prods)
+        if (!abortController.signal.aborted) {
+          setProducts(prods)
+        }
       } catch (error) {
-        console.error('Failed to load products for reviews:', error)
+        if (!abortController.signal.aborted) {
+          console.error('Failed to load products for reviews:', error)
+        }
       }
     }
     loadProducts()
+    
+    return () => {
+      abortController.abort()
+    }
   }, [])
 
   // Расчёт рейтинга
@@ -395,7 +405,7 @@ export const ReviewsPage = () => {
                       onClick={() => item.type === 'image' && handleMediaClick(review, idx)}
                     >
                       {item.type === 'image' ? (
-                        <img src={item.url} alt={`Media ${idx + 1}`} />
+                        <img src={item.url} alt={`Media ${idx + 1}`} loading="lazy" />
                       ) : (
                         <div className="reviews-card-media-video">
                           <video src={item.url} muted />
