@@ -246,9 +246,10 @@ a:active,
 }
 
 /* Layer management: pointer-events для активных слоёв */
-body.layer-active {
+/* Убираем этот класс - он не нужен, т.к. может блокировать клики */
+/* body.layer-active {
   pointer-events: auto;
-}
+} */
 
 /* ============================================
    UNIVERSEAL PAGE BLOCKS

@@ -27,8 +27,6 @@ export const LabIntroLoader = ({
   const [currentStage, setCurrentStage] = useState<Stage>('SCANNING')
   const [isVisible, setIsVisible] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
-  const [showReadyStamp, setShowReadyStamp] = useState(false)
-  const [showStamps, setShowStamps] = useState({ ok: false, pass: false, verified: false })
   
   const startTimeRef = useRef<number>(0)
   const durationRef = useRef<number>(0)
@@ -47,8 +45,6 @@ export const LabIntroLoader = ({
       setProgress(0)
       setCurrentStage('SCANNING')
       setIsFinishing(false)
-      setShowReadyStamp(false)
-      setShowStamps({ ok: false, pass: false, verified: false })
       return
     }
 
@@ -59,19 +55,12 @@ export const LabIntroLoader = ({
     setProgress(0)
     setCurrentStage('SCANNING')
     setIsFinishing(false)
-    setShowReadyStamp(false)
-    setShowStamps({ ok: false, pass: false, verified: false })
 
     // Случайная длительность
     const duration = minMs + Math.random() * (maxMs - minMs)
     durationRef.current = duration
     startTimeRef.current = Date.now()
     minHoldDoneAtRef.current = Date.now() + Math.min(duration, 5000) // Минимум 5с
-
-    // Показываем штампы по таймингу
-    const okTimer = setTimeout(() => setShowStamps(prev => ({ ...prev, ok: true })), duration * 0.3)
-    const passTimer = setTimeout(() => setShowStamps(prev => ({ ...prev, pass: true })), duration * 0.6)
-    const verifiedTimer = setTimeout(() => setShowStamps(prev => ({ ...prev, verified: true })), duration * 0.85)
 
     // Анимация прогресса
     const updateProgress = () => {
@@ -99,13 +88,12 @@ export const LabIntroLoader = ({
       const shouldForceFinish = now - startTimeRef.current >= maxDuration
 
       if (canFinish || shouldForceFinish) {
-        // Финиш: быстро до 100%, показываем READY stamp, затем fade-out
+        // Финиш: быстро до 100%, затем fade-out
         if (!isFinishingRef.current) {
           isFinishingRef.current = true
           setIsFinishing(true)
           setProgress(1)
           setCurrentStage('READY')
-          setShowReadyStamp(true)
           
           // Fade-out через 400ms
           setTimeout(() => {
@@ -128,7 +116,6 @@ export const LabIntroLoader = ({
       const timer = setTimeout(() => {
         setProgress(1)
         setCurrentStage('READY')
-        setShowReadyStamp(true)
         setTimeout(() => {
           setIsVisible(false)
           onDone?.()
@@ -141,9 +128,6 @@ export const LabIntroLoader = ({
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
       }
-      clearTimeout(okTimer)
-      clearTimeout(passTimer)
-      clearTimeout(verifiedTimer)
     }
   }, [active, minMs, maxMs, onDone, dataReady, prefersReducedMotion])
 
@@ -169,54 +153,41 @@ export const LabIntroLoader = ({
 
   const content = (
     <div className={`lab-intro-loader ${isVisible && active ? 'is-visible' : ''} ${isFinishing ? 'is-finishing' : ''}`}>
-      {/* Backdrop с эффектами */}
+      {/* Backdrop с эффектами - стиль как в LoadingScreen */}
       <div className="lab-intro-backdrop" />
-      <div className="lab-intro-scanlines" />
-      <div className="lab-intro-grain" />
-
-      {/* HUD по центру */}
-      <div className="lab-intro-hud">
-        <div className="lab-intro-header">
-          <div className="lab-intro-title">ASKED LAB</div>
-          <div className="lab-intro-subtitle">// SYNTHESIS</div>
-        </div>
-
-        <div className="lab-intro-content">
-          <div className="lab-intro-stage">
-            <span className="lab-intro-stage-label">STATUS:</span>
-            <span className={`lab-intro-stage-value ${currentStage.toLowerCase()}`}>
-              {currentStage === 'SCANNING' && 'SCANNING FABRIC'}
-              {currentStage === 'MIXING' && 'MIXING PIGMENTS'}
-              {currentStage === 'CALIBRATING' && 'CALIBRATING AIRBRUSH'}
-              {currentStage === 'CURING' && 'CURING LAYER'}
-              {currentStage === 'READY' && 'READY'}
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="lab-intro-progress">
-            <div 
-              className="lab-intro-progress-bar" 
-              style={{ width: `${progress * 100}%` }}
-            />
-            <div className="lab-intro-progress-shine" />
+      <div className="lab-intro-bg" />
+      <div className="lab-intro-glass" />
+      
+      {/* Контент в стиле LoadingScreen */}
+      <div className="lab-intro-content">
+        <div className="lab-intro-sticker">ASKED LAB</div>
+        
+        <div className="lab-intro-text">
+          <div className="lab-intro-title">Синтез кастомов</div>
+          <div className="lab-intro-sub">
+            Лаборатория ASKED создаёт уникальные вещи под заказ
           </div>
         </div>
 
-        {/* Штампы справа */}
-        <div className="lab-intro-stamps">
-          {showStamps.ok && (
-            <div className="lab-intro-stamp lab-intro-stamp--ok">OK</div>
-          )}
-          {showStamps.pass && (
-            <div className="lab-intro-stamp lab-intro-stamp--pass">PASS</div>
-          )}
-          {showStamps.verified && (
-            <div className="lab-intro-stamp lab-intro-stamp--verified">LAB VERIFIED</div>
-          )}
-          {showReadyStamp && (
-            <div className="lab-intro-stamp lab-intro-stamp--ready">READY</div>
-          )}
+        {/* Progress bar в стиле LoadingScreen */}
+        <div className="lab-intro-progress">
+          <div className="lab-intro-progress-track" />
+          <div 
+            className="lab-intro-progress-thumb" 
+            style={{ left: `${progress * 100}%` }}
+          />
+        </div>
+
+        {/* Статус */}
+        <div className="lab-intro-status">
+          <span className="lab-intro-status-label">STATUS:</span>
+          <span className={`lab-intro-status-value ${currentStage.toLowerCase()}`}>
+            {currentStage === 'SCANNING' && 'SCANNING FABRIC'}
+            {currentStage === 'MIXING' && 'MIXING PIGMENTS'}
+            {currentStage === 'CALIBRATING' && 'CALIBRATING AIRBRUSH'}
+            {currentStage === 'CURING' && 'CURING LAYER'}
+            {currentStage === 'READY' && 'READY'}
+          </span>
         </div>
       </div>
     </div>

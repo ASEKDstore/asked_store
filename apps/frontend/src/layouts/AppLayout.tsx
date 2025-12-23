@@ -39,9 +39,11 @@ export const AppLayout = () => {
       }
     }
     
-    // Safety net: очищаем все слои при смене route
-    // Это гарантирует, что scroll-lock не залипнет при навигации
-    clearLayers()
+    // Safety net: очищаем слои только при переходе на главную страницу
+    // Это предотвращает залипание scroll-lock, но не сбрасывает открытые слои на других страницах
+    if (location.pathname === '/app' || location.pathname === '/app/') {
+      clearLayers()
+    }
   }, [location.pathname, isOpen, closeProduct])
 
   useEffect(() => {

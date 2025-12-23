@@ -91,11 +91,11 @@ function updateScrollLock(): void {
     }
   }
 
-  // Управление классом layer-active на body
-  if (hasLayers) {
-    document.body.classList.add('layer-active')
-  } else {
-    document.body.classList.remove('layer-active')
-  }
+  // Управление классом layer-active на body - убрано, т.к. не используется
+  // if (hasLayers) {
+  //   document.body.classList.add('layer-active')
+  // } else {
+  //   document.body.classList.remove('layer-active')
+  // }
 }
 
