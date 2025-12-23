@@ -1,3 +1,21 @@
+/* CSS Variables */
+:root {
+  --admin-header-h: 64px;
+  --admin-gutter: 24px;
+}
+
+/* Global height constraints for proper scrolling */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+/* Root layout */
 .admin-layout {
   min-height: 100vh;
   display: flex;
@@ -7,19 +25,24 @@
 }
 
 .admin-root {
-  height: 100vh;
+  height: 100dvh;
   padding: 0;
   margin: 0;
   overflow: hidden;
 }
 
+/* Fixed header */
 .admin-header {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   top: 0;
+  height: var(--admin-header-h);
   z-index: 201;
   background: rgba(10, 10, 10, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 .admin-header-content {
@@ -29,6 +52,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: var(--admin-header-h);
 }
 
 .admin-header-actions {
@@ -72,7 +96,7 @@
   transform: scale(0.99);
 }
 
-/* Бургер меню (как в обычном режиме) */
+/* Бургер меню */
 .admin-burger {
   width: 28px;
   height: 22px;
@@ -84,7 +108,7 @@
   justify-content: space-between;
   cursor: pointer;
   position: relative;
-  z-index: 202; /* Всегда выше всего, чтобы быть кликабельным */
+  z-index: 202;
 }
 
 .admin-burger-lines {
@@ -104,7 +128,6 @@
   display: block;
 }
 
-/* Анимация крестика */
 .admin-burger--open .admin-burger-lines span:nth-child(1) {
   transform: translateY(10px) rotate(45deg);
 }
@@ -134,7 +157,7 @@
   z-index: 199;
 }
 
-/* Меню (выезжает справа, как в обычном режиме) */
+/* Mobile menu drawer */
 .admin-menu {
   position: fixed;
   top: 0;
@@ -147,11 +170,12 @@
   transform: translateX(100%);
   transition: transform 0.2s ease-out;
   z-index: 200;
-  padding: 80px 18px 24px;
+  padding: calc(var(--admin-header-h) + env(safe-area-inset-top, 0)) 18px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: none;
 }
-
 
 .admin-menu.is-open {
   transform: translateX(0);
@@ -199,26 +223,37 @@
   font-size: 18px;
   width: 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .admin-menu-label {
   flex: 1;
+  min-width: 0;
 }
 
+/* Body container with fixed header offset */
 .admin-body {
   display: flex;
   flex: 1;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  padding-top: var(--admin-header-h);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
+/* Desktop sidebar */
 .admin-sidebar {
   width: 240px;
   background: rgba(10, 10, 10, 0.6);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 24px 0;
   flex-shrink: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
 }
 
 .admin-nav {
@@ -260,24 +295,70 @@
   font-size: 18px;
   width: 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .admin-nav-label {
   flex: 1;
+  min-width: 0;
 }
 
+/* Main content area with scroll */
 .admin-main {
   flex: 1;
-  padding: 24px;
+  padding: var(--admin-gutter);
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  min-width: 0;
+  padding-bottom: calc(var(--admin-gutter) + env(safe-area-inset-bottom, 0));
+}
+
+/* Universal admin page styles */
+.admin-page {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.admin-container {
+  width: 100%;
+}
+
+.admin-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.admin-table-wrap table {
+  min-width: 900px;
+  width: 100%;
 }
 
 .admin-sidebar-overlay {
   display: none;
 }
 
-/* Mobile */
+/* Mobile styles */
 @media (max-width: 768px) {
+  :root {
+    --admin-gutter: 16px;
+    --admin-header-h: 60px;
+  }
+
+  .admin-header-content {
+    padding: 12px 16px;
+  }
+
   .admin-exit-btn {
     padding: 8px 12px;
     font-size: 12px;
@@ -300,11 +381,15 @@
   }
 
   .admin-main {
-    padding: 16px;
+    padding: var(--admin-gutter);
+  }
+
+  .admin-page {
+    padding-bottom: 8px;
   }
 }
 
-/* Desktop - показываем sidebar, скрываем меню */
+/* Desktop styles */
 @media (min-width: 769px) {
   .admin-burger {
     display: none;
@@ -318,4 +403,3 @@
     display: block;
   }
 }
-

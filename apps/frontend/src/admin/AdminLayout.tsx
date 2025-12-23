@@ -125,7 +125,9 @@ export const AdminLayout: React.FC = () => {
         </aside>
 
         <main className="admin-main">
-          <Outlet />
+          <div className="admin-page">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
