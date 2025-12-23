@@ -39,11 +39,9 @@ export const AppLayout = () => {
       }
     }
     
-    // Safety net: очищаем слои только при переходе на главную страницу
-    // Это предотвращает залипание scroll-lock, но не сбрасывает открытые слои на других страницах
-    if (location.pathname === '/app' || location.pathname === '/app/') {
-      clearLayers()
-    }
+    // НЕ вызываем clearLayers() при переходе на главную, т.к. это сбрасывает открытые корзины/меню
+    // Вместо этого каждый компонент сам управляет своим слоем через cleanup в useEffect
+    // clearLayers() используется только как emergency fallback, но не здесь
   }, [location.pathname, isOpen, closeProduct])
 
   useEffect(() => {
