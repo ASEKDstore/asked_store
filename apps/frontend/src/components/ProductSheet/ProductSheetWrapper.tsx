@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ProductSheet } from './ProductSheet'
 import { useProductSheet } from '../../context/ProductSheetContext'
+import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
 
 export const ProductSheetWrapper = () => {
   const { isOpen, productId, closeProduct } = useProductSheet()
