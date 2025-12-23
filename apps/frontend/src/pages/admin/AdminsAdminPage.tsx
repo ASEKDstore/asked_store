@@ -71,22 +71,23 @@ export const AdminsAdminPage: React.FC = () => {
       </div>
 
       <div className="admin-filters">
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div className="admin-form-grid" style={{ alignItems: 'center' }}>
           <input
             type="number"
             placeholder="Telegram ID"
             value={newTgId}
             onChange={(e) => setNewTgId(e.target.value)}
             className="admin-search-input"
-            style={{ width: '200px' }}
           />
-          <button onClick={handleAdd} className="admin-btn-primary">
-            Добавить админа
-          </button>
+          <div className="admin-actions-wrap">
+            <button onClick={handleAdd} className="admin-btn-primary">
+              Добавить админа
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="admin-table-container">
+      <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
@@ -98,7 +99,7 @@ export const AdminsAdminPage: React.FC = () => {
           <tbody>
             {admins.map(tgId => (
               <tr key={tgId}>
-                <td style={{ fontFamily: 'monospace', fontWeight: '600' }}>{tgId}</td>
+                <td style={{ fontFamily: 'monospace', fontWeight: '600' }} className="admin-ellipsis" title={String(tgId)}>{tgId}</td>
                 <td>{tgId === ROOT_ADMIN_ID ? 'Root Admin' : 'Admin'}</td>
                 <td>
                   {tgId !== ROOT_ADMIN_ID && (

@@ -55,23 +55,25 @@ export const StatsAdminPage: React.FC = () => {
       </div>
 
       <div className="admin-filters">
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <label style={{ fontSize: '14px' }}>От:</label>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="admin-search-input"
-            style={{ width: 'auto' }}
-          />
-          <label style={{ fontSize: '14px' }}>До:</label>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="admin-search-input"
-            style={{ width: 'auto' }}
-          />
+        <div className="admin-form-grid" style={{ alignItems: 'center' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>От:</label>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="admin-search-input"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>До:</label>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="admin-search-input"
+            />
+          </div>
         </div>
       </div>
 
@@ -93,7 +95,7 @@ export const StatsAdminPage: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div>
           <h3 style={{ marginBottom: '16px', fontSize: '18px' }}>Топ товаров</h3>
-          <div className="admin-table-container">
+          <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -105,7 +107,7 @@ export const StatsAdminPage: React.FC = () => {
               <tbody>
                 {stats.topProducts.map((product, idx) => (
                   <tr key={idx}>
-                    <td>{product.title}</td>
+                    <td className="admin-ellipsis" title={product.title}>{product.title}</td>
                     <td>{product.qty}</td>
                     <td>{product.revenue.toLocaleString('ru-RU')} ₽</td>
                   </tr>
@@ -117,7 +119,7 @@ export const StatsAdminPage: React.FC = () => {
 
         <div>
           <h3 style={{ marginBottom: '16px', fontSize: '18px' }}>Статусы заказов</h3>
-          <div className="admin-table-container">
+          <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -147,7 +149,7 @@ export const StatsAdminPage: React.FC = () => {
           </div>
 
           <h3 style={{ marginTop: '24px', marginBottom: '16px', fontSize: '18px' }}>Использование промокодов</h3>
-          <div className="admin-table-container">
+          <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -165,7 +167,7 @@ export const StatsAdminPage: React.FC = () => {
                 ) : (
                   stats.promoUsage.map((promo, idx) => (
                     <tr key={idx}>
-                      <td style={{ fontFamily: 'monospace' }}>{promo.code}</td>
+                      <td style={{ fontFamily: 'monospace' }} className="admin-ellipsis" title={promo.code}>{promo.code}</td>
                       <td>{promo.usedCount}</td>
                     </tr>
                   ))

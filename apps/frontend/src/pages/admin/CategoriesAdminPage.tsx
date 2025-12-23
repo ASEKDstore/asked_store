@@ -173,7 +173,7 @@ export const CategoriesAdminPage: React.FC = () => {
               className="admin-input"
             />
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="admin-actions-wrap">
             <button onClick={handleSave} className="admin-btn admin-btn-primary" disabled={loading}>
               Сохранить
             </button>
@@ -208,7 +208,7 @@ export const CategoriesAdminPage: React.FC = () => {
                   Slug: {category.slug} • Порядок: {category.order}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="admin-actions-wrap">
                 <button onClick={() => handleEdit(category)} className="admin-btn admin-btn-secondary">
                   ✏️ Редактировать
                 </button>

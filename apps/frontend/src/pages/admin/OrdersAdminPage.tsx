@@ -269,7 +269,7 @@ export const OrdersAdminPage: React.FC = () => {
       ) : orders.length === 0 ? (
         <div className="admin-empty">Заказов не найдено</div>
       ) : (
-        <div className="admin-table-container">
+        <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
@@ -290,18 +290,19 @@ export const OrdersAdminPage: React.FC = () => {
                   <td>{new Date(order.createdAt).toLocaleDateString('ru-RU')}</td>
                   <td>
                     <button
-                      className="admin-link"
+                      className="admin-link admin-ellipsis"
                       onClick={() => setSelectedOrder(order)}
+                      title={order.id}
                     >
                       #{order.id.slice(-6).toUpperCase()}
                       {hasLabItems && <span style={{ marginLeft: '4px' }}>🧪</span>}
                     </button>
                   </td>
                   <td>
-                    <div>
+                    <div className="admin-ellipsis" title={order.user.name}>
                       <div>{order.user.name}</div>
                       {order.user.username && (
-                        <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                        <div style={{ fontSize: '12px', opacity: 0.7 }} className="admin-ellipsis" title={`@${order.user.username}`}>
                           @{order.user.username}
                         </div>
                       )}
@@ -328,12 +329,14 @@ export const OrdersAdminPage: React.FC = () => {
                     </select>
                   </td>
                   <td>
-                    <button
-                      className="admin-btn-small"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      Детали
-                    </button>
+                    <div className="admin-actions-wrap">
+                      <button
+                        className="admin-btn-small"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        Детали
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 )

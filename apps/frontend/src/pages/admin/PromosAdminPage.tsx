@@ -124,7 +124,7 @@ export const PromosAdminPage: React.FC = () => {
       ) : promos.length === 0 ? (
         <div className="admin-empty">Промокодов нет</div>
       ) : (
-        <div className="admin-table-container">
+        <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
@@ -141,7 +141,7 @@ export const PromosAdminPage: React.FC = () => {
             <tbody>
               {promos.map(promo => (
                 <tr key={promo.id}>
-                  <td style={{ fontFamily: 'monospace', fontWeight: '600' }}>{promo.code}</td>
+                  <td style={{ fontFamily: 'monospace', fontWeight: '600' }} className="admin-ellipsis" title={promo.code}>{promo.code}</td>
                   <td>{promo.type === 'percent' ? '%' : '₽'}</td>
                   <td>{promo.value}</td>
                   <td>{promo.active ? '✓' : '✗'}</td>
@@ -153,7 +153,7 @@ export const PromosAdminPage: React.FC = () => {
                       : '—'}
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="admin-actions-wrap">
                       <button
                         className="admin-btn-small"
                         onClick={() => handleToggleActive(promo.id, promo.active)}

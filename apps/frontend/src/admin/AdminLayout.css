@@ -403,3 +403,50 @@ body {
     display: block;
   }
 }
+
+/* Additional admin page utilities */
+.admin-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.admin-actions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Mobile form adjustments */
+@media (max-width: 768px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-row {
+    flex-direction: column;
+  }
+
+  .admin-form-row > * {
+    width: 100%;
+  }
+}
+
+/* Modal scroll fix */
+.admin-modal-content {
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent body scroll when modal is open */
+body.admin-modal-open {
+  overflow: hidden;
+}

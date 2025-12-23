@@ -149,7 +149,7 @@ export const BannersAdminPage: React.FC = () => {
         />
       )}
 
-      <div className="admin-table-container">
+      <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
@@ -171,12 +171,12 @@ export const BannersAdminPage: React.FC = () => {
             ) : (
               banners.map(banner => (
                 <tr key={banner.id}>
-                  <td>{banner.id.slice(0, 8)}...</td>
+                  <td className="admin-ellipsis" title={banner.id}>{banner.id.slice(0, 8)}...</td>
                   <td>
                     <div>
-                      <strong>{banner.title}</strong>
+                      <strong className="admin-ellipsis" title={banner.title}>{banner.title}</strong>
                       {banner.subtitle && (
-                        <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                        <div style={{ fontSize: '12px', opacity: 0.7 }} className="admin-ellipsis" title={banner.subtitle}>
                           {banner.subtitle}
                         </div>
                       )}
@@ -195,7 +195,7 @@ export const BannersAdminPage: React.FC = () => {
                   <td>{banner.active ? '✅' : '❌'}</td>
                   <td>{banner.order ?? '-'}</td>
                   <td>
-                    <div className="admin-actions">
+                    <div className="admin-actions-wrap">
                       <button
                         className="admin-btn admin-btn-small"
                         onClick={() => {
@@ -327,7 +327,7 @@ const BannerEditor: React.FC<{
           </label>
         </div>
 
-        <div className="admin-form-actions">
+        <div className="admin-form-actions admin-actions-wrap">
           <button type="submit" className="admin-btn admin-btn-primary">
             Сохранить
           </button>
