@@ -6,7 +6,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
-  z-index: 50;
+  z-index: 1000;
 }
 
 .mini-cart-overlay.open {
@@ -19,7 +19,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  height: 100vh;
+  height: 100dvh;
   width: 320px;
   max-width: 90vw;
   background: rgba(10, 10, 10, 0.66);
@@ -27,8 +27,11 @@
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   transform: translateX(100%);
   transition: transform 0.2s ease-out;
-  z-index: 51;
-  padding: 16px;
+  z-index: 1001;
+  padding-top: calc(16px + env(safe-area-inset-top, 0));
+  padding-right: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  padding-left: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;

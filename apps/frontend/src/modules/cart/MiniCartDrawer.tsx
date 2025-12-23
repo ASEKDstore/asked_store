@@ -28,11 +28,8 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
 
   // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    if (open) {
-      pushLayer('MiniCartDrawer')
-    } else {
-      popLayer('MiniCartDrawer')
-    }
+    if (!open) return
+    pushLayer('MiniCartDrawer')
     return () => {
       popLayer('MiniCartDrawer')
     }

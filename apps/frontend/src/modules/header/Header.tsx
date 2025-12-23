@@ -31,11 +31,8 @@ export const Header: React.FC = () => {
 
   // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
-    if (open) {
-      pushLayer('HeaderMenu')
-    } else {
-      popLayer('HeaderMenu')
-    }
+    if (!open) return
+    pushLayer('HeaderMenu')
     return () => {
       popLayer('HeaderMenu')
     }
