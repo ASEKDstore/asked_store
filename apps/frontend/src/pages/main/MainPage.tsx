@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Banners } from '../../modules/banners/Banners'
 import { HomeTiles } from '../../modules/tiles/HomeTiles'
 import { ProductShowcaseCarousel } from '../../components/ProductShowcaseCarousel'
 import { getUIProducts, type UIProduct } from '../../api/productsApi'
 import { TELEGRAM_CHANNEL_URL } from '../../config/links'
-import { useProductSheet } from '../../context/ProductSheetContext'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
 import './MainPage.css'
 
 export const MainPage = () => {
   const safeNavigate = useSafeNavigate()
-  const { openProduct } = useProductSheet()
+  const navigate = useNavigate()
+  
+  const handleProductOpen = (id: string) => {
+    if (!id) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[MainPage] Cannot navigate: product id is missing')
+      }
+      return
+    }
+    navigate(`/app/product/${id}`)
+  }
   const featuresGridRef = useRef<HTMLDivElement>(null)
   const processGridRef = useRef<HTMLDivElement>(null)
   const [productsToShow, setProductsToShow] = useState<UIProduct[]>([])
@@ -219,7 +229,7 @@ export const MainPage = () => {
         {productsToShow.length > 0 ? (
           <ProductShowcaseCarousel 
             products={productsToShow} 
-            onOpen={openProduct} 
+            onOpen={handleProductOpen} 
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.7 }}>

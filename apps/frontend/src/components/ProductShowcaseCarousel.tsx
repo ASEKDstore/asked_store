@@ -84,7 +84,15 @@ export const ProductShowcaseCarousel = ({ products, onOpen }: Props) => {
             <div
               key={product.id}
               className={`car-card ${positionClass}`}
-              onClick={isClickable ? () => onOpen(product.id) : undefined}
+              onClick={isClickable && product?.id ? () => {
+                if (!product.id) {
+                  if (process.env.NODE_ENV === 'development') {
+                    console.warn('[ProductShowcaseCarousel] Cannot navigate: product.id is missing', product)
+                  }
+                  return
+                }
+                onOpen(product.id)
+              } : undefined}
               role={isClickable ? 'button' : undefined}
               tabIndex={isClickable ? 0 : undefined}
               onKeyDown={
@@ -92,6 +100,12 @@ export const ProductShowcaseCarousel = ({ products, onOpen }: Props) => {
                   ? (e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
+                        if (!product.id) {
+                          if (process.env.NODE_ENV === 'development') {
+                            console.warn('[ProductShowcaseCarousel] Cannot navigate: product.id is missing', product)
+                          }
+                          return
+                        }
                         onOpen(product.id)
                       }
                     }

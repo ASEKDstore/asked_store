@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getUIProducts, type UIProduct } from '../../api/productsApi'
-import { useProductSheet } from '../../context/ProductSheetContext'
 import './product-carousel.css'
 
 export const ProductCarousel = () => {
-  const { openProduct } = useProductSheet()
+  const navigate = useNavigate()
   const [active, setActive] = useState(0)
   const [products, setProducts] = useState<UIProduct[]>([])
   const [loading, setLoading] = useState(true)
@@ -120,18 +120,32 @@ export const ProductCarousel = () => {
             key={`${product.id}-${pos}`}
             className={`product-card ${pos}`}
             onClick={
-              pos === 'center'
-                ? () => openProduct(product.id)
+              pos === 'center' && product?.id
+                ? () => {
+                    if (!product.id) {
+                      if (process.env.NODE_ENV === 'development') {
+                        console.warn('[ProductCarousel] Cannot navigate: product.id is missing', product)
+                      }
+                      return
+                    }
+                    navigate(`/app/product/${product.id}`)
+                  }
                 : undefined
             }
             role={pos === 'center' ? 'button' : undefined}
             tabIndex={pos === 'center' ? 0 : undefined}
             onKeyDown={
-              pos === 'center'
+              pos === 'center' && product?.id
                 ? (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      openProduct(product.id)
+                      if (!product.id) {
+                        if (process.env.NODE_ENV === 'development') {
+                          console.warn('[ProductCarousel] Cannot navigate: product.id is missing', product)
+                        }
+                        return
+                      }
+                      navigate(`/app/product/${product.id}`)
                     }
                   }
                 : undefined

@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
-import { useProductSheet } from '../../context/ProductSheetContext'
 import type { UIProduct } from '../../api/productsApi'
 import './product-grid-card.css'
 
@@ -10,12 +10,18 @@ type Props = {
 }
 
 export const ProductGridCard: React.FC<Props> = ({ product }) => {
-  const { openProduct } = useProductSheet()
+  const navigate = useNavigate()
   const { addItem } = useCart()
   const [showSizes, setShowSizes] = useState(false)
 
   const handleCardClick = () => {
-    openProduct(product.id)
+    if (!product?.id) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[ProductGridCard] Cannot navigate: product.id is missing', product)
+      }
+      return
+    }
+    navigate(`/app/product/${product.id}`)
   }
 
   const handleQuickAdd = (e: React.MouseEvent) => {

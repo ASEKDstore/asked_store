@@ -293,7 +293,15 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
                       key={p.id}
                       className="related-card"
                       type="button"
-                      onClick={() => openProduct(p.id)}
+                      onClick={() => {
+                        if (!p?.id) {
+                          if (process.env.NODE_ENV === 'development') {
+                            console.warn('[ProductSheet] Cannot open product: id is missing', p)
+                          }
+                          return
+                        }
+                        openProduct(p.id)
+                      }}
                     >
                       <div className="related-img">
                         <img src={relatedImage} alt={p.title} />
