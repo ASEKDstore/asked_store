@@ -449,6 +449,4 @@ body.admin-lock-scroll {
 }
 
 /* Prevent body scroll when modal is open */
-body.admin-modal-open {
-  overflow: hidden;
-}
+/* Removed: body.admin-modal-open - class not used in code */

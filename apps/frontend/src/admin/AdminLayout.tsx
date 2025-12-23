@@ -44,18 +44,6 @@ export const AdminLayout: React.FC = () => {
     }
   }, [])
 
-  // Блокируем скролл body при открытом меню (дополнительно)
-  React.useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [sidebarOpen])
-
   return (
     <div className="admin-layout admin-root">
       <header className="admin-header">
