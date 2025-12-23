@@ -38,11 +38,12 @@ export const AppLayout = () => {
         closeProduct()
       }
     }
-    
-    // НЕ вызываем clearLayers() при переходе на главную, т.к. это сбрасывает открытые корзины/меню
-    // Вместо этого каждый компонент сам управляет своим слоем через cleanup в useEffect
-    // clearLayers() используется только как emergency fallback, но не здесь
   }, [location.pathname, isOpen, closeProduct])
+
+  // Emergency safety-net: prevents stuck scroll-lock if any overlay missed cleanup
+  useEffect(() => {
+    clearLayers()
+  }, [location.pathname])
 
   useEffect(() => {
     const isLab = location.pathname.startsWith('/app/lab')
