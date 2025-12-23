@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { productsStore } from '../store/productsStore'
 import { useAdminApi } from '../api/adminApi'
 import type { Product, ProductStatus } from '../types/adminProduct'
+import { pushLayer, popLayer } from '../shared/layerManager'
 import './ProductAdminSheet.css'
 
 // Helper для безопасного trim

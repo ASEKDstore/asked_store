@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ProductSheet } from './ProductSheet'
 import { useProductSheet } from '../../context/ProductSheetContext'
 import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
+import { pushLayer, popLayer } from '../../shared/layerManager'
 
 export const ProductSheetWrapper = () => {
   const { isOpen, productId, closeProduct } = useProductSheet()

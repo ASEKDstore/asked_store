@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { pushLayer, popLayer } from '../../shared/layerManager'
 import './LabIntroLoader.css'
 
 interface LabIntroLoaderProps {

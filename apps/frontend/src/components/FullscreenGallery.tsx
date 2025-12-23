@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { pushLayer, popLayer } from '../shared/layerManager'
 import './fullscreen-gallery.css'
 
 type Props = {

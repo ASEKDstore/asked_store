@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
 import { ProductGallery } from '../ProductGallery'
 import { useProductSheet } from '../../context/ProductSheetContext'
+import { pushLayer, popLayer } from '../../shared/layerManager'
 import './product-sheet.css'
 
 type ProductSheetProps = {

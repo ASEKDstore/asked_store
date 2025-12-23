@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { pushLayer, popLayer } from '../shared/layerManager'
 import './bottom-sheet.css'
 
 type BottomSheetProps = {
