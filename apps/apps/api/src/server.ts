@@ -32,9 +32,4 @@ app.listen(PORT, () => {
   console.log(`📡 CORS origins: ${corsOrigins.join(', ')}`)
 })
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  const { prisma } = await import('./prisma.js')
-  await prisma.$disconnect()
-  process.exit(0)
-})
+// Graceful shutdown is handled in prisma.ts

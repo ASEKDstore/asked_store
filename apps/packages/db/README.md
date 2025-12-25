@@ -1,33 +1,44 @@
 # @asked-store/db
 
-Prisma schema и клиент для базы данных ASKED Store.
+Prisma schema и типы для базы данных ASKED Store.
+
+**Это чистая библиотека без side effects.** Она не создает экземпляров PrismaClient и не читает переменные окружения при импорте.
 
 ## Генерация Prisma клиента
 
+⚠️ **Важно:** Генерация Prisma клиента должна выполняться из `apps/api`, а не из этого пакета.
+
 ```bash
-npm run generate
+# Из корня проекта
+npm run db:generate
+
+# Или из apps/api
+cd apps/api
+npm run db:generate
 ```
 
 ## Миграции
 
-### Создание новой миграции
+Миграции также должны выполняться из `apps/api`:
 
 ```bash
-npm run migrate:dev
+# Из корня проекта
+npm run db:migrate        # для разработки
+npm run db:migrate:deploy # для production
 ```
 
-### Применение миграций (production)
+## Использование в приложениях
 
-```bash
-npm run migrate:deploy
-```
-
-## Использование в других пакетах
+Импортируйте класс `PrismaClient` и создавайте экземпляр в своем приложении:
 
 ```typescript
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@asked-store/db'
 
+// Создайте экземпляр в вашем приложении (например, apps/api/src/prisma.ts)
 const prisma = new PrismaClient()
 ```
 
-**Важно:** Убедитесь, что Prisma клиент был сгенерирован перед использованием (`npm run generate`).
+**Важно:** 
+- Не создавайте экземпляры PrismaClient в `packages/db`
+- Все операции с Prisma (generate, migrate) выполняются из `apps/api`
+- Этот пакет содержит только schema и типы
