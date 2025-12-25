@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
 import { ProductGallery } from '../ProductGallery'
 import { useProductSheet } from '../../context/ProductSheetContext'
+import { ModalPortal } from '../ModalPortal'
 import { pushLayer, popLayer } from '../../shared/layerManager'
 import './product-sheet.css'
 
@@ -15,7 +16,6 @@ type ProductSheetProps = {
 }
 
 export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, onClose }) => {
-  // ✅ ВСЕ хуки вызываются ВСЕГДА, до любого return
   const navigate = useNavigate()
   const { addItem } = useCart()
   const { openProduct } = useProductSheet()
@@ -33,6 +33,7 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     if (!productId || !isOpen) {
       setProduct(null)
       setRelatedProducts([])
+      setLoading(false)
       return
     }
 
@@ -81,8 +82,54 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     }
   }, [productId, isOpen])
 
-  // ✅ useMemo вызывается ВСЕГДА, даже если product null
-  // Собираем массив изображений для галереи
+  // Reset size when product changes
+  useEffect(() => {
+    setSize(null)
+    setSizeError(false)
+  }, [productId])
+
+  // Mount/unmount animation
+  useEffect(() => {
+    if (isOpen && product && !loading) {
+      requestAnimationFrame(() => setMounted(true))
+    } else {
+      setMounted(false)
+    }
+  }, [isOpen, product, loading])
+
+  // Toast timer
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 1200)
+      return () => clearTimeout(timer)
+    }
+  }, [showToast])
+
+  // ESC handler
+  useEffect(() => {
+    if (!isOpen) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+
+  // Layer management
+  useEffect(() => {
+    if (isOpen && product && !loading) {
+      pushLayer('ProductSheet')
+    } else {
+      popLayer('ProductSheet')
+    }
+    return () => {
+      popLayer('ProductSheet')
+    }
+  }, [isOpen, product, loading])
+
+  // Gallery images
   const gallery = useMemo(() => {
     if (!product) return []
     if (product.images?.length) {
@@ -94,51 +141,6 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     return []
   }, [product])
 
-  // ✅ useEffect вызывается ВСЕГДА
-  useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => setMounted(true))
-    } else {
-      setMounted(false)
-    }
-  }, [isOpen])
-
-  // ✅ useEffect вызывается ВСЕГДА
-  useEffect(() => {
-    if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 1200)
-      return () => clearTimeout(timer)
-    }
-  }, [showToast])
-
-  // ✅ useEffect вызывается ВСЕГДА
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
-
-  // ✅ useEffect вызывается ВСЕГДА
-  // Layer management: управление scroll-lock через LayerManager
-  useEffect(() => {
-    if (isOpen) {
-      pushLayer('ProductSheet')
-    } else {
-      popLayer('ProductSheet')
-    }
-    return () => {
-      popLayer('ProductSheet')
-    }
-  }, [isOpen])
-
-  // Обработчики событий (не хуки, можно после хуков)
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!product) return
 
@@ -170,171 +172,158 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     }, 300)
   }
 
-  // Вычисляем shouldShow (не хук)
-  const shouldShow = product && productId && isOpen
+  const shouldShow = isOpen && product && !loading && mounted
 
-  // ✅ Только ПОСЛЕ всех хуков можно делать ранний return
-  if (!product || !productId || loading) {
-    // Если нет продукта или загрузка - рендерим пустой overlay (скрыт)
-    return (
-      <div
-        className={`tg-sheet-overlay ${false ? 'is-visible' : ''}`}
-        style={{ display: 'none' }}
-        aria-hidden="true"
-      />
-    )
-  }
+  // Don't render anything if not open
+  if (!isOpen) return null
 
   return (
-    <div
-      className={`tg-sheet-overlay ${shouldShow && mounted ? 'is-visible' : ''}`}
-      onClick={(e) => {
-        if (shouldShow && e.target === e.currentTarget) {
-          onClose()
-        }
-      }}
-      onPointerDown={(e) => {
-        if (shouldShow && e.target === e.currentTarget) {
-          onClose()
-        }
-      }}
-      aria-hidden={!shouldShow}
-    >
+    <ModalPortal isOpen={isOpen}>
       <div
-        className={`tg-sheet ${shouldShow && mounted ? 'is-visible' : ''}`}
-        onPointerDown={(e) => e.stopPropagation()}
+        className={`product-sheet-overlay ${shouldShow ? 'is-visible' : ''}`}
+        onClick={onClose}
+        aria-hidden={!shouldShow}
+      />
+      <div
+        className={`product-sheet ${shouldShow ? 'is-visible' : ''}`}
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal={shouldShow ? 'true' : 'false'}
         aria-label="Информация о товаре"
         aria-hidden={!shouldShow}
       >
-        <div className="tg-handle" />
-        <div className="tg-titlebar">
-          <div className="tg-title">Товар</div>
-        </div>
-
-        <div className="tg-sheet-body">
-          {/* Медиа */}
-          <div className="tg-media" data-product-hero>
-            <ProductGallery images={gallery} alt={product.title} />
+        {loading ? (
+          <div className="product-sheet-loading">
+            <div className="product-sheet-loading-spinner">Загрузка...</div>
           </div>
-
-          {/* Header товара */}
-          <div className="tg-profile-head">
-            <div className="tg-hero-title">{product.title}</div>
-            <div className="tg-hero-sub">@{product.article}</div>
-            <div className="tg-price-row">
-              <div className="tg-price">{product.price.toLocaleString('ru-RU')} ₽</div>
-              {product.oldPrice && product.oldPrice > product.price && (
-                <div className="tg-oldprice">{product.oldPrice.toLocaleString('ru-RU')} ₽</div>
-              )}
+        ) : product ? (
+          <>
+            <div className="product-sheet-handle" />
+            <div className="product-sheet-header">
+              <div className="product-sheet-title">Товар</div>
             </div>
-          </div>
 
-          {/* Секция: Данные */}
-          <section className="tg-card">
-            <div className="tg-card-title">Данные</div>
-            <div className="tg-row">
-              <div className="tg-row-key">Артикул</div>
-              <div className="tg-row-val">{product.article}</div>
-            </div>
-            <div className="tg-row">
-              <div className="tg-row-key">В наличии</div>
-              <div className="tg-row-val">{product.available ? 'Да' : 'Нет'}</div>
-            </div>
-            <div className="tg-row">
-              <div className="tg-row-key">Категория</div>
-              <div className="tg-row-val">{product.category}</div>
-            </div>
-          </section>
+            <div className="product-sheet-body">
+              {/* Медиа */}
+              <div className="product-sheet-media">
+                <ProductGallery images={gallery} alt={product.title} />
+              </div>
 
-          {/* Секция: Размеры */}
-          <section className="tg-card">
-            <div className="tg-card-title">Размер</div>
-            <div className="tg-sizes">
-              {product.sizes.map((s) => (
-                <button
-                  key={s}
-                  className={`tg-size-pill ${size === s ? 'is-active' : ''} ${
-                    sizeError ? 'is-error' : ''
-                  }`}
-                  onClick={() => {
-                    setSize(s)
-                    setSizeError(false)
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            {sizeError && (
-              <div className="tg-size-error">Пожалуйста, выберите размер</div>
-            )}
-          </section>
+              {/* Header товара */}
+              <div className="product-sheet-hero">
+                <div className="product-sheet-hero-title">{product.title}</div>
+                <div className="product-sheet-hero-sub">@{product.article}</div>
+                <div className="product-sheet-price-row">
+                  <div className="product-sheet-price">{product.price.toLocaleString('ru-RU')} ₽</div>
+                  {product.oldPrice && product.oldPrice > product.price && (
+                    <div className="product-sheet-oldprice">{product.oldPrice.toLocaleString('ru-RU')} ₽</div>
+                  )}
+                </div>
+              </div>
 
-          {/* Секция: Действия */}
-          <section className="tg-card">
-            <div className="tg-actions">
-              <button className="tg-btn tg-btn-primary" onClick={handleBuyNow}>
-                Купить сейчас
-              </button>
-              <button className="tg-btn tg-btn-secondary" onClick={handleAddToCart}>
-                В корзину
-              </button>
-              <button className="tg-btn tg-btn-ghost" onClick={onClose}>
-                Назад
-              </button>
-            </div>
-          </section>
+              {/* Секция: Данные */}
+              <section className="product-sheet-card">
+                <div className="product-sheet-card-title">Данные</div>
+                <div className="product-sheet-row">
+                  <div className="product-sheet-row-key">Артикул</div>
+                  <div className="product-sheet-row-val">{product.article}</div>
+                </div>
+                <div className="product-sheet-row">
+                  <div className="product-sheet-row-key">В наличии</div>
+                  <div className="product-sheet-row-val">{product.available ? 'Да' : 'Нет'}</div>
+                </div>
+                <div className="product-sheet-row">
+                  <div className="product-sheet-row-key">Категория</div>
+                  <div className="product-sheet-row-val">{product.category}</div>
+                </div>
+              </section>
 
-          {/* Секция: Описание */}
-          <section className="tg-card">
-            <div className="tg-card-title">Описание</div>
-            <div className="tg-text">{product.description}</div>
-          </section>
-
-          {/* Секция: Похожие товары */}
-          {relatedProducts.length > 0 && (
-            <section className="tg-card">
-              <div className="tg-card-title">Похожие товары</div>
-              <div className="related-row">
-                {relatedProducts.map((p) => {
-                  const relatedImage = p.images?.[0] || p.image || '/assets/placeholder-product.jpg'
-                  return (
+              {/* Секция: Размеры */}
+              <section className="product-sheet-card">
+                <div className="product-sheet-card-title">Размер</div>
+                <div className="product-sheet-sizes">
+                  {product.sizes.map((s) => (
                     <button
-                      key={p.id}
-                      className="related-card"
-                      type="button"
+                      key={s}
+                      className={`product-sheet-size-pill ${size === s ? 'is-active' : ''} ${
+                        sizeError ? 'is-error' : ''
+                      }`}
                       onClick={() => {
-                        if (!p?.id) {
-                          if (process.env.NODE_ENV === 'development') {
-                            console.warn('[ProductSheet] Cannot open product: id is missing', p)
-                          }
-                          return
-                        }
-                        openProduct(p.id)
+                        setSize(s)
+                        setSizeError(false)
                       }}
                     >
-                      <div className="related-img">
-                        <img src={relatedImage} alt={p.title} />
-                      </div>
-                      <div className="related-meta">
-                        <div className="related-title">{p.title}</div>
-                        <div className="related-price">{p.price.toLocaleString('ru-RU')} ₽</div>
-                      </div>
+                      {s}
                     </button>
-                  )
-                })}
-              </div>
-            </section>
-          )}
-        </div>
-      </div>
+                  ))}
+                </div>
+                {sizeError && (
+                  <div className="product-sheet-size-error">Пожалуйста, выберите размер</div>
+                )}
+              </section>
 
-      {showToast && (
-        <div className="tg-toast">Добавлено в корзину ✅</div>
-      )}
-    </div>
+              {/* Секция: Действия */}
+              <section className="product-sheet-card">
+                <div className="product-sheet-actions">
+                  <button className="product-sheet-btn product-sheet-btn-primary" onClick={handleBuyNow}>
+                    Купить сейчас
+                  </button>
+                  <button className="product-sheet-btn product-sheet-btn-secondary" onClick={handleAddToCart}>
+                    В корзину
+                  </button>
+                  <button className="product-sheet-btn product-sheet-btn-ghost" onClick={onClose}>
+                    Назад
+                  </button>
+                </div>
+              </section>
+
+              {/* Секция: Описание */}
+              {product.description && (
+                <section className="product-sheet-card">
+                  <div className="product-sheet-card-title">Описание</div>
+                  <div className="product-sheet-text">{product.description}</div>
+                </section>
+              )}
+
+              {/* Секция: Похожие товары */}
+              {relatedProducts.length > 0 && (
+                <section className="product-sheet-card">
+                  <div className="product-sheet-card-title">Похожие товары</div>
+                  <div className="product-sheet-related">
+                    {relatedProducts.map((p) => {
+                      const relatedImage = p.images?.[0] || p.image || '/assets/placeholder-product.jpg'
+                      return (
+                        <button
+                          key={p.id}
+                          className="product-sheet-related-card"
+                          type="button"
+                          onClick={() => {
+                            if (p?.id) {
+                              openProduct(p.id)
+                            }
+                          }}
+                        >
+                          <div className="product-sheet-related-img">
+                            <img src={relatedImage} alt={p.title} />
+                          </div>
+                          <div className="product-sheet-related-meta">
+                            <div className="product-sheet-related-title">{p.title}</div>
+                            <div className="product-sheet-related-price">{p.price.toLocaleString('ru-RU')} ₽</div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
+            </div>
+          </>
+        ) : null}
+
+        {showToast && (
+          <div className="product-sheet-toast">Добавлено в корзину ✅</div>
+        )}
+      </div>
+    </ModalPortal>
   )
 }
-

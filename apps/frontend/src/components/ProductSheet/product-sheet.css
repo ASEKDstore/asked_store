@@ -1,47 +1,57 @@
-/* Telegram-style Sheet Overlay */
-.tg-sheet-overlay {
+/* Product Sheet Overlay - Portal рендерится в document.body */
+.product-sheet-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  z-index: 1300;
+  -webkit-backdrop-filter: blur(4px);
   opacity: 0;
-  transition: opacity 180ms ease;
-  pointer-events: none; /* КРИТИЧНО: не блокируем клики когда закрыт */
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 1200;
 }
 
-.tg-sheet-overlay.is-visible {
+.product-sheet-overlay.is-visible {
   opacity: 1;
-  pointer-events: auto; /* Разрешаем клики только когда открыт */
+  pointer-events: auto;
 }
 
-/* Telegram-style Sheet */
-.tg-sheet {
+.product-sheet-overlay[aria-hidden="true"] {
+  pointer-events: none;
+}
+
+/* Product Sheet */
+.product-sheet {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  max-height: 90vh;
-  background: rgba(10, 10, 10, 0.95);
+  max-height: 92vh;
+  background: rgba(10, 10, 10, 0.98);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  transform: translateY(18px);
+  transform: translateY(100%);
   opacity: 0;
-  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1), opacity 240ms ease;
-  z-index: 1301;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  z-index: 1201;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-.tg-sheet.is-visible {
+.product-sheet.is-visible {
   transform: translateY(0);
   opacity: 1;
 }
 
-.tg-handle {
+.product-sheet-handle {
   width: 40px;
   height: 4px;
   background: rgba(255, 255, 255, 0.3);
@@ -50,13 +60,13 @@
   flex-shrink: 0;
 }
 
-.tg-titlebar {
+.product-sheet-header {
   padding: 0 20px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
-.tg-title {
+.product-sheet-title {
   font-size: 20px;
   font-weight: 600;
   color: #f5f5f5;
@@ -64,38 +74,51 @@
   text-align: center;
 }
 
-.tg-sheet-body {
+.product-sheet-body {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Smooth scrollbar */
-.tg-sheet-body::-webkit-scrollbar {
+.product-sheet-body::-webkit-scrollbar {
   width: 6px;
 }
 
-.tg-sheet-body::-webkit-scrollbar-track {
+.product-sheet-body::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.tg-sheet-body::-webkit-scrollbar-thumb {
+.product-sheet-body::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
-.tg-sheet-body::-webkit-scrollbar-thumb:hover {
+.product-sheet-body::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Loading */
+.product-sheet-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 40px;
+}
+
+.product-sheet-loading-spinner {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
 /* Media */
-.tg-media {
+.product-sheet-media {
   margin-bottom: 20px;
 }
 
-/* Profile Head (как в профиле) */
-.tg-profile-head {
+/* Hero Section */
+.product-sheet-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -104,7 +127,7 @@
   margin-bottom: 20px;
 }
 
-.tg-hero-title {
+.product-sheet-hero-title {
   font-size: 24px;
   font-weight: 600;
   color: #f5f5f5;
@@ -112,27 +135,27 @@
   text-align: center;
 }
 
-.tg-hero-sub {
+.product-sheet-hero-sub {
   font-size: 15px;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
   text-align: center;
 }
 
-.tg-price-row {
+.product-sheet-price-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
   margin-top: 4px;
 }
 
-.tg-price {
+.product-sheet-price {
   font-size: 20px;
   font-weight: 900;
   color: #f5f5f5;
 }
 
-.tg-oldprice {
+.product-sheet-oldprice {
   font-size: 13px;
   opacity: 0.55;
   text-decoration: line-through;
@@ -140,30 +163,26 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Card (как в профиле) */
-.tg-card {
-  background: rgba(10, 10, 10, 0.55);
-  backdrop-filter: blur(18px);
+/* Card */
+.product-sheet-card {
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 16px;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   margin-bottom: 20px;
 }
 
-.tg-card-title {
+.product-sheet-card-title {
   font-size: 18px;
   font-weight: 600;
   color: #f5f5f5;
-  margin: 0;
+  margin: 0 0 16px 0;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Row (как в профиле) */
-.tg-row {
+/* Row */
+.product-sheet-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -172,32 +191,32 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.tg-row:last-child {
+.product-sheet-row:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.tg-row-key {
+.product-sheet-row-key {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
 }
 
-.tg-row-val {
+.product-sheet-row-val {
   font-size: 15px;
   color: #f5f5f5;
   font-weight: 500;
 }
 
 /* Sizes */
-.tg-sizes {
+.product-sheet-sizes {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.tg-size-pill {
-  padding: 8px 12px;
+.product-sheet-size-pill {
+  padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.05);
@@ -210,20 +229,18 @@
   font-family: inherit;
 }
 
-.tg-size-pill:hover {
+.product-sheet-size-pill:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
 }
 
-.tg-size-pill.is-active {
+.product-sheet-size-pill.is-active {
   background: #fff;
   color: #000;
   border-color: #fff;
-  transform: scale(1.05);
 }
 
-.tg-size-pill.is-error {
+.product-sheet-size-pill.is-error {
   border-color: rgba(255, 100, 100, 0.6);
   background: rgba(255, 100, 100, 0.1);
   animation: shake 0.3s ease;
@@ -235,7 +252,7 @@
   75% { transform: translateX(4px); }
 }
 
-.tg-size-error {
+.product-sheet-size-error {
   margin-top: 8px;
   font-size: 12px;
   color: rgba(255, 100, 100, 0.9);
@@ -249,14 +266,14 @@
 }
 
 /* Actions */
-.tg-actions {
+.product-sheet-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.tg-btn {
-  padding: 12px 20px;
+.product-sheet-btn {
+  padding: 14px 20px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 15px;
@@ -266,46 +283,41 @@
   font-family: inherit;
 }
 
-.tg-btn-primary {
+.product-sheet-btn-primary {
   background: rgba(255, 255, 255, 0.1);
   color: #f5f5f5;
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.tg-btn-primary:hover {
+.product-sheet-btn-primary:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
 }
 
-.tg-btn-primary:active {
-  transform: translateY(0);
-}
-
-.tg-btn-secondary {
+.product-sheet-btn-secondary {
   background: transparent;
   color: rgba(255, 255, 255, 0.8);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.tg-btn-secondary:hover {
+.product-sheet-btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.tg-btn-ghost {
+.product-sheet-btn-ghost {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-.tg-btn-ghost:hover {
+.product-sheet-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.8);
 }
 
 /* Text */
-.tg-text {
+.product-sheet-text {
   font-size: 14px;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.85);
@@ -313,7 +325,7 @@
 }
 
 /* Toast */
-.tg-toast {
+.product-sheet-toast {
   position: fixed;
   bottom: 32px;
   left: 50%;
@@ -326,7 +338,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 14px;
   font-weight: 500;
-  z-index: 1302;
+  z-index: 1202;
   animation: toastSlideUp 0.3s ease;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
@@ -342,35 +354,8 @@
   }
 }
 
-/* Mobile */
-@media (max-width: 480px) {
-  .tg-sheet {
-    max-height: 95vh;
-  }
-
-  .tg-sheet-body {
-    padding: 16px;
-  }
-
-  .tg-card {
-    padding: 16px;
-  }
-
-  .tg-hero-title {
-    font-size: 22px;
-  }
-
-  .related-card {
-    min-width: 140px;
-  }
-
-  .related-img {
-    height: 100px;
-  }
-}
-
 /* Related Products */
-.related-row {
+.product-sheet-related {
   display: flex;
   gap: 10px;
   overflow-x: auto;
@@ -379,20 +364,20 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.related-row::-webkit-scrollbar {
+.product-sheet-related::-webkit-scrollbar {
   height: 4px;
 }
 
-.related-row::-webkit-scrollbar-track {
+.product-sheet-related::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.related-row::-webkit-scrollbar-thumb {
+.product-sheet-related::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
 }
 
-.related-card {
+.product-sheet-related-card {
   min-width: 160px;
   scroll-snap-align: start;
   border-radius: 18px;
@@ -404,23 +389,19 @@
   transition: transform 180ms ease, border-color 180ms ease;
   font-family: inherit;
   outline: none;
+  border: none;
 }
 
-.related-card:hover {
+.product-sheet-related-card:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.16);
 }
 
-.related-card:active {
+.product-sheet-related-card:active {
   transform: translateY(0);
 }
 
-.related-card:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.25);
-  outline-offset: 2px;
-}
-
-.related-img {
+.product-sheet-related-img {
   height: 110px;
   border-radius: 14px;
   overflow: hidden;
@@ -429,17 +410,17 @@
   place-items: center;
 }
 
-.related-img img {
+.product-sheet-related-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.related-meta {
+.product-sheet-related-meta {
   margin-top: 8px;
 }
 
-.related-title {
+.product-sheet-related-title {
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -449,10 +430,36 @@
   line-height: 1.3;
 }
 
-.related-price {
+.product-sheet-related-price {
   margin-top: 4px;
   font-size: 12px;
   opacity: 0.8;
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Mobile */
+@media (max-width: 480px) {
+  .product-sheet {
+    max-height: 95vh;
+  }
+
+  .product-sheet-body {
+    padding: 16px;
+  }
+
+  .product-sheet-card {
+    padding: 16px;
+  }
+
+  .product-sheet-hero-title {
+    font-size: 22px;
+  }
+
+  .product-sheet-related-card {
+    min-width: 140px;
+  }
+
+  .product-sheet-related-img {
+    height: 100px;
+  }
+}

@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useUser } from '../../context/UserContext'
 import { useCart } from '../../context/CartContext'
 import { MiniCartDrawer } from '../cart/MiniCartDrawer'
 import { useProductSheet } from '../../context/ProductSheetContext'
-import { pushLayer, popLayer } from '../../shared/layerManager'
+import { HeaderMenu } from './HeaderMenu'
 import './header.css'
 
 export const Header: React.FC = () => {
   const { user, displayName, initials } = useUser()
   const { totalQty } = useCart()
   const { isOpen: isProductSheetOpen } = useProductSheet()
-  const [open, setOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [miniCartOpen, setMiniCartOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -24,9 +24,24 @@ export const Header: React.FC = () => {
   // Check if user is admin by tgId
   const isAdmin = Boolean(user.tgId && typeof user.tgId === 'number' && adminIds.includes(user.tgId))
 
+  // Закрываем меню при открытии корзины
+  useEffect(() => {
+    if (miniCartOpen) {
+      setMenuOpen(false)
+    }
+  }, [miniCartOpen])
+
+  // Закрываем меню и корзину при открытии ProductSheet
+  useEffect(() => {
+    if (isProductSheetOpen) {
+      setMenuOpen(false)
+      setMiniCartOpen(false)
+    }
+  }, [isProductSheetOpen])
+
   const toggleMenu = () => {
-    setOpen((v) => {
-      const newValue = !v
+    setMenuOpen((prev) => {
+      const newValue = !prev
       // Закрываем корзину при открытии меню
       if (newValue) {
         setMiniCartOpen(false)
@@ -37,32 +52,8 @@ export const Header: React.FC = () => {
 
   const goProfile = () => {
     navigate('/app/profile', { state: { modal: true } })
-    setOpen(false)
+    setMenuOpen(false)
   }
-
-  // Закрываем меню при открытии корзины
-  useEffect(() => {
-    if (miniCartOpen) {
-      setOpen(false)
-    }
-  }, [miniCartOpen])
-
-  // Закрываем меню и корзину при открытии ProductSheet
-  useEffect(() => {
-    if (isProductSheetOpen) {
-      setOpen(false)
-      setMiniCartOpen(false)
-    }
-  }, [isProductSheetOpen])
-
-  // Layer management: управление scroll-lock через LayerManager
-  useEffect(() => {
-    if (!open) return
-    pushLayer('HeaderMenu')
-    return () => {
-      popLayer('HeaderMenu')
-    }
-  }, [open])
 
   return (
     <>
@@ -95,8 +86,7 @@ export const Header: React.FC = () => {
             className="header-cart-btn"
             aria-label="Корзина"
             onClick={() => {
-              // Закрываем меню при открытии корзины
-              setOpen(false)
+              setMenuOpen(false)
               setMiniCartOpen(true)
             }}
           >
@@ -109,10 +99,10 @@ export const Header: React.FC = () => {
           </button>
 
           <button
-            className={`header-burger ${open ? 'header-burger--open' : ''}`}
+            className={`header-burger ${menuOpen ? 'header-burger--open' : ''}`}
             onClick={toggleMenu}
             aria-label="Меню"
-            aria-expanded={open}
+            aria-expanded={menuOpen}
           >
             <div className="header-burger-lines">
               <span />
@@ -123,72 +113,7 @@ export const Header: React.FC = () => {
         </div>
       </header>
 
-      <div
-        className={`header-menu-overlay ${open ? 'is-open' : ''}`}
-        onClick={toggleMenu}
-      />
-
-      <nav className={`header-menu ${open ? 'is-open' : ''}`}>
-        <ul>
-          <li>
-            <Link to="/app" onClick={toggleMenu}>
-              Главная
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/catalog" onClick={toggleMenu}>
-              Ассортимент
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/lab" onClick={toggleMenu}>
-              ASKED LAB
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/reviews" onClick={toggleMenu}>
-              Отзывы
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/cart" onClick={toggleMenu}>
-              Корзина
-            </Link>
-          </li>
-          <li className="header-menu-divider" />
-          <li>
-            <Link to="/app/about" onClick={toggleMenu}>
-              О нас
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/help" onClick={toggleMenu}>
-              Помощь
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/docs" onClick={toggleMenu}>
-              Документы
-            </Link>
-          </li>
-          <li>
-            <Link to="/app/partners" onClick={toggleMenu}>
-              Сотрудничество
-            </Link>
-          </li>
-          {isAdmin && (
-            <>
-              <li className="header-menu-divider" />
-              <li className="header-menu-admin">
-                <Link to="/app/admin" onClick={toggleMenu}>
-                  Админка
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
-      </nav>
-
+      <HeaderMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} isAdmin={isAdmin} />
       <MiniCartDrawer open={miniCartOpen} onClose={() => setMiniCartOpen(false)} />
     </>
   )

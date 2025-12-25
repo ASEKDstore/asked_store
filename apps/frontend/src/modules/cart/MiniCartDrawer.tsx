@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useProductSheet } from '../../context/ProductSheetContext'
 import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
+import { ModalPortal } from '../../components/ModalPortal'
 import { pushLayer, popLayer } from '../../shared/layerManager'
 import './mini-cart.css'
 
@@ -15,18 +16,6 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
   const navigate = useNavigate()
   const { items, removeItem, setQty, totalQty, totalPrice, clear } = useCart()
   const { isOpen: isProductSheetOpen } = useProductSheet()
-
-  // Закрытие по ESC
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [open, onClose])
 
   // Закрываем корзину при открытии ProductSheet
   useEffect(() => {
@@ -44,6 +33,23 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
     }
   }, [open])
 
+  // Закрытие по ESC
+  useEffect(() => {
+    if (!open) return
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [open, onClose])
+
+  // Show Telegram BackButton when drawer is open
+  useTelegramBackButton(() => {
+    onClose()
+  }, open)
+
   const handleGoToCart = () => {
     onClose()
     navigate('/app/cart')
@@ -54,19 +60,14 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
     navigate('/app/checkout')
   }
 
-  // Show Telegram BackButton when drawer is open
-  useTelegramBackButton(() => {
-    onClose()
-  }, open)
-
   return (
-    <>
+    <ModalPortal isOpen={open}>
       <div
-        className={`mini-cart-overlay ${open ? 'open' : ''}`}
+        className="mini-cart-overlay"
         onClick={onClose}
+        aria-hidden={!open}
       />
-
-      <div className={`mini-cart ${open ? 'open' : ''}`}>
+      <div className={`mini-cart ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="mini-cart-header">
           <h2 className="mini-cart-title">Корзина</h2>
           <button
@@ -161,10 +162,6 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
           </>
         )}
       </div>
-    </>
+    </ModalPortal>
   )
 }
-
-
-
-
