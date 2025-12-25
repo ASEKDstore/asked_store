@@ -78,6 +78,11 @@ export const ProductCarousel = () => {
 
   // Drag на десктопе
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Не блокируем клики на карточках - только на пустых областях
+    const target = e.target as HTMLElement
+    if (target.closest('.product-card')) {
+      return // Пропускаем drag если клик на карточке
+    }
     isDragging.current = true
     dragStartX.current = e.clientX
   }

@@ -34,13 +34,15 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
       setProduct(null)
       setRelatedProducts([])
       setLoading(false)
+      setMounted(false)
       return
     }
 
     const abortController = new AbortController()
+    setMounted(false)
+    setLoading(true)
 
     const loadProduct = async () => {
-      setLoading(true)
       try {
         const loadedProduct = await getUIProduct(productId)
         
@@ -61,16 +63,25 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
               setRelatedProducts(filtered)
             }
           }
+          
+          // Показываем контент после загрузки продукта
+          if (!abortController.signal.aborted) {
+            setLoading(false)
+            // Используем setTimeout для плавного появления
+            setTimeout(() => {
+              if (!abortController.signal.aborted) {
+                setMounted(true)
+              }
+            }, 50)
+          }
         }
       } catch (error) {
         if (!abortController.signal.aborted) {
           console.error('Failed to load product:', error)
           setProduct(null)
           setRelatedProducts([])
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
           setLoading(false)
+          setMounted(false)
         }
       }
     }
@@ -87,15 +98,6 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     setSize(null)
     setSizeError(false)
   }, [productId])
-
-  // Mount/unmount animation
-  useEffect(() => {
-    if (isOpen && product && !loading) {
-      requestAnimationFrame(() => setMounted(true))
-    } else {
-      setMounted(false)
-    }
-  }, [isOpen, product, loading])
 
   // Toast timer
   useEffect(() => {
@@ -119,7 +121,7 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
 
   // Layer management
   useEffect(() => {
-    if (isOpen && product && !loading) {
+    if (isOpen && productId) {
       pushLayer('ProductSheet')
     } else {
       popLayer('ProductSheet')
@@ -127,7 +129,7 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     return () => {
       popLayer('ProductSheet')
     }
-  }, [isOpen, product, loading])
+  }, [isOpen, productId])
 
   // Gallery images
   const gallery = useMemo(() => {
@@ -172,25 +174,26 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
     }, 300)
   }
 
-  const shouldShow = isOpen && product && !loading && mounted
-
-  // Не рендерим ничего если не открыт
+  // Не рендерим ничего если не открыт или нет productId
   if (!isOpen || !productId) return null
+
+  // Sheet всегда показывается когда открыт, но контент виден только после загрузки
+  const isReady = mounted && product && !loading
 
   return (
     <ModalPortal isOpen={isOpen}>
       <div
-        className={`product-sheet-overlay ${shouldShow ? 'is-visible' : ''}`}
+        className="product-sheet-overlay is-visible"
         onClick={onClose}
-        aria-hidden={!shouldShow}
+        aria-hidden={false}
       />
       <div
-        className={`product-sheet ${shouldShow ? 'is-visible' : ''}`}
+        className={`product-sheet ${isOpen ? 'is-visible' : ''}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-modal={shouldShow ? 'true' : 'false'}
+        aria-modal={isReady ? 'true' : 'false'}
         aria-label="Информация о товаре"
-        aria-hidden={!shouldShow}
+        aria-hidden={false}
       >
         {loading ? (
           <div className="product-sheet-loading">
@@ -318,7 +321,11 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
               )}
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="product-sheet-loading">
+            <div className="product-sheet-loading-spinner">Ошибка загрузки</div>
+          </div>
+        )}
 
         {showToast && (
           <div className="product-sheet-toast">Добавлено в корзину ✅</div>

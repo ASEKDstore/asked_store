@@ -36,15 +36,6 @@ export const HeaderMenu: React.FC<Props> = ({ isOpen, onClose, isAdmin }) => {
     <ModalPortal isOpen={isOpen}>
       <div className="header-menu-overlay" onClick={onClose} aria-hidden={!isOpen} />
       <nav className={`header-menu ${isOpen ? 'is-open' : ''}`} aria-hidden={!isOpen}>
-        <div className="header-menu-header">
-          <button
-            className="header-menu-close"
-            onClick={onClose}
-            aria-label="Закрыть меню"
-          >
-            ← Назад
-          </button>
-        </div>
         <ul>
           <li>
             <Link to="/app" onClick={onClose}>
