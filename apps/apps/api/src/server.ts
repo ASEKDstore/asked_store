@@ -1,6 +1,5 @@
 import express from 'express'
 import cors from 'cors'
-import { PrismaClient } from '@prisma/client'
 import { errorHandler } from './middleware/errorHandler.js'
 import { healthRouter } from './routes/health.js'
 import { authRouter } from './routes/auth.js'
