@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../../context/UserContext'
 import { useCart } from '../../context/CartContext'
 import { MiniCartDrawer } from '../cart/MiniCartDrawer'
+import { useProductSheet } from '../../context/ProductSheetContext'
 import { pushLayer, popLayer } from '../../shared/layerManager'
 import './header.css'
 
 export const Header: React.FC = () => {
   const { user, displayName, initials } = useUser()
   const { totalQty } = useCart()
+  const { isOpen: isProductSheetOpen } = useProductSheet()
   const [open, setOpen] = useState(false)
   const [miniCartOpen, setMiniCartOpen] = useState(false)
   const navigate = useNavigate()
@@ -22,12 +24,36 @@ export const Header: React.FC = () => {
   // Check if user is admin by tgId
   const isAdmin = Boolean(user.tgId && typeof user.tgId === 'number' && adminIds.includes(user.tgId))
 
-  const toggleMenu = () => setOpen((v) => !v)
+  const toggleMenu = () => {
+    setOpen((v) => {
+      const newValue = !v
+      // Закрываем корзину при открытии меню
+      if (newValue) {
+        setMiniCartOpen(false)
+      }
+      return newValue
+    })
+  }
 
   const goProfile = () => {
     navigate('/app/profile', { state: { modal: true } })
     setOpen(false)
   }
+
+  // Закрываем меню при открытии корзины
+  useEffect(() => {
+    if (miniCartOpen) {
+      setOpen(false)
+    }
+  }, [miniCartOpen])
+
+  // Закрываем меню и корзину при открытии ProductSheet
+  useEffect(() => {
+    if (isProductSheetOpen) {
+      setOpen(false)
+      setMiniCartOpen(false)
+    }
+  }, [isProductSheetOpen])
 
   // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
@@ -68,7 +94,11 @@ export const Header: React.FC = () => {
           <button
             className="header-cart-btn"
             aria-label="Корзина"
-            onClick={() => setMiniCartOpen(true)}
+            onClick={() => {
+              // Закрываем меню при открытии корзины
+              setOpen(false)
+              setMiniCartOpen(true)
+            }}
           >
             <span className="header-cart-icon">🛒</span>
             {totalQty > 0 && (

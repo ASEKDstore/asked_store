@@ -6,7 +6,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
-  z-index: 1000;
+  z-index: 1200;
 }
 
 .mini-cart-overlay.open {
@@ -27,7 +27,7 @@
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   transform: translateX(100%);
   transition: transform 0.2s ease-out;
-  z-index: 1001;
+  z-index: 1201;
   padding-top: calc(16px + env(safe-area-inset-top, 0));
   padding-right: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));

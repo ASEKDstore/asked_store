@@ -188,6 +188,11 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
   return (
     <div
       className={`tg-sheet-overlay ${shouldShow && mounted ? 'is-visible' : ''}`}
+      onClick={(e) => {
+        if (shouldShow && e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
       onPointerDown={(e) => {
         if (shouldShow && e.target === e.currentTarget) {
           onClose()

@@ -4,7 +4,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 1300;
   opacity: 0;
   transition: opacity 180ms ease;
   pointer-events: none; /* КРИТИЧНО: не блокируем клики когда закрыт */
@@ -32,7 +32,7 @@
   transform: translateY(18px);
   opacity: 0;
   transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1), opacity 240ms ease;
-  z-index: 1001;
+  z-index: 1301;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -326,7 +326,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 14px;
   font-weight: 500;
-  z-index: 1002;
+  z-index: 1302;
   animation: toastSlideUp 0.3s ease;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }

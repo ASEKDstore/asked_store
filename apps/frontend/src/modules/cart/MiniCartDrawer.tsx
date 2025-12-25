@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useProductSheet } from '../../context/ProductSheetContext'
 import { useTelegramBackButton } from '../../hooks/useTelegramBackButton'
 import { pushLayer, popLayer } from '../../shared/layerManager'
 import './mini-cart.css'
@@ -13,6 +14,7 @@ type Props = {
 export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
   const navigate = useNavigate()
   const { items, removeItem, setQty, totalQty, totalPrice, clear } = useCart()
+  const { isOpen: isProductSheetOpen } = useProductSheet()
 
   // Закрытие по ESC
   useEffect(() => {
@@ -25,6 +27,13 @@ export const MiniCartDrawer: React.FC<Props> = ({ open, onClose }) => {
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
   }, [open, onClose])
+
+  // Закрываем корзину при открытии ProductSheet
+  useEffect(() => {
+    if (isProductSheetOpen && open) {
+      onClose()
+    }
+  }, [isProductSheetOpen, open, onClose])
 
   // Layer management: управление scroll-lock через LayerManager
   useEffect(() => {
