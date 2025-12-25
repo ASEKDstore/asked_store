@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useProductSheet } from '../../context/ProductSheetContext'
 import { useCart } from '../../context/CartContext'
 import { flyToCart } from '../../utils/flyToCart'
 import type { UIProduct } from '../../api/productsApi'
@@ -10,22 +10,24 @@ type Props = {
 }
 
 const ProductGridCard: React.FC<Props> = ({ product }) => {
-  const navigate = useNavigate()
+  const { openProduct } = useProductSheet()
   const { addItem } = useCart()
   const [showSizes, setShowSizes] = useState(false)
 
   const handleCardClick = useCallback(() => {
     if (!product?.id) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[ProductGridCard] Cannot navigate: product.id is missing', product)
+        console.warn('[ProductGridCard] Cannot open: product.id is missing', product)
       }
       return
     }
-    navigate(`/app/product/${product.id}`)
-  }, [product?.id, navigate])
+    // Используем openProduct напрямую вместо navigate
+    openProduct(product.id)
+  }, [product?.id, openProduct])
 
   const handleQuickAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
 
     if (product.sizes.length === 1) {
       // Если один размер - добавляем сразу
@@ -39,6 +41,7 @@ const ProductGridCard: React.FC<Props> = ({ product }) => {
 
   const handleSizeSelect = useCallback((size: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
     addItem(product, { size })
     flyToCart({ imageUrl: product.image, fromEl: e.currentTarget as HTMLElement })
     setShowSizes(false)
@@ -53,6 +56,7 @@ const ProductGridCard: React.FC<Props> = ({ product }) => {
 
   const handleSizeClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
   }, [])
 
   return (
@@ -110,4 +114,3 @@ const ProductGridCard: React.FC<Props> = ({ product }) => {
 
 // Memoize component to prevent unnecessary re-renders
 export default React.memo(ProductGridCard)
-

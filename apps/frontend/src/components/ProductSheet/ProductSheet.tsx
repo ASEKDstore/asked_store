@@ -174,8 +174,8 @@ export const ProductSheet: React.FC<ProductSheetProps> = ({ productId, isOpen, o
 
   const shouldShow = isOpen && product && !loading && mounted
 
-  // Don't render anything if not open
-  if (!isOpen) return null
+  // Не рендерим ничего если не открыт
+  if (!isOpen || !productId) return null
 
   return (
     <ModalPortal isOpen={isOpen}>

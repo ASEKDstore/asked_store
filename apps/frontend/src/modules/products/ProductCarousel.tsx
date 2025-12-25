@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useProductSheet } from '../../context/ProductSheetContext'
 import { getUIProducts, type UIProduct } from '../../api/productsApi'
 import './product-carousel.css'
 
 export const ProductCarousel = () => {
-  const navigate = useNavigate()
+  const { openProduct } = useProductSheet()
   const [active, setActive] = useState(0)
   const [products, setProducts] = useState<UIProduct[]>([])
   const [loading, setLoading] = useState(true)
@@ -136,11 +136,11 @@ export const ProductCarousel = () => {
                 ? () => {
                     if (!product.id) {
                       if (process.env.NODE_ENV === 'development') {
-                        console.warn('[ProductCarousel] Cannot navigate: product.id is missing', product)
+                        console.warn('[ProductCarousel] Cannot open: product.id is missing', product)
                       }
                       return
                     }
-                    navigate(`/app/product/${product.id}`)
+                    openProduct(product.id)
                   }
                 : undefined
             }
@@ -153,11 +153,11 @@ export const ProductCarousel = () => {
                       e.preventDefault()
                       if (!product.id) {
                         if (process.env.NODE_ENV === 'development') {
-                          console.warn('[ProductCarousel] Cannot navigate: product.id is missing', product)
+                          console.warn('[ProductCarousel] Cannot open: product.id is missing', product)
                         }
                         return
                       }
-                      navigate(`/app/product/${product.id}`)
+                      openProduct(product.id)
                     }
                   }
                 : undefined
