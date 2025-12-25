@@ -14,6 +14,7 @@ import { ReplySheet } from '../components/ReplySheet'
 import { FullscreenGallery } from '../components/FullscreenGallery'
 import type { ReviewFormData, ReactionKey, ReviewReply, ReviewMedia } from '../types/review'
 import { getUIProducts, type UIProduct } from '../api/productsApi'
+import { useUser } from '../context/UserContext'
 import './reviews.css'
 
 type SortOption = 'new' | 'helpful' | 'withMedia' | 'low'
@@ -21,17 +22,8 @@ type FilterRating = null | 1 | 2 | 3 | 4 | 5
 
 const PRESET_EMOJIS: ReactionKey[] = ['🔥', '🖤', '👍', '💎', '😂', '😮‍💨']
 
-// Mock текущего пользователя (в реальном приложении из контекста/API)
-const CURRENT_USER = {
-  tgId: 'current_user',
-  name: 'Вы',
-  username: 'you',
-  avatarUrl: 'https://i.pravatar.cc/150?img=33',
-}
-
-const IS_ADMIN = false // В реальном приложении из контекста/API
-
 export const ReviewsPage = () => {
+  const { user, displayName } = useUser()
   const [reviews, setReviews] = useState<Review[]>([])
   const [products, setProducts] = useState<UIProduct[]>([])
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
@@ -128,7 +120,18 @@ export const ReviewsPage = () => {
     return sorted
   }, [reviews, filterRating, sort])
 
+  // Получаем данные текущего пользователя
+  const currentUserId = user.source === 'telegram' && user.tgId ? String(user.tgId) : null
+  const currentUserName = displayName || 'Гость'
+  const currentUserAvatar = user.source === 'telegram' ? user.avatar : undefined
+  const isAdmin = user.isAdmin || false
+
   const handleAddReview = (formData: ReviewFormData) => {
+    if (!currentUserId) {
+      alert('Пожалуйста, войдите в систему для оставления отзыва')
+      return
+    }
+
     // Создаём медиа URLs из File объектов
     const media = formData.media.map((file: File, idx: number) => ({
       id: `m-${Date.now()}-${idx}`,
@@ -139,10 +142,10 @@ export const ReviewsPage = () => {
     const newReview: Review = {
       id: `r-${Date.now()}`,
       user: {
-        tgId: 'current_user',
-        name: 'Вы',
-        username: 'you',
-        avatarUrl: 'https://i.pravatar.cc/150?img=33',
+        tgId: currentUserId,
+        name: currentUserName,
+        username: user.username,
+        avatarUrl: currentUserAvatar,
       },
       rating: formData.rating!,
       text: formData.text,
@@ -174,7 +177,8 @@ export const ReviewsPage = () => {
   }
 
   const handleToggleReaction = (reviewId: string, emoji: ReactionKey) => {
-    toggleReaction(reviewId, emoji, CURRENT_USER)
+    if (!currentUserId) return
+    toggleReaction(reviewId, emoji, { tgId: currentUserId, name: currentUserName, username: user.username, avatarUrl: currentUserAvatar })
     setReviews(getReviews())
     // Pulse animation
     setPulseId(`${reviewId}:${emoji}`)
@@ -193,11 +197,16 @@ export const ReviewsPage = () => {
             name: 'ASKED',
             isAdmin: true,
           }
-        : {
-            tgId: CURRENT_USER.tgId,
-            name: CURRENT_USER.name,
-            username: CURRENT_USER.username,
-            avatarUrl: CURRENT_USER.avatarUrl,
+        : currentUserId ? {
+            tgId: currentUserId,
+            name: currentUserName,
+            username: user.username,
+            avatarUrl: currentUserAvatar,
+          } : {
+            tgId: 'guest',
+            name: 'Гость',
+            username: undefined,
+            avatarUrl: undefined,
           },
       text,
       createdAt: new Date().toISOString(),
@@ -209,14 +218,16 @@ export const ReviewsPage = () => {
   }
 
   const handleDeleteReview = (reviewId: string) => {
-    if (deleteReview(reviewId, CURRENT_USER.tgId, IS_ADMIN)) {
+    if (!currentUserId) return
+    if (deleteReview(reviewId, currentUserId, isAdmin)) {
       setReviews(getReviews())
       setDeleteConfirm(null)
     }
   }
 
   const handleDeleteReply = (reviewId: string, replyId: string) => {
-    if (deleteReply(reviewId, replyId, CURRENT_USER.tgId, IS_ADMIN)) {
+    if (!currentUserId) return
+    if (deleteReply(reviewId, replyId, currentUserId, isAdmin)) {
       setReviews(getReviews())
     }
   }
@@ -418,7 +429,7 @@ export const ReviewsPage = () => {
               )}
 
               {/* Menu button */}
-              {(IS_ADMIN || review.user.tgId === CURRENT_USER.tgId) && (
+              {(isAdmin || (currentUserId && review.user.tgId === currentUserId)) && (
                 <div className="reviews-card-menu">
                   <button
                     type="button"
@@ -429,7 +440,7 @@ export const ReviewsPage = () => {
                   </button>
                   {menuOpen === review.id && (
                     <div className="reviews-card-menu-dropdown">
-                      {(IS_ADMIN || review.user.tgId === CURRENT_USER.tgId) && (
+                      {(isAdmin || (currentUserId && review.user.tgId === currentUserId)) && (
                         <button
                           type="button"
                           className="reviews-card-menu-item reviews-card-menu-item-danger"
@@ -441,7 +452,7 @@ export const ReviewsPage = () => {
                           Удалить отзыв
                         </button>
                       )}
-                      {(IS_ADMIN || review.user.tgId === CURRENT_USER.tgId) && (
+                      {(isAdmin || (currentUserId && review.user.tgId === currentUserId)) && (
                         <button
                           type="button"
                           className="reviews-card-menu-item"
@@ -500,7 +511,7 @@ export const ReviewsPage = () => {
                           </div>
                           <div className="reply-date">{formatDate(reply.createdAt)}</div>
                         </div>
-                        {(IS_ADMIN || reply.user.tgId === CURRENT_USER.tgId) && (
+                        {(isAdmin || (currentUserId && reply.user.tgId === currentUserId)) && (
                           <button
                             type="button"
                             className="reply-del"
@@ -557,7 +568,7 @@ export const ReviewsPage = () => {
           isOpen={true}
           onClose={() => setReplySheet(null)}
           onSubmit={handleAddReply}
-          isAdmin={IS_ADMIN}
+          isAdmin={isAdmin}
           reviewAuthorName={replySheet.authorName}
         />
       )}

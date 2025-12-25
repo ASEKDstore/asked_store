@@ -97,7 +97,6 @@ function AppContent() {
           <LabProductDetailsPage />
         </Suspense>
       } />
-      {/* Заглушки под остальные страницы */}
       <Route path="reviews" element={
         <Suspense fallback={<PageLoader />}>
           <ReviewsPage />
@@ -106,11 +105,11 @@ function AppContent() {
       <Route path="cart" element={<CartPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="try-on" element={<TryOnPage />} />
-      <Route path="about" element={<div style={{ padding: '32px 16px', textAlign: 'center' }}>О нас (в разработке)</div>} />
+      <Route path="about" element={<HelpPage />} />
       <Route path="help" element={<HelpPage />} />
       <Route path="collab" element={<CollabPage />} />
-      <Route path="docs" element={<div style={{ padding: '32px 16px', textAlign: 'center' }}>Документы (в разработке)</div>} />
-      <Route path="partners" element={<div style={{ padding: '32px 16px', textAlign: 'center' }}>Сотрудничество (в разработке)</div>} />
+      <Route path="docs" element={<HelpPage />} />
+      <Route path="partners" element={<CollabPage />} />
       <Route path="admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
         <Route index element={<Navigate to="/app/admin/orders" replace />} />
         <Route path="orders" element={

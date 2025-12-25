@@ -1,25 +1,47 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { labWorks, getReviewsForWork, type LabWorkReview } from '../data/lab'
+import { getReviewsForWork, type LabWorkReview } from '../data/lab'
 import { useEffect, useState } from 'react'
 import { StarRating } from '../modules/lab/StarRating'
 import { ReviewForm } from '../modules/lab/ReviewForm'
 import './lab-work-details.css'
 
+// TODO: Lab Works должны загружаться из API
+// Когда API будет готов, нужно добавить getLabWorks в labApi.ts
+// и использовать его здесь вместо null
 export const LabWorkDetailsPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const work = labWorks.find((w) => w.id === id)
-
   const [mounted, setMounted] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [reviews, setReviews] = useState<LabWorkReview[]>([])
+  const [work, setWork] = useState<any>(null) // TODO: заменить на LabWork когда API будет готов
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
-  }, [])
+    // TODO: Загрузить работу из API когда API будет готов
+    // const loadWork = async () => {
+    //   try {
+    //     const workData = await getLabWork(id)
+    //     setWork(workData)
+    //     if (workData) {
+    //       setSelectedImage(workData.image)
+    //       setReviews(getReviewsForWork(workData.id))
+    //     }
+    //   } catch (error) {
+    //     console.error('Failed to load work:', error)
+    //   } finally {
+    //     setLoading(false)
+    //   }
+    // }
+    // loadWork()
+    
+    // Временное решение: показываем что работы загружаются из API
+    setLoading(false)
+  }, [id])
 
   useEffect(() => {
-    if (work) {
+    if (work && work.id) {
       setSelectedImage(work.image)
       setReviews(getReviewsForWork(work.id))
     }
@@ -29,12 +51,21 @@ export const LabWorkDetailsPage = () => {
     setReviews([...reviews, newReview])
   }
 
-  if (!work)
+  if (loading) {
     return (
       <div style={{ padding: '32px 16px', textAlign: 'center', color: '#f5f5f5' }}>
-        Работа не найдена
+        Загрузка...
       </div>
     )
+  }
+
+  if (!work) {
+    return (
+      <div style={{ padding: '32px 16px', textAlign: 'center', color: '#f5f5f5' }}>
+        Работа не найдена. Работы загружаются из API через админ панель.
+      </div>
+    )
+  }
 
   const allImages = [work.image, ...(work.images || [])]
 
@@ -50,7 +81,7 @@ export const LabWorkDetailsPage = () => {
 
         {work.tags && work.tags.length > 0 && (
           <div className="lab-work-tags">
-            {work.tags.map((tag) => (
+            {work.tags.map((tag: string) => (
               <span key={tag} className="lab-work-tag">
                 {tag}
               </span>
@@ -70,7 +101,7 @@ export const LabWorkDetailsPage = () => {
         {/* Галерея изображений */}
         {allImages.length > 1 && (
           <div className="lab-work-gallery">
-            {allImages.map((img, idx) => (
+            {allImages.map((img: string, idx: number) => (
               <button
                 key={idx}
                 className={`lab-work-gallery-item ${selectedImage === img ? 'active' : ''}`}
@@ -136,4 +167,3 @@ export const LabWorkDetailsPage = () => {
     </div>
   )
 }
-
