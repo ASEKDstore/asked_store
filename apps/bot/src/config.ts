@@ -1,30 +1,10 @@
 /**
  * Configuration module for reading environment variables
  * Uses only process.env (no .env files in production)
+ * 
+ * Note: In production (Render), all env vars come from process.env
+ * For local development, set environment variables directly or use a tool like dotenv-cli
  */
-
-// Load .env file ONLY in development (not on Render)
-// On Render, all env vars come from process.env, so dotenv is not needed
-// Note: dotenv loading is skipped in production - Render provides env vars directly
-if (process.env.NODE_ENV !== 'production') {
-  // Try to load dotenv synchronously if available (for local development)
-  // If dotenv is not available or fails, continue - process.env will be used
-  try {
-    // Use createRequire for ESM compatibility
-    const { createRequire } = await import('module')
-    const require = createRequire(import.meta.url)
-    const dotenv = require('dotenv')
-    const { fileURLToPath } = await import('url')
-    const { dirname, join } = await import('path')
-    
-    const __filename = fileURLToPath(import.meta.url)
-    const __dirname = dirname(__filename)
-    dotenv.config({ path: join(__dirname, '../.env') })
-  } catch (error) {
-    // dotenv is optional, ignore if not available
-    // This is fine - in production we use process.env directly
-  }
-}
 
 /**
  * Get required environment variable with fallback
