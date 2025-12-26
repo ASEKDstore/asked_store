@@ -16,9 +16,17 @@ const __dirname = dirname(__filename)
 // Get version from package.json
 function getVersion(): string {
   try {
-    const packageJsonPath = join(__dirname, '../../package.json')
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
-    return packageJson.version || 'unknown'
+    // Try root package.json first, then apps/api/package.json
+    const rootPackagePath = join(__dirname, '../../../../package.json')
+    const localPackagePath = join(__dirname, '../../package.json')
+    
+    try {
+      const packageJson = JSON.parse(readFileSync(rootPackagePath, 'utf-8'))
+      return packageJson.version || 'unknown'
+    } catch {
+      const packageJson = JSON.parse(readFileSync(localPackagePath, 'utf-8'))
+      return packageJson.version || 'unknown'
+    }
   } catch {
     return 'unknown'
   }
