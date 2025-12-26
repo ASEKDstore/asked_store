@@ -2,9 +2,53 @@
 
 import express from 'express'
 import cors from 'cors'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
 import { errorHandler } from './middleware/errorHandler.js'
 import { healthRouter } from './routes/health.js'
+import { readyRouter } from './routes/ready.js'
 import { authRouter } from './routes/auth.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+// Get version from package.json
+function getVersion(): string {
+  try {
+    const packageJsonPath = join(__dirname, '../../package.json')
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
+    return packageJson.version || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+// Get commit SHA from environment or git
+function getCommitSha(): string {
+  // Check common environment variables (Render, etc.)
+  return (
+    process.env.RENDER_GIT_COMMIT ||
+    process.env.GIT_COMMIT ||
+    process.env.COMMIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    'unknown'
+  )
+}
+
+// Log startup information
+function logStartupInfo() {
+  const version = getVersion()
+  const commitSha = getCommitSha()
+  const env = process.env.NODE_ENV || 'development'
+  const port = process.env.PORT || 4000
+
+  console.log('🚀 ASKED Store API Server')
+  console.log(`   Version: ${version}`)
+  console.log(`   Commit: ${commitSha}`)
+  console.log(`   Environment: ${env}`)
+  console.log(`   Port: ${port}`)
+}
 
 const app = express()
 
@@ -22,6 +66,7 @@ app.use(express.json())
 
 // Routes
 app.use('/health', healthRouter)
+app.use('/ready', readyRouter)
 app.use('/auth', authRouter)
 
 // Error handler (must be last)
@@ -30,7 +75,7 @@ app.use(errorHandler)
 const PORT = process.env.PORT || 4000
 
 app.listen(PORT, () => {
-  console.log(`🚀 API server running on port ${PORT}`)
+  logStartupInfo()
   console.log(`📡 CORS origins: ${corsOrigins.join(', ')}`)
 })
 

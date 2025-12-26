@@ -9,7 +9,7 @@ const router = Router()
  * Health check endpoint (should work even if DB is unavailable)
  */
 router.get('/', (req: Request, res: Response) => {
-  res.json({ ok: true })
+  res.json({ status: 'ok' })
 })
 
 export { router as healthRouter }
