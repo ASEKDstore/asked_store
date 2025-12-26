@@ -1,27 +1,61 @@
 services:
-  # Frontend: Vite + React, билд как статический сайт
-  - type: web
-    name: asked-store-frontend
-    runtime: static
-    rootDir: apps/frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./apps/frontend/dist
-    plan: free
-    autoDeployTrigger: commit
-
-  # Backend: Node + Express
+  # Backend API Service
   - type: web
     name: asked-store-backend
-    runtime: node
-    rootDir: apps/backend
-    buildCommand: npm install && npm run build
-    startCommand: npm start
-    plan: free
-    autoDeployTrigger: commit
-    healthCheckPath: /health
+    env: node
+    rootDir: .
+    buildCommand: npm ci && npm run build:api
+    startCommand: npm run start:api
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
       - key: PORT
-        value: 4000
+        value: "4000"
+    healthCheckPath: /health
 
+  # Frontend Static Site (Telegram Mini App)
+  - type: static_site
+    name: asked-store-frontend
+    rootDir: .
+    buildCommand: npm ci && npm run build:webapp
+    staticPublishPath: apps/webapp/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: asked-store-backend
+          property: host
+        format: https://${host}
 
-
+  # Bot Background Worker
+  - type: worker
+    name: asked-store-bot
+    env: node
+    rootDir: .
+    buildCommand: npm ci && npm run build:bot
+    startCommand: npm run start:bot
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: asked-store-backend
+          property: host
+        format: https://${host}
+      - key: WEBAPP_URL
+        fromService:
+          type: static_site
+          name: asked-store-frontend
+          property: host
+        format: https://${host}
