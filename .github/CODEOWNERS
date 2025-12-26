@@ -1,0 +1,71 @@
+# CODEOWNERS для ASKED Store
+
+# Общие правила:
+# - Используется синтаксис gitignore для путей
+# - Порядок важен: более специфичные правила идут первыми
+# - Можно использовать @username или @team-name
+# - Если указано несколько владельцев, все должны одобрить изменения
+
+# ===========================================
+# Приложения (apps/)
+# ===========================================
+
+# Backend API
+/apps/api/                    @asked-store/backend-team
+
+# Frontend (Telegram Mini App)
+/apps/webapp/                 @asked-store/frontend-team
+
+# Telegram Bot
+/apps/bot/                    @asked-store/backend-team
+
+# ===========================================
+# Пакеты (packages/)
+# ===========================================
+
+# Shared типы, схемы, контракты
+/packages/shared/             @asked-store/backend-team @asked-store/frontend-team
+
+# Prisma schema и клиент
+/packages/db/                 @asked-store/backend-team
+
+# ===========================================
+# Инфраструктура
+# ===========================================
+
+# Конфигурация деплоя
+/render.yaml                  @asked-store/devops-team
+/package.json                 @asked-store/devops-team @asked-store/backend-team
+
+# Документация архитектуры и блоков
+/docs/                        @asked-store/backend-team @asked-store/frontend-team
+/ARCHITECTURE.md              @asked-store/backend-team @asked-store/frontend-team
+/README.md                    @asked-store/backend-team @asked-store/frontend-team
+
+# GitHub Actions workflows
+/.github/workflows/           @asked-store/devops-team
+/.github/CODEOWNERS           @asked-store/devops-team
+/.github/pull_request_template.md @asked-store/devops-team
+
+# ===========================================
+# Корневые конфигурационные файлы
+# ===========================================
+
+/.gitignore                   @asked-store/devops-team
+/.env.example                 @asked-store/backend-team
+/tsconfig.json                @asked-store/backend-team @asked-store/frontend-team
+
+# ===========================================
+# Примечания
+# ===========================================
+
+# Для добавления новых владельцев:
+# 1. Используйте формат @username для отдельных пользователей
+# 2. Используйте @org/team-name для команд GitHub
+# 3. Несколько владельцев означают, что изменения требуют одобрения всех
+
+# Текущая структура команд (пример):
+# - @asked-store/backend-team - команда backend разработки
+# - @asked-store/frontend-team - команда frontend разработки  
+# - @asked-store/devops-team - команда инфраструктуры и деплоя
+
