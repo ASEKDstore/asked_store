@@ -51,4 +51,3 @@ services:
           name: asked-store-backend
           property: host
         format: https://${host}
-
