@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "asked-store",
   "version": "1.0.0",
   "private": true,
@@ -9,23 +9,25 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:api && npm run build:webapp && npm run build:bot",
     "build:api": "npm run build --workspace=@asked-store/api",
     "build:webapp": "npm run build --workspace=@asked-store/webapp",
     "build:bot": "npm run build --workspace=@asked-store/bot",
     "start:api": "npm run start --workspace=@asked-store/api",
-    "start:webapp": "npm run dev --workspace=@asked-store/webapp",
     "start:bot": "npm run start --workspace=@asked-store/bot",
     "dev": "npm run dev --workspaces --if-present",
     "dev:api": "npm run dev --workspace=@asked-store/api",
     "dev:webapp": "npm run dev --workspace=@asked-store/webapp",
     "dev:bot": "npm run dev --workspace=@asked-store/bot",
     "db:generate": "npm run generate --workspace=@asked-store/db",
-    "db:migrate": "npm run migrate:dev --workspace=@asked-store/db",
+    "db:migrate:dev": "npm run migrate:dev --workspace=@asked-store/db",
     "db:migrate:deploy": "npm run migrate:deploy --workspace=@asked-store/db",
     "db:studio": "npm run studio --workspace=@asked-store/db",
     "lint": "npm run lint --workspaces --if-present",
-    "type-check": "npm run type-check --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "ci:lint": "npm run lint",
+    "ci:typecheck": "npm run typecheck",
+    "ci:build": "npm run build"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -44,4 +46,3 @@
   "author": "ASKED Store Team",
   "license": "UNLICENSED"
 }
-
