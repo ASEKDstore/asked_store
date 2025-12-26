@@ -58,7 +58,7 @@
 #### Rollback Strategy
 - **Риск**: Низкий (только структура и конфигурация)
 - **Rollback**: Откат к предыдущей структуре через git revert
-- **Процедура**: 
+- **Процедура**:
   ```bash
   git revert <commit-hash>
   npm install  # Переустановка зависимостей
@@ -78,118 +78,126 @@
 
 #### Описание
 Блок обеспечивает автоматический деплой трех сервисов:
-- Backend API Service (web)
-- Frontend Static Site (static_site)
-- Bot Background Worker (worker)
-
-Все сервисы деплоятся из одного репозитория с использованием npm workspaces.
+- Backend API (`asked-store-backend`)
+- Frontend Static Site (`asked-store-frontend`)
+- Telegram Bot Worker (`asked-store-bot`)
 
 #### Детали реализации
 - Файл `render.yaml` в корне репозитория
-- Конфигурация трех сервисов:
-  - `asked-store-backend`: rootDir `.`, buildCommand `npm ci && npm run build:api`
-  - `asked-store-frontend`: rootDir `.`, buildCommand `npm ci && npm run build:webapp`, staticPublishPath `apps/webapp/dist`
-  - `asked-store-bot`: rootDir `.`, buildCommand `npm ci && npm run build:bot`
-- Синхронизация переменных окружения между сервисами
-- Использование `property: url` для web services
-- Использование `property: host` для static_site
+- `rootDir: .` для всех сервисов
+- `buildCommand` и `startCommand` используют npm workspaces скрипты из корневого `package.json`
+- Автоматическая синхронизация URL между сервисами Render
+- Использование `property: url` для web services и `property: host` с `https://${host}` для static_site
+- Автоматический запуск миграций БД перед стартом backend (`db:migrate:deploy` в `startCommand`)
 
 #### Зависимости
-- **RepoStructureAlign v1.0.0** - требует правильной структуры репозитория
-
-#### Переменные окружения
-- Backend: `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `JWT_SECRET`, `CORS_ORIGINS`, `PORT`
-- Frontend: `VITE_API_URL` (синхронизируется из backend)
-- Bot: `TELEGRAM_BOT_TOKEN`, `BACKEND_URL`, `WEBAPP_URL` (синхронизируются)
+- RepoStructureAlign v1.0.0
 
 #### Изменения
 - **v1.0.0** (2025-01-XX): Первоначальная настройка автодеплоя на Render.com
+- **v1.0.1** (2025-01-XX): Добавлен `db:migrate:deploy` в `startCommand` для backend сервиса
 
 #### Rollback Strategy
-- **Риск**: Средний (может нарушить деплой)
-- **Rollback**: Откат изменений `render.yaml` через git revert
-- **Процедура**: 
+- **Риск**: Средний (может повлиять на доступность сервисов)
+- **Rollback**: Откат к предыдущей версии `render.yaml` через git revert или ручной откат через Render Dashboard.
+- **Процедура**:
   ```bash
   git revert <commit-hash>
-  # Render автоматически подхватит изменения при следующем деплое
+  # В случае проблем, вручную откатить деплой на Render.com через панель управления
   ```
-- **Альтернатива**: Ручной откат через Render Dashboard (изменить buildCommand/startCommand)
-
-#### Известные проблемы
-- `npm ci` выполняется 3 раза (для каждого сервиса), что замедляет деплой
-- Решение отложено (см. `DEPLOYMENT_OPTIMIZATION.md`)
 
 ---
 
-## Формат записи блока
+### TelegramInitAuth / core/auth / 1.0.0
 
-```markdown
-### BlockName / Category / Version
-
-**Категория**: Category / Subcategory  
-**Версия**: X.Y.Z  
-**Статус**: ✅ Completed / 🚧 In Progress / 📋 Planned  
-**Дата**: YYYY-MM-DD
+**Категория**: Core / Authentication  
+**Версия**: 1.0.0  
+**Статус**: ✅ Completed  
+**Дата**: 2025-01-XX
 
 #### Назначение
-Краткое описание назначения блока
+Аутентификация пользователей через Telegram WebApp initData с валидацией подписи и выдачей JWT токенов.
 
 #### Описание
-Подробное описание функциональности
+Блок реализует полный цикл аутентификации:
+- Валидация подписи Telegram WebApp `initData` по Bot Token
+- Upsert пользователя в БД по `telegramId`
+- Выдача JWT токена с информацией о пользователе
+- RBAC заглушка (роли по умолчанию "user", админы через seed/ручную выдачу в БД)
+- Health check endpoint
 
 #### Детали реализации
-- Технические детали
-- Используемые технологии
-- Конфигурация
+
+**Endpoints:**
+- `GET /health` - Health check (работает даже при недоступности БД)
+- `POST /auth/telegram` - Аутентификация через Telegram initData
+
+**Валидация подписи:**
+- Использует официальный алгоритм Telegram (HMAC SHA-256)
+- Секретный ключ генерируется из Bot Token через `crypto.createHmac('sha256', 'WebAppData')`
+- Валидирует hash из initData параметров
+
+**База данных:**
+- Модель `TelegramUser` с полями: `id`, `tgId` (BigInt, unique), `username`, `firstName`, `lastName`, `role` (default: "user"), `createdAt`, `updatedAt`
+- Индексы на `tgId` и `role`
+- Upsert по `tgId` (обновляет только username/firstName/lastName, роль не обновляется автоматически)
+
+**JWT токены:**
+- Payload содержит: `tgId`, `userId`, `role`
+- Срок действия настраивается через `JWT_EXPIRES_IN` (по умолчанию: 7 дней)
+- Секретный ключ из `JWT_SECRET` env variable
+
+**RBAC:**
+- Роли хранятся в поле `role` модели `TelegramUser`
+- По умолчанию все пользователи получают роль "user"
+- Админы назначаются вручную в БД или через seed скрипт
+- Middleware `requireAuth` проверяет JWT и добавляет `req.user` с payload токена
+
+**Файлы:**
+- `apps/api/src/routes/auth.ts` - POST /auth/telegram endpoint
+- `apps/api/src/routes/health.ts` - GET /health endpoint
+- `apps/api/src/utils/telegramAuth.ts` - Валидация initData подписи
+- `apps/api/src/utils/jwt.ts` - Генерация и верификация JWT
+- `apps/api/src/middleware/requireAuth.ts` - JWT authentication middleware
+- `apps/api/src/middleware/errorHandler.ts` - Unified error handler
+- `packages/db/prisma/schema.prisma` - Prisma schema с моделью TelegramUser
+- `packages/shared/src/types.ts` - Shared types (AuthResponse, UserProfile, JWTPayload)
+- `packages/shared/src/schemas.ts` - Zod schemas для валидации
 
 #### Зависимости
-- Список зависимых блоков с версиями
+- RepoStructureAlign v1.0.0
+- RenderAutoDeploy v1.0.0
+
+#### Переменные окружения
+
+**Обязательные:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `TELEGRAM_BOT_TOKEN` - Telegram bot token для валидации подписи
+- `JWT_SECRET` - Секретный ключ для подписи JWT токенов
+
+**Опциональные:**
+- `JWT_EXPIRES_IN` - Срок действия JWT токена (по умолчанию: "7d")
+- `CORS_ORIGINS` - Разрешенные CORS origins (через запятую, по умолчанию: "*")
+- `PORT` - Порт API сервера (по умолчанию: 4000)
 
 #### Изменения
-- **vX.Y.Z** (дата): Описание изменений
+- **v1.0.0** (2025-01-XX): Первоначальная реализация Telegram аутентификации
 
 #### Rollback Strategy
-- **Риск**: Низкий/Средний/Высокий
-- **Rollback**: Описание процедуры отката
-- **Процедура**: Команды/шаги для rollback
-```
+- **Риск**: Высокий (критичный блок аутентификации)
+- **Rollback**: 
+  1. Откат изменений через git revert
+  2. Откат миграций БД (если были изменения схемы): `prisma migrate resolve --rolled-back <migration-name>`
+  3. Перезапуск API сервиса на Render
+- **Процедура**:
+  ```bash
+  git revert <commit-hash>
+  # На Render: manual redeploy через Dashboard
+  ```
+- **Важные замечания**:
+  - Откат не повлияет на существующие пользователи в БД
+  - Существующие JWT токены останутся валидными до истечения срока действия (если JWT_SECRET не изменился)
+  - При изменении JWT_SECRET все существующие токены станут невалидными
 
-## Категории блоков
-
-### Infrastructure (infra/)
-- `repo` - Структура репозитория
-- `cicd` - CI/CD конфигурация
-- `db` - База данных и миграции
-
-### Core (core/)
-- `auth` - Авторизация и аутентификация
-- `rbac` - Роли и права доступа
-- `audit` - Аудит действий
-- `config` - Управление конфигурацией
-
-### Admin (admin/)
-- `users` - Управление пользователями
-- `products` - Управление товарами
-- `orders` - Управление заказами
-- `bot-config` - Конфигурация бота
-- `channel-config` - Конфигурация канала
-
-### Storefront (storefront/)
-- `catalog` - Каталог товаров
-- `product-details` - Детали товара
-- `cart` - Корзина
-- `checkout` - Оформление заказа
-
-### Bot (bot/)
-- `commands` - Команды бота
-- `handlers` - Обработчики
-- `scheduling` - Расписание
-
-### Channel (channel/)
-- `posting` - Публикация постов
-- `automation` - Автоматизация
-
-## История изменений реестра
-
-- **2025-01-XX**: Создан реестр блоков, добавлены первые 2 блока (RepoStructureAlign, RenderAutoDeploy)
+---
 
