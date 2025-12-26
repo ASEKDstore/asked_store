@@ -1,0 +1,47 @@
+{
+  "name": "asked-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ASKED Store - Telegram Mini App + Backend API + Bot + Channel Automation",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build --workspace=@asked-store/api",
+    "build:webapp": "npm run build --workspace=@asked-store/webapp",
+    "build:bot": "npm run build --workspace=@asked-store/bot",
+    "start:api": "npm run start --workspace=@asked-store/api",
+    "start:webapp": "npm run dev --workspace=@asked-store/webapp",
+    "start:bot": "npm run start --workspace=@asked-store/bot",
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@asked-store/api",
+    "dev:webapp": "npm run dev --workspace=@asked-store/webapp",
+    "dev:bot": "npm run dev --workspace=@asked-store/bot",
+    "db:generate": "npm run generate --workspace=@asked-store/db",
+    "db:migrate": "npm run migrate:dev --workspace=@asked-store/db",
+    "db:migrate:deploy": "npm run migrate:deploy --workspace=@asked-store/db",
+    "db:studio": "npm run studio --workspace=@asked-store/db",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ASEKDstore/asked_store.git"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "e-commerce",
+    "monorepo"
+  ],
+  "author": "ASKED Store Team",
+  "license": "UNLICENSED"
+}
+
