@@ -1,4 +1,4 @@
-﻿services:
+services:
   # Backend API Service
   - type: web
     name: asked-store-backend
@@ -56,4 +56,4 @@
           type: static_site
           name: asked-store-frontend
           property: host
-        format: https://System.Management.Automation.Internal.Host.InternalHost
+        format: https://${host}
