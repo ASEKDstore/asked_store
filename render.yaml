@@ -1,4 +1,4 @@
-services:
+﻿services:
   # Backend API Service
   - type: web
     name: asked-store-backend
@@ -34,8 +34,7 @@ services:
         fromService:
           type: web
           name: asked-store-backend
-          property: host
-        format: https://${host}
+          property: url
 
   # Bot Background Worker
   - type: worker
@@ -51,11 +50,10 @@ services:
         fromService:
           type: web
           name: asked-store-backend
-          property: host
-        format: https://${host}
+          property: url
       - key: WEBAPP_URL
         fromService:
           type: static_site
           name: asked-store-frontend
           property: host
-        format: https://${host}
+        format: https://System.Management.Automation.Internal.Host.InternalHost
