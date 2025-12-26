@@ -5,7 +5,7 @@ services:
     env: node
     rootDir: .
     buildCommand: npm ci && npm run build:api
-    startCommand: npm run start:api
+    startCommand: npm run db:migrate:deploy && npm run start:api
     envVars:
       - key: NODE_ENV
         value: production
