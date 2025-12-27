@@ -2,6 +2,13 @@
 
 import type { BotConfigDTO, ChannelConfigDTO } from '@asked-store/shared'
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || ''
+const CONFIG_REFRESH_INTERVAL_MS = parseInt(process.env.CONFIG_REFRESH_INTERVAL_MS || '300000', 10) // Default: 5 minutes
+const MAX_RETRIES = 3
+const INITIAL_RETRY_DELAY_MS = 1000 // 1 second
+const MAX_RETRY_DELAY_MS = 30000 // 30 seconds
+
 /**
  * Internal Bot Config Response (from API)
  */
@@ -10,13 +17,6 @@ interface InternalBotConfigResponse {
   channel: ChannelConfigDTO
   allowedOps: string[]
 }
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
-const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || ''
-const CONFIG_REFRESH_INTERVAL_MS = parseInt(process.env.CONFIG_REFRESH_INTERVAL_MS || '300000', 10) // Default: 5 minutes
-const MAX_RETRIES = 3
-const INITIAL_RETRY_DELAY_MS = 1000 // 1 second
-const MAX_RETRY_DELAY_MS = 30000 // 30 seconds
 
 interface ConfigCache {
   botConfig: BotConfigDTO | null
@@ -224,4 +224,3 @@ class BotConfigClient {
 
 // Singleton instance
 export const botConfigClient = new BotConfigClient()
-
