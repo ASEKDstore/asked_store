@@ -46,10 +46,15 @@ router.post('/telegram', async (req: Request, res: Response) => {
     }
 
     const { id: tgId, first_name: firstName, last_name: lastName, username, photo_url: photoUrl } = parsedData.user
+    const tgIdBigInt = BigInt(tgId)
+
+    // Check if this is the owner (first login only)
+    const TELEGRAM_OWNER_ID = process.env.TELEGRAM_OWNER_ID
+    const isOwner = TELEGRAM_OWNER_ID && BigInt(TELEGRAM_OWNER_ID) === tgIdBigInt
 
     // Upsert user in database
     const user = await prisma.user.upsert({
-      where: { tgId: BigInt(tgId) },
+      where: { tgId: tgIdBigInt },
       update: {
         username: username || null,
         firstName: firstName || null,
@@ -58,7 +63,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
         updatedAt: new Date(),
       },
       create: {
-        tgId: BigInt(tgId),
+        tgId: tgIdBigInt,
         username: username || null,
         firstName: firstName || null,
         lastName: lastName || null,
@@ -73,8 +78,36 @@ router.post('/telegram', async (req: Request, res: Response) => {
       },
     })
 
-    // Get user roles
-    const roles = user.userRoles.map((ur) => ur.role.name)
+    // Assign owner role if this is the owner and they don't have it yet
+    if (isOwner) {
+      const ownerRole = await prisma.role.findUnique({ where: { name: 'owner' } })
+      if (ownerRole) {
+        const hasOwnerRole = user.userRoles.some((ur) => ur.role.name === 'owner')
+        if (!hasOwnerRole) {
+          await prisma.userRole.create({
+            data: {
+              userId: user.id,
+              roleId: ownerRole.id,
+            },
+          })
+          console.log(`✅ Assigned owner role to user ${user.id} (tgId: ${tgId})`)
+        }
+      }
+    }
+
+    // Get user roles (refresh to include newly assigned owner role if applicable)
+    const userWithRoles = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        userRoles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    })
+
+    const roles = userWithRoles?.userRoles.map((ur) => ur.role.name) || user.userRoles.map((ur) => ur.role.name)
 
     // Generate JWT token with sub=userId, telegramId, roles[]
     const token = generateToken({
@@ -83,19 +116,20 @@ router.post('/telegram', async (req: Request, res: Response) => {
       roles: roles,
     })
 
-    // Return token and user profile
+    // Return token and user profile (use userWithRoles if available, otherwise user)
+    const finalUser = userWithRoles || user
     res.json({
       token,
       user: {
-        id: user.id,
-        tgId: user.tgId.toString(),
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        photoUrl: user.photoUrl,
+        id: finalUser.id,
+        tgId: finalUser.tgId.toString(),
+        username: finalUser.username,
+        firstName: finalUser.firstName,
+        lastName: finalUser.lastName,
+        photoUrl: finalUser.photoUrl,
         roles: roles,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        createdAt: finalUser.createdAt,
+        updatedAt: finalUser.updatedAt,
       },
     })
   } catch (error) {
