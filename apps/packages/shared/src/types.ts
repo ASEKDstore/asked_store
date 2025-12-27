@@ -62,7 +62,7 @@ export interface PublicSettingsDTO {
 }
 
 /**
- * Menu Button DTO - button in bot menu
+ * Menu Button DTO - for bot menus or inline keyboards
  */
 export interface MenuButtonDTO {
   text: string
@@ -72,16 +72,16 @@ export interface MenuButtonDTO {
 }
 
 /**
- * Deep Link DTO - deep link configuration
+ * Deep Link DTO - for bot deep links
  */
 export interface DeepLinkDTO {
-  key: string
-  url: string
+  key: string // Unique key for the deep link
+  url: string // Full deep link URL
   description?: string
 }
 
 /**
- * Bot Config DTO - bot configuration settings
+ * Bot Config DTO - bot specific configuration settings
  */
 export interface BotConfigDTO {
   webappUrl: string
@@ -91,7 +91,7 @@ export interface BotConfigDTO {
 }
 
 /**
- * Post Template DTO - template for channel posts
+ * Post Template DTO - for channel posts
  */
 export interface PostTemplateDTO {
   id: string
@@ -169,6 +169,48 @@ export interface JWTPayload {
   roles: string[] // Array of role names
   iat?: number // Issued at timestamp
   exp?: number // Expiration timestamp
+}
+
+/**
+ * Channel Queue Status
+ */
+export type ChannelQueueStatus = 'queued' | 'sent' | 'failed'
+
+/**
+ * Channel Queue Item DTO
+ */
+export interface ChannelQueueItemDTO {
+  id: string
+  payload: ChannelQueuePayloadDTO
+  status: ChannelQueueStatus
+  scheduledAt: string | null // ISO 8601 date string
+  sentAt: string | null // ISO 8601 date string
+  messageId: number | null
+  attempts: number
+  lastError: string | null
+  createdAt: string // ISO 8601 date string
+  updatedAt: string // ISO 8601 date string
+}
+
+/**
+ * Channel Queue Payload DTO - content of the message to send
+ */
+export interface ChannelQueuePayloadDTO {
+  templateKey?: string // Template key from channel config
+  variables?: Record<string, unknown> // Variables to replace in template
+  content?: string // Direct content (if no template)
+  buttons?: MenuButtonDTO[] // Inline keyboard buttons
+}
+
+/**
+ * Create Channel Queue Request DTO
+ */
+export interface CreateChannelQueueRequestDTO {
+  templateKey?: string
+  variables?: Record<string, unknown>
+  content?: string
+  buttons?: MenuButtonDTO[]
+  scheduledAt?: string // ISO 8601 date string (optional, null = send immediately)
 }
 
 // Legacy exports for backward compatibility (deprecated)

@@ -10,6 +10,7 @@ import { healthRouter } from './routes/health.js'
 import { readyRouter } from './routes/ready.js'
 import { authRouter } from './routes/auth.js'
 import { adminSettingsRouter } from './routes/admin/settings.js'
+import { channelQueueRouter } from './routes/admin/channel/queue.js'
 import { publicSettingsRouter } from './routes/public/settings.js'
 import { botConfigRouter } from './routes/internal/bot/config.js'
 import { verifyJwt } from './middleware/verifyJwt.js'
@@ -92,6 +93,7 @@ app.use('/internal/bot/config', internalAuth, botConfigRouter)
 
 // Admin routes (require authentication and admin.access permission)
 app.use('/admin/settings', verifyJwt, rbacGuard('admin.access'), adminSettingsRouter)
+app.use('/admin/channel/queue', verifyJwt, rbacGuard('admin.access'), channelQueueRouter)
 
 // Error handler (must be last)
 app.use(errorHandler)
