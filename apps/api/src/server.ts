@@ -11,8 +11,10 @@ import { readyRouter } from './routes/ready.js'
 import { authRouter } from './routes/auth.js'
 import { adminSettingsRouter } from './routes/admin/settings.js'
 import { publicSettingsRouter } from './routes/public/settings.js'
+import { botConfigRouter } from './routes/internal/bot/config.js'
 import { verifyJwt } from './middleware/verifyJwt.js'
 import { rbacGuard } from './middleware/rbacGuard.js'
+import { serviceAuth } from './middleware/serviceAuth.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -83,6 +85,9 @@ app.use('/auth', authRouter)
 
 // Public routes (no authentication)
 app.use('/public/settings', publicSettingsRouter)
+
+// Internal routes (require service authentication)
+app.use('/internal/bot/config', serviceAuth, botConfigRouter)
 
 // Admin routes (require authentication and admin.access permission)
 app.use('/admin/settings', verifyJwt, rbacGuard('admin.access'), adminSettingsRouter)
