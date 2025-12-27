@@ -129,3 +129,29 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// Enum for channel queue status
+enum ChannelQueueStatus {
+  queued
+  sent
+  failed
+}
+
+// ChannelQueue model for scheduled channel posts
+model ChannelQueue {
+  id          String            @id @default(uuid())
+  payload     Json              // Message payload (templateKey, variables, buttons, etc.)
+  status      ChannelQueueStatus @default(queued)
+  scheduledAt DateTime?         // When to send (null = send immediately)
+  sentAt      DateTime?         // When message was sent
+  messageId   Int?              // Telegram message ID after sending
+  attempts    Int               @default(0)
+  lastError   String?           // Last error message if failed
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("channel_queue")
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([status, scheduledAt])
+}
+
