@@ -1,17 +1,27 @@
 // Bot config client - fetches and caches config from API
 
-import type { BotConfigDTO } from '@asked-store/shared'
+import type { BotConfigDTO, ChannelConfigDTO } from '@asked-store/shared'
+
+/**
+ * Internal Bot Config Response (from API)
+ */
+interface InternalBotConfigResponse {
+  bot: BotConfigDTO
+  channel: ChannelConfigDTO
+  allowedOps: string[]
+}
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
-const SERVICE_TOKEN = process.env.SERVICE_TOKEN || process.env.BOT_SERVICE_TOKEN || ''
-const SERVICE_SECRET = process.env.SERVICE_SECRET || process.env.BOT_SERVICE_SECRET || ''
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || ''
 const CONFIG_REFRESH_INTERVAL_MS = parseInt(process.env.CONFIG_REFRESH_INTERVAL_MS || '300000', 10) // Default: 5 minutes
 const MAX_RETRIES = 3
 const INITIAL_RETRY_DELAY_MS = 1000 // 1 second
 const MAX_RETRY_DELAY_MS = 30000 // 30 seconds
 
 interface ConfigCache {
-  config: BotConfigDTO | null
+  botConfig: BotConfigDTO | null
+  channelConfig: ChannelConfigDTO | null
+  allowedOps: string[]
   lastUpdated: Date | null
   lastSuccessfulUpdate: Date | null
   isInitialized: boolean
@@ -19,7 +29,9 @@ interface ConfigCache {
 
 class BotConfigClient {
   private cache: ConfigCache = {
-    config: null,
+    botConfig: null,
+    channelConfig: null,
+    allowedOps: [],
     lastUpdated: null,
     lastSuccessfulUpdate: null,
     isInitialized: false,
@@ -31,15 +43,17 @@ class BotConfigClient {
   /**
    * Initialize config client - fetch config on startup
    */
-  async initialize(): Promise<BotConfigDTO> {
-    if (this.cache.isInitialized && this.cache.config) {
-      return this.cache.config
+  async initialize(): Promise<void> {
+    if (this.cache.isInitialized) {
+      return
     }
 
     console.log('🔄 Initializing bot config client...')
-    const config = await this.fetchConfigWithRetry()
+    const response = await this.fetchConfigWithRetry()
     
-    this.cache.config = config
+    this.cache.botConfig = response.bot
+    this.cache.channelConfig = response.channel
+    this.cache.allowedOps = response.allowedOps
     this.cache.lastUpdated = new Date()
     this.cache.lastSuccessfulUpdate = new Date()
     this.cache.isInitialized = true
@@ -48,41 +62,68 @@ class BotConfigClient {
     this.startPeriodicRefresh()
 
     console.log('✅ Bot config initialized successfully')
-    return config
   }
 
   /**
-   * Get current config (from cache)
+   * Get current bot config (from cache)
    */
-  getConfig(): BotConfigDTO | null {
-    return this.cache.config
+  getBotConfig(): BotConfigDTO | null {
+    return this.cache.botConfig
   }
 
   /**
-   * Get config or throw if not available
+   * Get bot config or throw if not available
    */
-  getConfigOrThrow(): BotConfigDTO {
-    if (!this.cache.config) {
+  getBotConfigOrThrow(): BotConfigDTO {
+    if (!this.cache.botConfig) {
       throw new Error('Bot config not initialized. Call initialize() first.')
     }
-    return this.cache.config
+    return this.cache.botConfig
+  }
+
+  /**
+   * Get current channel config (from cache)
+   */
+  getChannelConfig(): ChannelConfigDTO | null {
+    return this.cache.channelConfig
+  }
+
+  /**
+   * Get channel config or throw if not available
+   */
+  getChannelConfigOrThrow(): ChannelConfigDTO {
+    if (!this.cache.channelConfig) {
+      throw new Error('Channel config not initialized. Call initialize() first.')
+    }
+    return this.cache.channelConfig
+  }
+
+  /**
+   * Get allowed operations
+   */
+  getAllowedOps(): string[] {
+    return this.cache.allowedOps
   }
 
   /**
    * Fetch config from API with retry and exponential backoff
    */
-  private async fetchConfigWithRetry(retries = MAX_RETRIES): Promise<BotConfigDTO> {
+  private async fetchConfigWithRetry(retries = MAX_RETRIES): Promise<InternalBotConfigResponse> {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
-        const config = await this.fetchConfig()
-        return config
+        const response = await this.fetchConfig()
+        return response
       } catch (error) {
         const isLastAttempt = attempt === retries - 1
         if (isLastAttempt) {
-          // If we have a cached config, use it as fallback
-          if (this.cache.config) {
-            console.warn(`⚠️ Failed to fetch config after ${retries} attempts. Using cached config as fallback.`)
-            return this.cache.config
+          // If we have cached configs, use them as fallback
+          if (this.cache.botConfig && this.cache.channelConfig) {
+            console.warn(`⚠️ Failed to fetch config after ${retries} attempts. Using cached configs as fallback.`)
+            return {
+              bot: this.cache.botConfig,
+              channel: this.cache.channelConfig,
+              allowedOps: this.cache.allowedOps,
+            }
           }
           throw new Error(`Failed to fetch bot config after ${retries} attempts: ${error}`)
         }
@@ -104,16 +145,14 @@ class BotConfigClient {
   /**
    * Fetch config from API
    */
-  private async fetchConfig(): Promise<BotConfigDTO> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+  private async fetchConfig(): Promise<InternalBotConfigResponse> {
+    if (!INTERNAL_SERVICE_TOKEN) {
+      throw new Error('INTERNAL_SERVICE_TOKEN is not set')
     }
 
-    // Add authentication header
-    if (SERVICE_TOKEN) {
-      headers['Authorization'] = `Bearer ${SERVICE_TOKEN}`
-    } else if (SERVICE_SECRET) {
-      headers['X-Service-Secret'] = SERVICE_SECRET
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${INTERNAL_SERVICE_TOKEN}`,
     }
 
     const response = await fetch(`${BACKEND_URL}/internal/bot/config`, {
@@ -125,7 +164,7 @@ class BotConfigClient {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
-    const config: BotConfigDTO = await response.json()
+    const config: InternalBotConfigResponse = await response.json()
     return config
   }
 
@@ -145,16 +184,18 @@ class BotConfigClient {
       this.isRefreshing = true
       try {
         console.log('🔄 Refreshing bot config...')
-        const config = await this.fetchConfigWithRetry()
+        const response = await this.fetchConfigWithRetry()
         
-        this.cache.config = config
+        this.cache.botConfig = response.bot
+        this.cache.channelConfig = response.channel
+        this.cache.allowedOps = response.allowedOps
         this.cache.lastUpdated = new Date()
         this.cache.lastSuccessfulUpdate = new Date()
         
         console.log('✅ Bot config refreshed successfully')
       } catch (error) {
         console.error('❌ Failed to refresh bot config:', error)
-        // Keep using cached config (fallback)
+        // Keep using cached configs (fallback)
       } finally {
         this.isRefreshing = false
       }
