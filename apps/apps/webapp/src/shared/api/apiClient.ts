@@ -1,13 +1,10 @@
 // API client with automatic token injection
 
 import { saveToken, clearToken, getToken } from '../auth/tokenStore.js'
+import type { ApiError, AuthResponseDTO } from '@asked-store/shared'
+import { isApiError } from '@asked-store/shared'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-
-export interface ApiError {
-  error: string
-  details?: unknown
-}
 
 /**
  * API client with automatic Authorization header and token management
@@ -41,9 +38,14 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
+    const errorData = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }))
+    
+    const error: ApiError = isApiError(errorData)
+      ? errorData
+      : { error: errorData.error || `HTTP ${response.status}` }
+    
     throw new Error(error.error || `HTTP ${response.status}`)
   }
 
@@ -53,23 +55,8 @@ export async function apiClient<T>(
 /**
  * Authenticate via Telegram initData
  */
-export interface AuthResponse {
-  token: string
-  user: {
-    id: string
-    tgId: string
-    username: string | null
-    firstName: string | null
-    lastName: string | null
-    photoUrl: string | null
-    roles: string[]
-    createdAt: string
-    updatedAt: string
-  }
-}
-
-export async function authenticateWithTelegram(initData: string): Promise<AuthResponse> {
-  const response = await apiClient<AuthResponse>('/auth/telegram', {
+export async function authenticateWithTelegram(initData: string): Promise<AuthResponseDTO> {
+  const response = await apiClient<AuthResponseDTO>('/auth/telegram', {
     method: 'POST',
     body: JSON.stringify({ initData }),
   })

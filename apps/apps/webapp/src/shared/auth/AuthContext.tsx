@@ -3,21 +3,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authenticateWithTelegram } from '../api/apiClient.js'
 import { getToken, clearToken } from './tokenStore.js'
-// UserProfile type (matches backend)
-interface UserProfile {
-  id: string
-  tgId: string
-  username: string | null
-  firstName: string | null
-  lastName: string | null
-  photoUrl: string | null
-  roles: string[]
-  createdAt: Date
-  updatedAt: Date
-}
+import type { UserDTO } from '@asked-store/shared'
 
 interface AuthContextType {
-  user: UserProfile | null
+  user: UserDTO | null
   isAuthenticated: boolean
   isAdmin: boolean
   roles: string[]
@@ -36,7 +25,7 @@ interface AuthProviderProps {
  * AuthProvider component - manages authentication state
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<UserDTO | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Check if user has admin.access permission (via roles)
@@ -50,11 +39,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (initData: string) => {
     try {
       const response = await authenticateWithTelegram(initData)
-      setUser({
-        ...response.user,
-        createdAt: new Date(response.user.createdAt),
-        updatedAt: new Date(response.user.updatedAt),
-      })
+      // UserDTO already has ISO string dates, no conversion needed
+      setUser(response.user)
     } catch (error) {
       console.error('Login failed:', error)
       clearToken()
