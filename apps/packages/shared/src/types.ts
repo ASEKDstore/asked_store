@@ -1,5 +1,5 @@
 // Shared DTOs and types for ASKED Store
-// Version: 1.0.0
+// Version: 1.1.0
 
 /**
  * User DTO - represents a user in the system
@@ -59,6 +59,97 @@ export interface PublicSettingsDTO {
   shopName?: unknown
   supportContact?: unknown
   uiFlags?: unknown
+}
+
+/**
+ * Menu Button DTO - button in bot menu
+ */
+export interface MenuButtonDTO {
+  text: string
+  url?: string
+  webAppUrl?: string
+  callbackData?: string
+}
+
+/**
+ * Deep Link DTO - deep link configuration
+ */
+export interface DeepLinkDTO {
+  key: string
+  url: string
+  description?: string
+}
+
+/**
+ * Bot Config DTO - bot configuration settings
+ */
+export interface BotConfigDTO {
+  webappUrl: string
+  backendUrl: string
+  menuButtons: MenuButtonDTO[]
+  deepLinks: DeepLinkDTO[]
+}
+
+/**
+ * Post Template DTO - template for channel posts
+ */
+export interface PostTemplateDTO {
+  id: string
+  name: string
+  content: string
+  buttons?: MenuButtonDTO[]
+}
+
+/**
+ * Schedule Rule DTO - rule for scheduled posts
+ */
+export interface ScheduleRuleDTO {
+  id: string
+  name: string
+  cron: string // Cron expression
+  templateId: string
+  enabled: boolean
+}
+
+/**
+ * Channel Config DTO - channel configuration settings
+ */
+export interface ChannelConfigDTO {
+  channelId: string
+  postTemplates: PostTemplateDTO[]
+  defaultButtons: MenuButtonDTO[]
+  timezone: string // IANA timezone (e.g., 'Europe/Moscow')
+  scheduleRules: ScheduleRuleDTO[]
+}
+
+/**
+ * UI Flags DTO - UI feature flags
+ */
+export interface UIFlagsDTO {
+  enableCatalog?: boolean
+  enableCart?: boolean
+  enableOrders?: boolean
+  enableProfile?: boolean
+  [key: string]: unknown // Allow additional flags
+}
+
+/**
+ * Support Contact DTO - support contact information
+ */
+export interface SupportContactDTO {
+  telegram?: string
+  email?: string
+  phone?: string
+  [key: string]: unknown // Allow additional contact methods
+}
+
+/**
+ * WebApp Public Config DTO - public configuration for web app
+ */
+export interface WebAppPublicConfigDTO {
+  shopName: string
+  uiFlags: UIFlagsDTO
+  supportContact: SupportContactDTO
 }
 
 /**
