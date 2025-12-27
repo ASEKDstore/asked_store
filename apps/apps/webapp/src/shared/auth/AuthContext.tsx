@@ -3,7 +3,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authenticateWithTelegram } from '../api/apiClient.js'
 import { getToken, clearToken } from './tokenStore.js'
-import type { UserProfile } from '@asked-store/shared'
+// UserProfile type (matches backend)
+interface UserProfile {
+  id: string
+  tgId: string
+  username: string | null
+  firstName: string | null
+  lastName: string | null
+  photoUrl: string | null
+  roles: string[]
+  createdAt: Date
+  updatedAt: Date
+}
 
 interface AuthContextType {
   user: UserProfile | null
