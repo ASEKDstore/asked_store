@@ -1,7 +1,7 @@
 // Telegram authentication endpoint
 
 import { Router, Request, Response } from 'express'
-import { telegramAuthRequestSchema } from '@asked-store/shared'
+import { telegramAuthRequestSchema, type AuthResponseDTO, type UserDTO } from '@asked-store/shared'
 import { validateTelegramInitData, parseInitData } from '../utils/telegramAuth.js'
 import { generateToken } from '../utils/jwt.js'
 import { prisma } from '../prisma.js'
@@ -118,20 +118,27 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     // Return token and user profile (use userWithRoles if available, otherwise user)
     const finalUser = userWithRoles || user
-    res.json({
+    
+    // Build UserDTO
+    const userDTO: UserDTO = {
+      id: finalUser.id,
+      tgId: finalUser.tgId.toString(),
+      username: finalUser.username,
+      firstName: finalUser.firstName,
+      lastName: finalUser.lastName,
+      photoUrl: finalUser.photoUrl,
+      roles: roles,
+      createdAt: finalUser.createdAt.toISOString(),
+      updatedAt: finalUser.updatedAt.toISOString(),
+    }
+
+    // Build AuthResponseDTO
+    const authResponse: AuthResponseDTO = {
       token,
-      user: {
-        id: finalUser.id,
-        tgId: finalUser.tgId.toString(),
-        username: finalUser.username,
-        firstName: finalUser.firstName,
-        lastName: finalUser.lastName,
-        photoUrl: finalUser.photoUrl,
-        roles: roles,
-        createdAt: finalUser.createdAt,
-        updatedAt: finalUser.updatedAt,
-      },
-    })
+      user: userDTO,
+    }
+
+    res.json(authResponse)
   } catch (error) {
     errorHandler(error as Error, req, res, () => {})
   }

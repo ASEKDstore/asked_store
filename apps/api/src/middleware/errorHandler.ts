@@ -1,8 +1,9 @@
 // Unified error handler middleware
 
 import { Request, Response, NextFunction } from 'express'
+import type { ApiError } from '@asked-store/shared'
 
-export interface ApiError extends Error {
+export interface ExpressApiError extends Error {
   statusCode?: number
 }
 
@@ -11,7 +12,7 @@ export interface ApiError extends Error {
  * Must be used last in the middleware chain
  */
 export function errorHandler(
-  err: ApiError,
+  err: ExpressApiError,
   req: Request,
   res: Response,
   next: NextFunction
@@ -21,9 +22,12 @@ export function errorHandler(
 
   console.error(`[${req.method} ${req.path}] Error:`, err)
 
-  res.status(statusCode).json({
+  const errorResponse: ApiError = {
     error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  })
+    statusCode,
+    ...(process.env.NODE_ENV === 'development' && { details: err.stack }),
+  }
+
+  res.status(statusCode).json(errorResponse)
 }
 
