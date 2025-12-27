@@ -9,6 +9,10 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { healthRouter } from './routes/health.js'
 import { readyRouter } from './routes/ready.js'
 import { authRouter } from './routes/auth.js'
+import { adminSettingsRouter } from './routes/admin/settings.js'
+import { publicSettingsRouter } from './routes/public/settings.js'
+import { verifyJwt } from './middleware/verifyJwt.js'
+import { rbacGuard } from './middleware/rbacGuard.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -76,6 +80,12 @@ app.use(express.json())
 app.use('/health', healthRouter)
 app.use('/ready', readyRouter)
 app.use('/auth', authRouter)
+
+// Public routes (no authentication)
+app.use('/public/settings', publicSettingsRouter)
+
+// Admin routes (require authentication and admin.access permission)
+app.use('/admin/settings', verifyJwt, rbacGuard('admin.access'), adminSettingsRouter)
 
 // Error handler (must be last)
 app.use(errorHandler)

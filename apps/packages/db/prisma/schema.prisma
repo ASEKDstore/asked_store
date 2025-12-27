@@ -95,3 +95,37 @@ model RolePermission {
   @@index([permissionId])
 }
 
+// Settings model - configuration key-value store with scopes
+model Settings {
+  id        String    @id @default(uuid())
+  key       String    @unique
+  value     Json      // JSON value stored as JSONB
+  scope     String    // Enum: global, bot, channel, webapp
+  updatedBy String?   // User ID who last updated
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  @@map("settings")
+  @@index([key])
+  @@index([scope])
+}
+
+// Audit Log model - tracks changes to settings and other admin actions
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String   // User ID who performed the action
+  action    String   // Action type: settings.update, settings.create, settings.delete
+  resource  String   // Resource type: settings, user, role, etc.
+  resourceId String? // Resource ID (e.g., settings key)
+  oldValue  Json?    // Old value (for updates)
+  newValue  Json?    // New value
+  metadata  Json?    // Additional metadata
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+}
+

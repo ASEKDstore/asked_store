@@ -28,6 +28,40 @@ export interface RoleDTO {
 }
 
 /**
+ * Settings Scope - scope for settings
+ */
+export type SettingsScope = 'global' | 'bot' | 'channel' | 'webapp'
+
+/**
+ * Settings DTO - represents a configuration setting
+ */
+export interface SettingsDTO {
+  id: string
+  key: string
+  value: unknown // JSON value
+  scope: SettingsScope
+  updatedBy: string | null
+  updatedAt: string // ISO 8601 date string
+  createdAt: string // ISO 8601 date string
+}
+
+/**
+ * Update Settings Request DTO
+ */
+export interface UpdateSettingsRequestDTO {
+  value: unknown // JSON value
+}
+
+/**
+ * Public Settings DTO - limited settings for public access
+ */
+export interface PublicSettingsDTO {
+  shopName?: unknown
+  supportContact?: unknown
+  uiFlags?: unknown
+}
+
+/**
  * Auth Response DTO - response from POST /auth/telegram
  */
 export interface AuthResponseDTO {
@@ -59,4 +93,3 @@ export interface AuthResponse {
   token: string
   user: UserDTO
 }
-
