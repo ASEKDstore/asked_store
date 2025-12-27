@@ -11,15 +11,16 @@ export interface UserProfile {
   username: string | null
   firstName: string | null
   lastName: string | null
+  photoUrl: string | null
   roles: string[] // Array of role names
   createdAt: Date
   updatedAt: Date
 }
 
 export interface JWTPayload {
+  sub: string // User ID (userId)
   tgId: string
-  userId: string
-  role: string
+  roles: string[] // Array of role names
   iat?: number
   exp?: number
 }

@@ -45,7 +45,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
       return
     }
 
-    const { id: tgId, first_name: firstName, last_name: lastName, username } = parsedData.user
+    const { id: tgId, first_name: firstName, last_name: lastName, username, photo_url: photoUrl } = parsedData.user
 
     // Upsert user in database
     const user = await prisma.user.upsert({
@@ -54,6 +54,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
         username: username || null,
         firstName: firstName || null,
         lastName: lastName || null,
+        photoUrl: photoUrl || null,
         updatedAt: new Date(),
       },
       create: {
@@ -61,6 +62,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
         username: username || null,
         firstName: firstName || null,
         lastName: lastName || null,
+        photoUrl: photoUrl || null,
       },
       include: {
         userRoles: {
@@ -71,15 +73,14 @@ router.post('/telegram', async (req: Request, res: Response) => {
       },
     })
 
-    // Get user roles (default to "user" role if none assigned)
+    // Get user roles
     const roles = user.userRoles.map((ur) => ur.role.name)
-    const primaryRole = roles.length > 0 ? roles[0] : 'user'
 
-    // Generate JWT token
+    // Generate JWT token with sub=userId, telegramId, roles[]
     const token = generateToken({
+      sub: user.id, // User ID as subject
       tgId: user.tgId.toString(),
-      userId: user.id,
-      role: primaryRole, // Use first role or default to "user"
+      roles: roles,
     })
 
     // Return token and user profile
@@ -91,6 +92,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        photoUrl: user.photoUrl,
         roles: roles,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
