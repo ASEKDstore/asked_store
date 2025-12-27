@@ -131,10 +131,11 @@ class ChannelQueueWorker {
       } else if (payload.templateKey) {
         // Get template from channel config
         const channelConfig = botConfigClient.getChannelConfigOrThrow()
+        // templateKey should match template id
         const template = channelConfig.postTemplates.find((t) => t.id === payload.templateKey)
         
         if (!template) {
-          throw new Error(`Template "${payload.templateKey}" not found`)
+          throw new Error(`Template with id "${payload.templateKey}" not found in channel config`)
         }
 
         messageText = template.content
