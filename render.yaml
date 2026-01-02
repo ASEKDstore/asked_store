@@ -1,6 +1,6 @@
 services:
   # PostgreSQL Database
-  - type: pspg
+  - type: pg
     name: telegram-shop-db
     plan: free
     databaseName: telegram_shop
