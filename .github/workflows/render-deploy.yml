@@ -1,0 +1,40 @@
+name: Render Deploy Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Check API build
+        run: cd apps/api && pnpm build
+      
+      - name: Check Admin build
+        run: cd apps/admin && pnpm build
+      
+      - name: Check MiniApp build
+        run: cd apps/miniapp && pnpm build
+      
+      - name: Check Bot build
+        run: cd apps/bot && pnpm build
+

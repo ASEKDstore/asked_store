@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Администраторы
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Пользователи (из Telegram)
+model User {
+  id            String   @id @default(cuid())
+  telegramId    String   @unique
+  firstName     String?
+  lastName      String?
+  username      String?
+  avatarUrl     String?
+  languageCode  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  orders        Order[]
+  cart          CartItem[]
+}
+
+// Категории товаров
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  products    Product[]
+}
+
+// Товары
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  price       Float
+  oldPrice    Float?
+  images      String[] // Массив URL изображений
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  // Учет товара
+  sku         String?  @unique
+  stock       Int      @default(0) // Остаток на складе
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  
+  // Размеры (для одежды)
+  sizes       String[] // ["S", "M", "L", "XL"]
+  colors      String[] // ["red", "blue", "black"]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  inventory   InventoryLog[]
+}
+
+// История изменений остатков
+model InventoryLog {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  type        String   // "in" (приход), "out" (расход), "adjustment" (корректировка)
+  quantity    Int      // Количество
+  previousStock Int    // Остаток до изменения
+  newStock    Int      // Остаток после изменения
+  reason      String?  // Причина изменения
+  adminId     String?  // Кто внес изменение
+  
+  createdAt   DateTime @default(now())
+}
+
+// Заказы
+model Order {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  status      String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  total       Float
+  subtotal    Float
+  shipping    Float    @default(0)
+  
+  // Данные доставки
+  firstName   String
+  lastName    String
+  phone       String
+  address     String?  @db.Text
+  city        String?
+  postalCode  String?
+  
+  notes       String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  items       OrderItem[]
+}
+
+// Элементы заказа
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  
+  quantity    Int
+  price       Float    // Цена на момент заказа
+  size        String?
+  color       String?
+  
+  createdAt   DateTime @default(now())
+}
+
+// Корзина
+model CartItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity    Int
+  size        String?
+  color       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, productId, size, color])
+}
+
+// Баннеры
+model Banner {
+  id          String   @id @default(cuid())
+  title       String?
+  description String?  @db.Text
+  imageUrl    String
+  linkUrl     String?  // Куда ведет баннер
+  linkType    String?  // "product", "category", "page", "external"
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Страницы (о нас, доставка, контакты и т.д.)
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  isActive    Boolean  @default(true)
+  metaTitle   String?
+  metaDescription String? @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

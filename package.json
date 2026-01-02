@@ -1,0 +1,33 @@
+{
+  "name": "telegram-shop-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram Mini App - Магазин одежды",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter './apps/*' dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "dev:miniapp": "pnpm --filter miniapp dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:bot": "pnpm --filter bot dev",
+    "build": "pnpm --filter './apps/*' build",
+    "typecheck": "pnpm --filter './apps/*' exec tsc --noEmit",
+    "lint": "pnpm --filter './apps/*' lint",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:migrate:deploy": "pnpm --filter api db:migrate:deploy",
+    "db:studio": "pnpm --filter api db:studio",
+    "migrate:deploy": "pnpm --filter api db:migrate:deploy",
+    "start": "pnpm --filter './apps/*' start"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
