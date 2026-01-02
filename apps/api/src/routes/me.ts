@@ -1,20 +1,20 @@
-import { FastifyInstance } from "fastify";
-import { AuthenticatedRequest } from "../types";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { authGuard } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 
-export async function meRoutes(fastify: FastifyInstance) {
-  // GET /me
-  fastify.get(
+export async function meRoutes(app: FastifyInstance) {
+  app.get(
     "/me",
-    {
-      preHandler: [authGuard],
-    },
-    async (request: AuthenticatedRequest, reply) => {
+    { preHandler: authGuard },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      if (!request.user) {
+        return reply.code(401).send({ error: "UNAUTHORIZED" });
+      }
+
       try {
         const user = await prisma.user.findUnique({
           where: {
-            id: request.user.userId,
+            id: request.user.id,
           },
           select: {
             id: true,
@@ -33,7 +33,7 @@ export async function meRoutes(fastify: FastifyInstance) {
 
         return reply.send(user);
       } catch (error) {
-        fastify.log.error(error);
+        app.log.error(error);
         return reply.code(500).send({ error: "Internal server error" });
       }
     }

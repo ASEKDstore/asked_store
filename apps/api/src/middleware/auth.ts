@@ -1,33 +1,32 @@
-import { FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
-import { AuthenticatedRequest, JWTPayload } from "../types";
+
+type JwtPayload = {
+  userId: string;
+  role: "USER" | "ADMIN";
+};
 
 export async function authGuard(
   request: FastifyRequest,
   reply: FastifyReply
-): Promise<void> {
+) {
+  const auth = request.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    return reply.code(401).send({ error: "UNAUTHORIZED" });
+  }
+
   try {
-    const authHeader = request.headers.authorization;
+    const payload = jwt.verify(
+      auth.slice(7),
+      env.JWT_SECRET
+    ) as JwtPayload;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return reply.code(401).send({ error: "Missing or invalid Authorization header" });
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-    try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
-
-      // Добавляем user в request
-      (request as AuthenticatedRequest).user = {
-        userId: decoded.userId,
-        role: decoded.role,
-      };
-    } catch (error) {
-      return reply.code(401).send({ error: "Invalid or expired token" });
-    }
-  } catch (error) {
-    return reply.code(401).send({ error: "Authentication failed" });
+    request.user = {
+      id: payload.userId,
+      role: payload.role,
+    };
+  } catch {
+    return reply.code(401).send({ error: "UNAUTHORIZED" });
   }
 }

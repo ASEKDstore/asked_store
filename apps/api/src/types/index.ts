@@ -1,15 +1,6 @@
-import { FastifyRequest } from "fastify";
-
 export interface JWTPayload {
   userId: string;
   role: string;
-}
-
-export interface AuthenticatedRequest extends FastifyRequest {
-  user: {
-    userId: string;
-    role: string;
-  };
 }
 
 export interface TelegramUser {
