@@ -4,7 +4,6 @@ import { env } from "../config/env";
 
 type JwtPayload = {
   userId: string;
-  role: "USER" | "ADMIN";
 };
 
 export async function authGuard(
@@ -24,7 +23,6 @@ export async function authGuard(
 
     request.user = {
       id: payload.userId,
-      role: payload.role,
     };
   } catch {
     return reply.code(401).send({ error: "UNAUTHORIZED" });

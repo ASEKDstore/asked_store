@@ -35,7 +35,13 @@ export async function cartRoutes(fastify: FastifyInstance) {
         }
 
         const body = updateCartSchema.parse(request.body);
-        const cart = await updateCartItem(request.user.id, body.variantId, body.qty);
+        const cart = await updateCartItem(
+          request.user.id,
+          body.productId,
+          body.quantity,
+          body.size,
+          body.color
+        );
         return reply.send(cart);
       } catch (error) {
         if (error instanceof Error && error.name === "ZodError") {
@@ -43,11 +49,11 @@ export async function cartRoutes(fastify: FastifyInstance) {
         }
 
         if (error instanceof Error) {
-          if (error.message === "VARIANT_NOT_FOUND") {
-            return sendError(reply, 404, "VARIANT_NOT_FOUND");
+          if (error.message === "PRODUCT_NOT_FOUND") {
+            return sendError(reply, 404, "PRODUCT_NOT_FOUND");
           }
-          if (error.message === "VARIANT_NOT_ACTIVE") {
-            return sendError(reply, 400, "VARIANT_NOT_ACTIVE");
+          if (error.message === "PRODUCT_NOT_ACTIVE") {
+            return sendError(reply, 400, "PRODUCT_NOT_ACTIVE");
           }
           if (error.message === "INSUFFICIENT_STOCK") {
             return sendError(reply, 400, "INSUFFICIENT_STOCK");
@@ -60,4 +66,3 @@ export async function cartRoutes(fastify: FastifyInstance) {
     }
   );
 }
-

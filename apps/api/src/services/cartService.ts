@@ -1,146 +1,101 @@
 import { prisma } from "../lib/prisma";
 
 export async function getCart(userId: string) {
-  let cart = await prisma.cart.findUnique({
+  const items = await prisma.cartItem.findMany({
     where: { userId },
     include: {
-      items: {
+      product: {
         include: {
-          variant: {
-            include: {
-              product: {
-                include: {
-                  images: {
-                    orderBy: { sortOrder: "asc" },
-                    take: 1,
-                  },
-                },
-              },
-            },
-          },
+          category: true,
         },
       },
     },
   });
 
-  if (!cart) {
-    cart = await prisma.cart.create({
-      data: {
-        userId,
-      },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: {
-                  include: {
-                    images: {
-                      orderBy: { sortOrder: "asc" },
-                      take: 1,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-  }
-
-  const items = cart.items.map((item) => ({
+  const cartItems = items.map((item) => ({
     id: item.id,
-    variantId: item.variantId,
-    qty: item.qty,
-    variant: {
-      id: item.variant.id,
-      sku: item.variant.sku,
-      size: item.variant.size,
-      color: item.variant.color,
-      price: item.variant.price,
-      stock: item.variant.stock,
-      product: {
-        id: item.variant.product.id,
-        title: item.variant.product.title,
-        slug: item.variant.product.slug,
-        image: item.variant.product.images[0]?.url || null,
-      },
+    productId: item.productId,
+    quantity: item.quantity,
+    size: item.size,
+    color: item.color,
+    product: {
+      id: item.product.id,
+      name: item.product.name,
+      slug: item.product.slug,
+      price: item.product.price,
+      images: item.product.images,
+      category: item.product.category,
     },
-    lineTotal: item.variant.price * item.qty,
+    lineTotal: item.product.price * item.quantity,
   }));
 
-  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const total = cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
 
   return {
-    id: cart.id,
-    items,
+    items: cartItems,
     total,
-    itemCount: items.reduce((sum, item) => sum + item.qty, 0),
+    itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
   };
 }
 
-export async function updateCartItem(userId: string, variantId: string, qty: number) {
-  // Get or create cart
-  let cart = await prisma.cart.findUnique({
-    where: { userId },
+export async function updateCartItem(
+  userId: string,
+  productId: string,
+  quantity: number,
+  size?: string | null,
+  color?: string | null
+) {
+  // Check product exists and is active
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
   });
 
-  if (!cart) {
-    cart = await prisma.cart.create({
-      data: { userId },
-    });
+  if (!product) {
+    throw new Error("PRODUCT_NOT_FOUND");
   }
 
-  // Check variant exists and is active
-  const variant = await prisma.productVariant.findUnique({
-    where: { id: variantId },
-  });
-
-  if (!variant) {
-    throw new Error("VARIANT_NOT_FOUND");
+  if (!product.isActive) {
+    throw new Error("PRODUCT_NOT_ACTIVE");
   }
 
-  if (!variant.isActive) {
-    throw new Error("VARIANT_NOT_ACTIVE");
-  }
-
-  if (qty === 0) {
+  if (quantity === 0) {
     // Remove item
     await prisma.cartItem.deleteMany({
       where: {
-        cartId: cart.id,
-        variantId,
+        userId,
+        productId,
+        size: size || null,
+        color: color || null,
       },
     });
   } else {
     // Check stock
-    if (qty > variant.stock) {
+    if (quantity > product.stock) {
       throw new Error("INSUFFICIENT_STOCK");
     }
 
     // Upsert item
     await prisma.cartItem.upsert({
       where: {
-        cartId_variantId: {
-          cartId: cart.id,
-          variantId,
+        userId_productId_size_color: {
+          userId,
+          productId,
+          size: size || null,
+          color: color || null,
         },
       },
       update: {
-        qty,
+        quantity,
       },
       create: {
-        cartId: cart.id,
-        variantId,
-        qty,
+        userId,
+        productId,
+        quantity,
+        size: size || null,
+        color: color || null,
       },
     });
   }
 
   return getCart(userId);
 }
-
-
-
-

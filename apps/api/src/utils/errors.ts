@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 export function sendError(reply: FastifyReply, statusCode: number, message: string, details?: unknown) {
   return reply.code(statusCode).send({
     error: message,
-    ...(details && { details }),
+    ...(details && typeof details === "object" ? { details } : {}),
   });
 }
 
@@ -20,4 +20,3 @@ export function handleZodError(reply: FastifyReply, error: unknown) {
   }
   return sendError(reply, 400, "VALIDATION_ERROR");
 }
-

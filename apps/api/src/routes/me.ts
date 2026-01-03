@@ -22,8 +22,10 @@ export async function meRoutes(app: FastifyInstance) {
             username: true,
             firstName: true,
             lastName: true,
-            role: true,
+            avatarUrl: true,
+            languageCode: true,
             createdAt: true,
+            updatedAt: true,
           },
         });
 
@@ -39,4 +41,3 @@ export async function meRoutes(app: FastifyInstance) {
     }
   );
 }
-

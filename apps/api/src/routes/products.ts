@@ -25,10 +25,10 @@ export async function productsRoutes(fastify: FastifyInstance) {
   // GET /products/:slug
   fastify.get(
     "/products/:slug",
-    async (request: FastifyRequest<{ Params: { slug: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { slug } = request.params;
-        const product = await getProductBySlug(slug);
+        const params = request.params as { slug: string };
+        const product = await getProductBySlug(params.slug);
 
         if (!product) {
           return sendError(reply, 404, "PRODUCT_NOT_FOUND");
@@ -42,4 +42,3 @@ export async function productsRoutes(fastify: FastifyInstance) {
     }
   );
 }
-

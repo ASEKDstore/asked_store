@@ -1,6 +1,5 @@
 export interface JWTPayload {
   userId: string;
-  role: string;
 }
 
 export interface TelegramUser {
@@ -12,4 +11,3 @@ export interface TelegramUser {
   is_premium?: boolean;
   photo_url?: string;
 }
-

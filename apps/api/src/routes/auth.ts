@@ -44,14 +44,12 @@ export async function authRoutes(fastify: FastifyInstance) {
             username: telegramUser.username || null,
             firstName: telegramUser.first_name || null,
             lastName: telegramUser.last_name || null,
-            role: "USER",
           },
         });
 
-        // Создание JWT токена
+        // Создание JWT токена (без role, так как его нет в схеме)
         const payload: JWTPayload = {
           userId: user.id,
-          role: user.role,
         };
 
         const accessToken = jwt.sign(payload, env.JWT_SECRET, {
@@ -70,4 +68,3 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   );
 }
-

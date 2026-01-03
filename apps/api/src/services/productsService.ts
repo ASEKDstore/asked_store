@@ -1,11 +1,5 @@
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
-import {
-  createProductSchema,
-  updateProductSchema,
-  createVariantSchema,
-  updateVariantSchema,
-} from "../schemas/products";
 
 type GetProductsQuery = {
   category?: string;
@@ -39,38 +33,24 @@ export async function getProducts(query: GetProductsQuery) {
 
   if (q) {
     where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
+      { name: { contains: q, mode: "insensitive" } },
       { description: { contains: q, mode: "insensitive" } },
     ];
   }
 
-  // Build variants filter combining price, size, and color
-  const variantFilters: any = {
-    isActive: true,
-  };
-
-  if (minPrice !== undefined || maxPrice !== undefined) {
-    variantFilters.price = {};
-    if (minPrice !== undefined) {
-      variantFilters.price.gte = minPrice;
-    }
-    if (maxPrice !== undefined) {
-      variantFilters.price.lte = maxPrice;
-    }
+  if (minPrice !== undefined) {
+    where.price = { ...where.price, gte: minPrice };
+  }
+  if (maxPrice !== undefined) {
+    where.price = { ...where.price, lte: maxPrice };
   }
 
   if (size) {
-    variantFilters.size = size;
+    where.sizes = { has: size };
   }
 
   if (color) {
-    variantFilters.color = color;
-  }
-
-  if (minPrice !== undefined || maxPrice !== undefined || size || color) {
-    where.variants = {
-      some: variantFilters,
-    };
+    where.colors = { has: color };
   }
 
   const [products, total] = await Promise.all([
@@ -79,36 +59,22 @@ export async function getProducts(query: GetProductsQuery) {
       skip,
       take: limit,
       include: {
-        images: {
-          orderBy: { sortOrder: "asc" },
-          take: 1,
-        },
-        variants: {
-          where: { isActive: true },
-          select: {
-            price: true,
-          },
-          orderBy: { price: "asc" },
-          take: 1,
-        },
+        category: true,
       },
       orderBy: { createdAt: "desc" },
     }),
     prisma.product.count({ where }),
   ]);
 
-  const data = products.map((product) => {
-    const priceFrom = product.variants[0]?.price || 0;
-    const image = product.images[0]?.url || null;
-
-    return {
-      id: product.id,
-      title: product.title,
-      slug: product.slug,
-      priceFrom,
-      image,
-    };
-  });
+  const data = products.map((product) => ({
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    price: product.price,
+    oldPrice: product.oldPrice,
+    images: product.images,
+    category: product.category,
+  }));
 
   return {
     data,
@@ -122,27 +88,7 @@ export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findUnique({
     where: { slug },
     include: {
-      category: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-        },
-      },
-      images: {
-        orderBy: { sortOrder: "asc" },
-      },
-      variants: {
-        where: { isActive: true },
-        select: {
-          id: true,
-          size: true,
-          color: true,
-          price: true,
-          stock: true,
-        },
-        orderBy: [{ size: "asc" }, { color: "asc" }],
-      },
+      category: true,
     },
   });
 
@@ -153,48 +99,60 @@ export async function getProductBySlug(slug: string) {
   return {
     id: product.id,
     slug: product.slug,
-    title: product.title,
+    name: product.name,
     description: product.description,
+    price: product.price,
+    oldPrice: product.oldPrice,
+    images: product.images,
+    sizes: product.sizes,
+    colors: product.colors,
+    stock: product.stock,
     category: product.category,
-    images: product.images.map((img) => ({
-      id: img.id,
-      url: img.url,
-      sortOrder: img.sortOrder,
-    })),
-    variants: product.variants,
   };
 }
 
-export async function createProduct(data: z.infer<typeof createProductSchema>) {
-  const { images, ...productData } = data;
-
+// Simplified create/update for admin - will need to match schema
+export async function createProduct(data: any) {
   const product = await prisma.product.create({
     data: {
-      ...productData,
-      images: images
-        ? {
-            create: images,
-          }
-        : undefined,
+      name: data.name || data.title,
+      slug: data.slug,
+      description: data.description,
+      price: data.price || 0,
+      oldPrice: data.oldPrice,
+      images: data.images || [],
+      sizes: data.sizes || [],
+      colors: data.colors || [],
+      categoryId: data.categoryId,
+      isActive: data.isActive !== false,
+      stock: data.stock || 0,
     },
     include: {
       category: true,
-      images: true,
-      variants: true,
     },
   });
 
   return product;
 }
 
-export async function updateProduct(id: string, data: z.infer<typeof updateProductSchema>) {
+export async function updateProduct(id: string, data: any) {
   const product = await prisma.product.update({
     where: { id },
-    data,
+    data: {
+      name: data.name || data.title,
+      slug: data.slug,
+      description: data.description,
+      price: data.price,
+      oldPrice: data.oldPrice,
+      images: data.images,
+      sizes: data.sizes,
+      colors: data.colors,
+      categoryId: data.categoryId,
+      isActive: data.isActive,
+      stock: data.stock,
+    },
     include: {
       category: true,
-      images: true,
-      variants: true,
     },
   });
 
@@ -206,33 +164,3 @@ export async function deleteProduct(id: string) {
     where: { id },
   });
 }
-
-export async function createVariant(data: z.infer<typeof createVariantSchema>) {
-  const variant = await prisma.productVariant.create({
-    data,
-    include: {
-      product: true,
-    },
-  });
-
-  return variant;
-}
-
-export async function updateVariant(id: string, data: z.infer<typeof updateVariantSchema>) {
-  const variant = await prisma.productVariant.update({
-    where: { id },
-    data,
-    include: {
-      product: true,
-    },
-  });
-
-  return variant;
-}
-
-export async function deleteVariant(id: string) {
-  await prisma.productVariant.delete({
-    where: { id },
-  });
-}
-

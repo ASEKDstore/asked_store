@@ -1,10 +1,8 @@
 import { z } from "zod";
 
 export const updateCartSchema = z.object({
-  variantId: z.string().uuid(),
-  qty: z.number().int().min(0),
+  productId: z.string().uuid(),
+  quantity: z.number().int().min(0),
+  size: z.string().optional().nullable(),
+  color: z.string().optional().nullable(),
 });
-
-
-
-

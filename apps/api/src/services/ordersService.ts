@@ -1,105 +1,83 @@
 import { prisma } from "../lib/prisma";
-import { OrderStatus } from "@prisma/client";
 
 export async function createOrder(
   userId: string,
-  deliveryAddress: Record<string, unknown>,
+  deliveryAddress: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+  },
   promoCode?: string
 ) {
   return await prisma.$transaction(async (tx) => {
-    // Get cart
-    const cart = await tx.cart.findUnique({
+    // Get cart items
+    const cartItems = await tx.cartItem.findMany({
       where: { userId },
       include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        },
+        product: true,
       },
     });
 
-    if (!cart || cart.items.length === 0) {
+    if (cartItems.length === 0) {
       throw new Error("CART_IS_EMPTY");
     }
 
-    // Calculate total
-    let totalAmount = cart.items.reduce(
-      (sum, item) => sum + item.variant.price * item.qty,
+    // Calculate totals
+    const subtotal = cartItems.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
       0
     );
 
-    // Apply promo code if provided
-    if (promoCode) {
-      const promo = await tx.promoCode.findUnique({
-        where: { code: promoCode },
-      });
-
-      if (!promo || !promo.isActive) {
-        throw new Error("INVALID_PROMO_CODE");
-      }
-
-      const now = new Date();
-      if (promo.startsAt && now < promo.startsAt) {
-        throw new Error("PROMO_CODE_NOT_STARTED");
-      }
-
-      if (promo.endsAt && now > promo.endsAt) {
-        throw new Error("PROMO_CODE_EXPIRED");
-      }
-
-      if (promo.discountType === "PERCENT") {
-        totalAmount = Math.round(totalAmount * (1 - promo.value / 100));
-      } else {
-        totalAmount = Math.max(0, totalAmount - promo.value);
-      }
-    }
+    let total = subtotal;
+    // TODO: Apply promo code if provided
+    // For now, skip promo code logic
 
     // Create order
     const order = await tx.order.create({
       data: {
         userId,
-        status: OrderStatus.NEW,
-        totalAmount,
-        deliveryAddress,
+        status: "pending",
+        total,
+        subtotal,
+        shipping: 0,
+        firstName: deliveryAddress.firstName,
+        lastName: deliveryAddress.lastName,
+        phone: deliveryAddress.phone,
+        address: deliveryAddress.address,
+        city: deliveryAddress.city,
+        postalCode: deliveryAddress.postalCode,
         items: {
-          create: cart.items.map((item) => ({
-            variantSnapshot: {
-              id: item.variant.id,
-              sku: item.variant.sku,
-              size: item.variant.size,
-              color: item.variant.color,
-              price: item.variant.price,
-              product: {
-                id: item.variant.product.id,
-                title: item.variant.product.title,
-                slug: item.variant.product.slug,
-              },
-            },
-            qty: item.qty,
-            lineAmount: item.variant.price * item.qty,
+          create: cartItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.product.price,
+            size: item.size,
+            color: item.color,
           })),
         },
       },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
     // Clear cart
     await tx.cartItem.deleteMany({
-      where: { cartId: cart.id },
+      where: { userId },
     });
 
     return order;
   });
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+export async function updateOrderStatus(orderId: string, status: string) {
   const order = await prisma.order.update({
     where: { id: orderId },
     data: { status },
@@ -112,13 +90,13 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
           lastName: true,
         },
       },
-      items: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
     },
   });
 
   return order;
 }
-
-
-
-
