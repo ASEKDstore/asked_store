@@ -6,7 +6,7 @@ services:
     name: telegram-shop-api
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --include=dev && pnpm --filter api db:generate && pnpm --filter api build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && NODE_ENV=development pnpm install && pnpm --filter api db:generate && pnpm --filter api build
     startCommand: pnpm --filter api db:migrate:deploy && pnpm --filter api start
     envVars:
       - key: PNPM_VERSION
@@ -28,7 +28,7 @@ services:
     name: telegram-shop-admin
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --include=dev && pnpm --filter admin build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && NODE_ENV=development pnpm install && pnpm --filter admin build
     startCommand: pnpm --filter admin start
     envVars:
       - key: PNPM_VERSION
@@ -48,7 +48,7 @@ services:
     name: telegram-shop-miniapp
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --include=dev && pnpm --filter miniapp build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && NODE_ENV=development pnpm install && pnpm --filter miniapp build
     startCommand: pnpm --filter miniapp start
     envVars:
       - key: PNPM_VERSION
@@ -69,7 +69,7 @@ services:
     name: telegram-shop-bot
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --include=dev && pnpm --filter bot build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && NODE_ENV=development pnpm install && pnpm --filter bot build
     startCommand: pnpm --filter bot start
     envVars:
       - key: PNPM_VERSION
