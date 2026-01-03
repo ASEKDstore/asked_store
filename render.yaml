@@ -6,8 +6,8 @@ services:
     name: telegram-shop-api
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/api && pnpm db:generate && pnpm build
-    startCommand: cd apps/api && pnpm start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter api db:generate && pnpm --filter api build
+    startCommand: pnpm --filter api start
     envVars:
       - key: PNPM_VERSION
         value: 8
@@ -28,8 +28,8 @@ services:
     name: telegram-shop-admin
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/admin && pnpm build
-    startCommand: cd apps/admin && pnpm start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter admin build
+    startCommand: pnpm --filter admin start
     envVars:
       - key: PNPM_VERSION
         value: 8
@@ -46,8 +46,8 @@ services:
     name: telegram-shop-miniapp
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/miniapp && pnpm build
-    startCommand: cd apps/miniapp && pnpm start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter miniapp build
+    startCommand: pnpm --filter miniapp start
     envVars:
       - key: PNPM_VERSION
         value: 8
@@ -65,8 +65,8 @@ services:
     name: telegram-shop-bot
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/bot && pnpm build
-    startCommand: cd apps/bot && pnpm start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter bot build
+    startCommand: pnpm --filter bot start
     envVars:
       - key: PNPM_VERSION
         value: 8
