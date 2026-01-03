@@ -64,8 +64,8 @@ export async function updateCartItem(
       where: {
         userId,
         productId,
-        size: size || null,
-        color: color || null,
+        size: size ?? null,
+        color: color ?? null,
       },
     });
   } else {
@@ -74,27 +74,40 @@ export async function updateCartItem(
       throw new Error("INSUFFICIENT_STOCK");
     }
 
-    // Upsert item
-    await prisma.cartItem.upsert({
+    // Prepare values for unique constraint
+    const sizeValue: string | null = size ?? null;
+    const colorValue: string | null = color ?? null;
+
+    // Check if item exists
+    const existingItem = await prisma.cartItem.findUnique({
       where: {
         userId_productId_size_color: {
           userId,
           productId,
-          size: size ?? null,
-          color: color ?? null,
+          size: sizeValue,
+          color: colorValue,
         },
       },
-      update: {
-        quantity,
-      },
-      create: {
-        userId,
-        productId,
-        quantity,
-        size: size ?? null,
-        color: color ?? null,
-      },
     });
+
+    if (existingItem) {
+      // Update existing item
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity },
+      });
+    } else {
+      // Create new item
+      await prisma.cartItem.create({
+        data: {
+          userId,
+          productId,
+          quantity,
+          size: sizeValue,
+          color: colorValue,
+        },
+      });
+    }
   }
 
   return getCart(userId);
