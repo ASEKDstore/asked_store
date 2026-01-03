@@ -6,8 +6,8 @@ services:
     name: telegram-shop-api
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && cd apps/api && pnpm build
-    startCommand: cd apps/api && pnpm db:migrate:deploy && pnpm start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/api && pnpm db:generate && pnpm build
+    startCommand: cd apps/api && pnpm start
     envVars:
       - key: PNPM_VERSION
         value: 8
@@ -28,7 +28,7 @@ services:
     name: telegram-shop-admin
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && cd apps/admin && pnpm build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/admin && pnpm build
     startCommand: cd apps/admin && pnpm start
     envVars:
       - key: PNPM_VERSION
@@ -46,7 +46,7 @@ services:
     name: telegram-shop-miniapp
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && cd apps/miniapp && pnpm build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/miniapp && pnpm build
     startCommand: cd apps/miniapp && pnpm start
     envVars:
       - key: PNPM_VERSION
@@ -64,7 +64,7 @@ services:
     name: telegram-shop-bot
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && cd apps/bot && pnpm build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && cd apps/bot && pnpm build
     startCommand: cd apps/bot && pnpm start
     envVars:
       - key: PNPM_VERSION
