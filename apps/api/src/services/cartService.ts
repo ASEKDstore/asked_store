@@ -80,8 +80,8 @@ export async function updateCartItem(
         userId_productId_size_color: {
           userId,
           productId,
-          size: size || null,
-          color: color || null,
+          size: size ?? null,
+          color: color ?? null,
         },
       },
       update: {
@@ -91,8 +91,8 @@ export async function updateCartItem(
         userId,
         productId,
         quantity,
-        size: size || null,
-        color: color || null,
+        size: size ?? null,
+        color: color ?? null,
       },
     });
   }

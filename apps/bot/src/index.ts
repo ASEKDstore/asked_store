@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api'
+import type { Message } from 'node-telegram-bot-api'
 import dotenv from 'dotenv'
 import http from 'http'
 
@@ -13,7 +14,7 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true })
 
 // Команда /start
-bot.onText(/\/start/, (msg) => {
+bot.onText(/\/start/, (msg: Message) => {
   const chatId = msg.chat.id
   const miniAppUrl = process.env.MINI_APP_URL || 'https://your-miniapp-url.com'
   
@@ -32,7 +33,7 @@ bot.onText(/\/start/, (msg) => {
 })
 
 // Команда /help
-bot.onText(/\/help/, (msg) => {
+bot.onText(/\/help/, (msg: Message) => {
   const chatId = msg.chat.id
   bot.sendMessage(chatId, `
 Доступные команды:
@@ -43,7 +44,7 @@ bot.onText(/\/help/, (msg) => {
 })
 
 // Команда /catalog
-bot.onText(/\/catalog/, (msg) => {
+bot.onText(/\/catalog/, (msg: Message) => {
   const chatId = msg.chat.id
   const miniAppUrl = process.env.MINI_APP_URL || 'https://your-miniapp-url.com'
   
