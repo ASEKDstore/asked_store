@@ -1,19 +1,34 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { apiFetch } from "@/lib/api";
 import { Product } from "@/types/product";
 
-async function getProducts(): Promise<Product[]> {
-  try {
-    return await apiFetch<Product[]>("/admin/products");
-  } catch (error) {
-    console.error("Failed to fetch products:", error);
-    return [];
-  }
-}
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function ProductsPage() {
-  const products = await getProducts();
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        const data = await apiFetch<Product[]>("/admin/products");
+        setProducts(data);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        setError("Не удалось загрузить товары. Убедитесь, что API сервер запущен.");
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
 
   return (
     <Layout>
@@ -31,7 +46,16 @@ export default async function ProductsPage() {
           </Link>
         </div>
 
-        {products.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Загрузка товаров...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <p className="text-yellow-800">{error}</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <p className="text-gray-600 mb-4">Товары не найдены</p>
             <Link

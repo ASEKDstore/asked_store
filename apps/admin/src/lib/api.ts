@@ -47,19 +47,47 @@ export async function apiFetch<T>(
   }
 
   const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
-  const response = await fetch(fullUrl, fetchOptions);
+  
+  // Добавляем таймаут для запросов
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
 
-  if (!response.ok) {
-    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    try {
-      const errorData = await response.json();
-      if (errorData.error) {
-        errorMessage = errorData.error;
+  try {
+    const response = await fetch(fullUrl, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch {
+        // Ignore JSON parse errors
       }
-    } catch {
-      // Ignore JSON parse errors
+      throw new Error(errorMessage);
     }
-    throw new Error(errorMessage);
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    return response.json() as Promise<T>;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Превышено время ожидания ответа от сервера');
+    }
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Не удалось подключиться к API серверу. Убедитесь, что сервер запущен на ' + API_URL);
+    }
+    throw error;
   }
 
   // Handle 204 No Content
