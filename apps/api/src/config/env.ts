@@ -6,6 +6,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
   PORT: z.string().optional().default("3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).optional().default("development"),
+  ADMIN_TELEGRAM_IDS: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -24,6 +25,10 @@ export function validateEnv(): Env {
 
 export const env = validateEnv();
 
-
-
-
+// Helper to check if Telegram ID is admin
+export function isAdminTelegramId(telegramId: string): boolean {
+  const adminIds = env.ADMIN_TELEGRAM_IDS.split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+  return adminIds.includes(telegramId);
+}

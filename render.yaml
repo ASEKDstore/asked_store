@@ -22,6 +22,8 @@ services:
         generateValue: true
       - key: TELEGRAM_BOT_TOKEN
         sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        value: "930749603"
 
   # Admin Panel
   - type: web

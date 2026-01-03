@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { env } from "../config/env";
+import { env, isAdminTelegramId } from "../config/env";
 import { validateTelegramInitData, extractUserFromInitData } from "../utils/telegram";
 import { JWTPayload } from "../types";
 import { prisma } from "../lib/prisma";
@@ -11,7 +11,7 @@ const authTelegramSchema = z.object({
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
-  // POST /auth/telegram
+  // POST /auth/telegram - для обычных пользователей
   fastify.post(
     "/telegram",
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -47,7 +47,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           },
         });
 
-        // Создание JWT токена (без role, так как его нет в схеме)
+        // Создание JWT токена
         const payload: JWTPayload = {
           userId: user.id,
         };
@@ -57,6 +57,70 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
 
         return reply.send({ accessToken });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: "Invalid request body", details: error.errors });
+        }
+
+        fastify.log.error(error);
+        return reply.code(500).send({ error: "Internal server error" });
+      }
+    }
+  );
+
+  // POST /auth/admin/telegram - для админов
+  fastify.post(
+    "/admin/telegram",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const body = authTelegramSchema.parse(request.body);
+
+        // Валидация initData
+        if (!validateTelegramInitData(body.initData)) {
+          return reply.code(401).send({ error: "Invalid initData" });
+        }
+
+        // Извлечение пользователя из initData
+        const telegramUser = extractUserFromInitData(body.initData);
+        if (!telegramUser) {
+          return reply.code(401).send({ error: "Invalid user data" });
+        }
+
+        const telegramId = String(telegramUser.id);
+
+        // Проверка, является ли пользователь админом
+        if (!isAdminTelegramId(telegramId)) {
+          return reply.code(403).send({ error: "Access denied. Admin access required." });
+        }
+
+        // Upsert пользователя в БД
+        const user = await prisma.user.upsert({
+          where: {
+            telegramId,
+          },
+          update: {
+            username: telegramUser.username || null,
+            firstName: telegramUser.first_name || null,
+            lastName: telegramUser.last_name || null,
+          },
+          create: {
+            telegramId,
+            username: telegramUser.username || null,
+            firstName: telegramUser.first_name || null,
+            lastName: telegramUser.last_name || null,
+          },
+        });
+
+        // Создание JWT токена для админа
+        const payload: JWTPayload = {
+          userId: user.id,
+        };
+
+        const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+          expiresIn: "7d", // Админы получают токен на 7 дней
+        });
+
+        return reply.send({ accessToken, isAdmin: true });
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.code(400).send({ error: "Invalid request body", details: error.errors });

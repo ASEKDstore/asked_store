@@ -131,7 +131,14 @@ export default function Layout({ children }: LayoutProps) {
           </nav>
           
           <div className="p-4 border-t border-gray-200">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => {
+                localStorage.removeItem('admin_token')
+                localStorage.removeItem('admin_telegram_id')
+                window.location.href = '/login'
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <span>🚪</span>
               <span>Выйти</span>
             </button>
