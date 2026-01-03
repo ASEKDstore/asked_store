@@ -74,19 +74,17 @@ export async function updateCartItem(
       throw new Error("INSUFFICIENT_STOCK");
     }
 
-    // Prepare values for unique constraint
-    const sizeValue: string | null = size ?? null;
-    const colorValue: string | null = color ?? null;
+    // Prepare values - use undefined instead of null for Prisma unique constraint
+    const sizeValue = size ?? undefined;
+    const colorValue = color ?? undefined;
 
-    // Check if item exists
-    const existingItem = await prisma.cartItem.findUnique({
+    // Check if item exists using findFirst instead of findUnique
+    const existingItem = await prisma.cartItem.findFirst({
       where: {
-        userId_productId_size_color: {
-          userId,
-          productId,
-          size: sizeValue,
-          color: colorValue,
-        },
+        userId,
+        productId,
+        size: sizeValue ?? null,
+        color: colorValue ?? null,
       },
     });
 
@@ -103,8 +101,8 @@ export async function updateCartItem(
           userId,
           productId,
           quantity,
-          size: sizeValue,
-          color: colorValue,
+          size: sizeValue ?? null,
+          color: colorValue ?? null,
         },
       });
     }
