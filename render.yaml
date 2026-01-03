@@ -6,8 +6,8 @@ services:
     name: telegram-shop-api
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter api db:generate && pnpm --filter api build
-    startCommand: pnpm --filter api start
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && pnpm --filter api db:generate && pnpm --filter api build
+    startCommand: pnpm --filter api db:migrate:deploy && pnpm --filter api start
     envVars:
       - key: PNPM_VERSION
         value: 8
@@ -28,13 +28,15 @@ services:
     name: telegram-shop-admin
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter admin build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && pnpm --filter admin build
     startCommand: pnpm --filter admin start
     envVars:
       - key: PNPM_VERSION
         value: 8
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: NEXT_PUBLIC_API_URL
         fromService:
           name: telegram-shop-api
@@ -46,13 +48,15 @@ services:
     name: telegram-shop-miniapp
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter miniapp build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && pnpm --filter miniapp build
     startCommand: pnpm --filter miniapp start
     envVars:
       - key: PNPM_VERSION
         value: 8
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: NEXT_PUBLIC_API_URL
         fromService:
           name: telegram-shop-api
@@ -65,13 +69,15 @@ services:
     name: telegram-shop-bot
     env: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install --frozen-lockfile && pnpm --filter bot build
+    buildCommand: corepack enable && corepack prepare pnpm@8 --activate && pnpm install && pnpm --filter bot build
     startCommand: pnpm --filter bot start
     envVars:
       - key: PNPM_VERSION
         value: 8
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: MINI_APP_URL

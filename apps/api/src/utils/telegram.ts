@@ -37,8 +37,8 @@ export function validateTelegramInitData(initData: string): boolean {
       .map((key) => `${key}=${data[key]}`)
       .join("\n");
 
-    // Создаем secret_key из BOT_TOKEN
-    const secretKey = crypto.createHash("sha256").update(env.BOT_TOKEN).digest();
+    // Создаем secret_key из TELEGRAM_BOT_TOKEN
+    const secretKey = crypto.createHash("sha256").update(env.TELEGRAM_BOT_TOKEN).digest();
 
     // Вычисляем HMAC_SHA256
     const computedHash = crypto

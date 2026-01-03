@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  BOT_TOKEN: z.string().min(1),
+  TELEGRAM_BOT_TOKEN: z.string().min(1),
   JWT_SECRET: z.string().min(1),
   PORT: z.string().optional().default("3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).optional().default("development"),
@@ -23,6 +23,7 @@ export function validateEnv(): Env {
 }
 
 export const env = validateEnv();
+
 
 
 
