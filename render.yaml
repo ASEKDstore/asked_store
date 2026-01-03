@@ -60,7 +60,8 @@ services:
           property: host
 
   # Telegram Bot
-  - type: worker
+  # Примечание: На Free плане используем web вместо worker
+  - type: web
     name: telegram-shop-bot
     env: node
     plan: free
