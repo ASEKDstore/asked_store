@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Layout from "@/components/Layout";
 import { apiFetch } from "@/lib/api";
 import { Product } from "@/types/product";
 import { ProductEditForm } from "./ProductEditForm";
@@ -24,10 +25,12 @@ export default async function EditProductPage({
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "600px" }}>
-      <h1 style={{ marginBottom: "2rem" }}>Edit Product</h1>
-      <ProductEditForm product={product} />
-    </div>
+    <Layout>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Редактировать товар</h1>
+        <p className="text-gray-600 mb-8">Изменение данных товара</p>
+        <ProductEditForm product={product} />
+      </div>
+    </Layout>
   );
 }
-

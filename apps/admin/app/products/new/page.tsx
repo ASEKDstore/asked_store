@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Layout from "@/components/Layout";
 import { apiFetch } from "@/lib/api";
 import { CreateProductInput } from "@/types/product";
 
@@ -20,6 +21,8 @@ export default function NewProductPage() {
       slug: formData.get("slug") as string,
       name: formData.get("name") as string,
       description: formData.get("description") as string || null,
+      price: Number(formData.get("price")) || 0,
+      stock: Number(formData.get("stock")) || 0,
       isActive: formData.get("isActive") === "on",
     };
 
@@ -37,146 +40,121 @@ export default function NewProductPage() {
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "600px" }}>
-      <h1 style={{ marginBottom: "2rem" }}>Create New Product</h1>
+    <Layout>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Создать товар</h1>
+        <p className="text-gray-600 mb-8">Добавление нового товара в каталог</p>
 
-      {error && (
-        <div
-          style={{
-            padding: "1rem",
-            backgroundColor: "#fee",
-            border: "1px solid #fcc",
-            borderRadius: "4px",
-            marginBottom: "1rem",
-            color: "#c00",
-          }}
-        >
-          {error}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Название *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+                Slug *
+              </label>
+              <input
+                type="text"
+                id="slug"
+                name="slug"
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                Описание
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                  Цена *
+                </label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  required
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
+                  Остаток *
+                </label>
+                <input
+                  type="number"
+                  id="stock"
+                  name="stock"
+                  required
+                  min="0"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                defaultChecked
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                Активен
+              </label>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {isSubmitting ? "Создание..." : "Создать товар"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
+              >
+                Отмена
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label
-            htmlFor="name"
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
-          >
-            Название *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            required
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label
-            htmlFor="slug"
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
-          >
-            Slug *
-          </label>
-          <input
-            type="text"
-            id="slug"
-            name="slug"
-            required
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label
-            htmlFor="description"
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
-          >
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-              fontFamily: "inherit",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "1.5rem" }}>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              id="isActive"
-              name="isActive"
-              defaultChecked
-              style={{ width: "18px", height: "18px" }}
-            />
-            <span>Active</span>
-          </label>
-        </div>
-
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              padding: "0.5rem 1.5rem",
-              backgroundColor: isSubmitting ? "#ccc" : "#0070f3",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "1rem",
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-            }}
-          >
-            {isSubmitting ? "Creating..." : "Create Product"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              padding: "0.5rem 1.5rem",
-              backgroundColor: "#f5f5f5",
-              color: "#333",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </Layout>
   );
 }
-
