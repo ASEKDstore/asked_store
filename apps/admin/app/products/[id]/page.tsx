@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { apiFetch } from "@/src/lib/api";
-import { Product } from "@/src/types/product";
+import { apiFetch } from "@/lib/api";
+import { Product } from "@/types/product";
 import { ProductEditForm } from "./ProductEditForm";
 
 async function getProduct(id: string): Promise<Product | null> {

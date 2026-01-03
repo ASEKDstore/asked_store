@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { apiFetch } from "@/src/lib/api";
-import { Product } from "@/src/types/product";
+import { apiFetch } from "@/lib/api";
+import { Product } from "@/types/product";
 
 async function getProducts(): Promise<Product[]> {
   try {

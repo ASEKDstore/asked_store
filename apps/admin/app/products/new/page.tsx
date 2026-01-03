@@ -2,8 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/src/lib/api";
-import { CreateProductInput } from "@/src/types/product";
+import { apiFetch } from "@/lib/api";
+import { CreateProductInput } from "@/types/product";
 
 export default function NewProductPage() {
   const router = useRouter();

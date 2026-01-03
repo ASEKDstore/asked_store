@@ -2,8 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/src/lib/api";
-import { Product, UpdateProductInput } from "@/src/types/product";
+import { apiFetch } from "@/lib/api";
+import { Product, UpdateProductInput } from "@/types/product";
 
 type ProductEditFormProps = {
   product: Product;
