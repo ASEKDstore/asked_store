@@ -2,28 +2,18 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Пропускаем статические файлы и API роуты
+  // Пропускаем статические файлы, API роуты и страницу логина
   if (
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname === '/login'
+    request.nextUrl.pathname === '/login' ||
+    request.nextUrl.pathname.startsWith('/favicon')
   ) {
     return NextResponse.next()
   }
 
-  // Проверяем наличие токена
-  const token = request.cookies.get('admin_token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
-
-  // Для локальной разработки - проверяем через cookie или header
-  if (!token) {
-    // Проверяем localStorage через клиентскую проверку (в компоненте)
-    // Здесь просто редиректим на логин
-    if (request.nextUrl.pathname !== '/login') {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  }
-
+  // Проверка авторизации происходит на клиенте через AuthGuard
+  // Middleware просто пропускает запросы
   return NextResponse.next()
 }
 
@@ -39,4 +29,3 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
-

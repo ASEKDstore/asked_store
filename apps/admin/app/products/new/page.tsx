@@ -18,7 +18,7 @@ export default function NewProductPage() {
     const formData = new FormData(e.currentTarget);
     const data: CreateProductInput = {
       slug: formData.get("slug") as string,
-      title: formData.get("title") as string,
+      name: formData.get("name") as string,
       description: formData.get("description") as string || null,
       isActive: formData.get("isActive") === "on",
     };
@@ -58,15 +58,15 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "1rem" }}>
           <label
-            htmlFor="title"
+            htmlFor="name"
             style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
           >
-            Title *
+            Название *
           </label>
           <input
             type="text"
-            id="title"
-            name="title"
+            id="name"
+            name="name"
             required
             style={{
               width: "100%",

@@ -22,7 +22,7 @@ export function ProductEditForm({ product }: ProductEditFormProps) {
     const formData = new FormData(e.currentTarget);
     const data: UpdateProductInput = {
       slug: formData.get("slug") as string,
-      title: formData.get("title") as string,
+      name: formData.get("name") as string,
       description: formData.get("description") as string || null,
       isActive: formData.get("isActive") === "on",
     };
@@ -60,17 +60,17 @@ export function ProductEditForm({ product }: ProductEditFormProps) {
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "1rem" }}>
           <label
-            htmlFor="title"
+            htmlFor="name"
             style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
           >
-            Title *
+            Название *
           </label>
           <input
             type="text"
-            id="title"
-            name="title"
+            id="name"
+            name="name"
             required
-            defaultValue={product.title}
+            defaultValue={product.name}
             style={{
               width: "100%",
               padding: "0.5rem",

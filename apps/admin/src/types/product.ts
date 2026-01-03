@@ -1,58 +1,61 @@
 export type Category = {
   id: string;
   slug: string;
-  title: string;
-  createdAt: string;
-};
-
-export type ProductImage = {
-  id: string;
-  productId: string;
-  url: string;
-  sortOrder: number;
-};
-
-export type ProductVariant = {
-  id: string;
-  productId: string;
-  sku: string;
-  size: string | null;
-  color: string | null;
-  price: number;
-  stock: number;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
   isActive: boolean;
+  createdAt: string;
 };
 
 export type Product = {
   id: string;
   slug: string;
-  title: string;
+  name: string;
   description: string | null;
-  isActive: boolean;
+  price: number;
+  oldPrice: number | null;
+  images: string[];
   categoryId: string | null;
-  createdAt: string;
   category: Category | null;
-  images: ProductImage[];
-  variants: ProductVariant[];
+  sku: string | null;
+  stock: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  sizes: string[];
+  colors: string[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CreateProductInput = {
   slug: string;
-  title: string;
+  name: string;
   description?: string | null;
-  isActive?: boolean;
+  price: number;
+  oldPrice?: number | null;
+  images?: string[];
   categoryId?: string | null;
-  images?: Array<{
-    url: string;
-    sortOrder?: number;
-  }>;
+  sku?: string | null;
+  stock?: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  sizes?: string[];
+  colors?: string[];
 };
 
 export type UpdateProductInput = {
   slug?: string;
-  title?: string;
+  name?: string;
   description?: string | null;
-  isActive?: boolean;
+  price?: number;
+  oldPrice?: number | null;
+  images?: string[];
   categoryId?: string | null;
+  sku?: string | null;
+  stock?: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  sizes?: string[];
+  colors?: string[];
 };
-
