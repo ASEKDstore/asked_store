@@ -15,17 +15,44 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Для локальной разработки - проверяем Telegram ID напрямую
-      if (telegramId === '930749603') {
-        // Сохраняем токен в localStorage (в продакшене это будет через Telegram Web App)
-        localStorage.setItem('admin_token', 'dev-token-' + telegramId)
-        localStorage.setItem('admin_telegram_id', telegramId)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      const trimmedId = telegramId.trim()
+
+      // Проверяем через API
+      const response = await fetch(`${apiUrl}/auth/admin/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ telegramId: trimmedId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Ошибка от API
+        setError(data.error || 'Неверный ID администратора')
+        return
+      }
+
+      if (data.isAdmin && data.accessToken) {
+        // Сохраняем токен и ID
+        localStorage.setItem('admin_token', data.accessToken)
+        localStorage.setItem('admin_telegram_id', trimmedId)
         router.push('/')
       } else {
-        setError('Неверный Telegram ID. Для доступа используйте: 930749603')
+        setError('Неверный ID администратора')
       }
     } catch (err) {
-      setError('Ошибка авторизации')
+      console.error('Login error:', err)
+      // Если API недоступен, используем fallback для локальной разработки
+      if (telegramId.trim() === '930749603') {
+        localStorage.setItem('admin_token', 'dev-token-' + telegramId)
+        localStorage.setItem('admin_telegram_id', telegramId.trim())
+        router.push('/')
+      } else {
+        setError('Ошибка подключения к серверу. Проверьте, что API сервер запущен.')
+      }
     } finally {
       setLoading(false)
     }

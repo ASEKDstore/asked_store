@@ -68,7 +68,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // POST /auth/admin/telegram - для админов
+  // POST /auth/admin/telegram - для админов (с initData)
   fastify.post(
     "/admin/telegram",
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -121,6 +121,65 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
 
         return reply.send({ accessToken, isAdmin: true });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: "Invalid request body", details: error.errors });
+        }
+
+        fastify.log.error(error);
+        return reply.code(500).send({ error: "Internal server error" });
+      }
+    }
+  );
+
+  // POST /auth/admin/check - простая проверка Telegram ID для админ-панели (без initData)
+  const adminCheckSchema = z.object({
+    telegramId: z.string().min(1),
+  });
+
+  fastify.post(
+    "/admin/check",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const body = adminCheckSchema.parse(request.body);
+        const telegramId = body.telegramId.trim();
+
+        // Проверка, является ли пользователь админом
+        if (!isAdminTelegramId(telegramId)) {
+          return reply.code(403).send({ 
+            error: "Неверный ID администратора",
+            isAdmin: false 
+          });
+        }
+
+        // Upsert пользователя в БД (создаем или обновляем)
+        const user = await prisma.user.upsert({
+          where: {
+            telegramId,
+          },
+          update: {},
+          create: {
+            telegramId,
+            username: null,
+            firstName: null,
+            lastName: null,
+          },
+        });
+
+        // Создание JWT токена для админа
+        const payload: JWTPayload = {
+          userId: user.id,
+        };
+
+        const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+          expiresIn: "7d", // Админы получают токен на 7 дней
+        });
+
+        return reply.send({ 
+          accessToken, 
+          isAdmin: true,
+          userId: user.id 
+        });
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.code(400).send({ error: "Invalid request body", details: error.errors });
