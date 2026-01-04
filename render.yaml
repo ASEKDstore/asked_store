@@ -69,6 +69,7 @@ services:
           name: telegram-shop-admin
           type: web
           property: host
+        # Примечание: Render автоматически добавляет https:// к хосту
 
   # Telegram Bot
   # Примечание: На Free плане используем web вместо worker

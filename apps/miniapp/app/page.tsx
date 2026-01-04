@@ -24,9 +24,27 @@ export default function Home() {
 
     const adminUrlEnv = process.env.NEXT_PUBLIC_ADMIN_URL
     
+    let finalUrl = ''
+    
     if (adminUrlEnv) {
       // Используем URL из переменных окружения (продакшен)
-      setAdminUrl(adminUrlEnv.startsWith('http') ? adminUrlEnv : `https://${adminUrlEnv}`)
+      // Render возвращает хост в формате: service-name.onrender.com
+      // Нужно убедиться, что это не внутренний хост (без .onrender.com)
+      if (adminUrlEnv.startsWith('http://') || adminUrlEnv.startsWith('https://')) {
+        finalUrl = adminUrlEnv
+      } else {
+        // Проверяем, что это публичный хост Render
+        // Внутренние хосты Render имеют формат: service-name-xxxxx
+        // Публичные хосты: service-name.onrender.com
+        if (adminUrlEnv.includes('.onrender.com')) {
+          finalUrl = `https://${adminUrlEnv}`
+        } else {
+          // Если это внутренний хост, конвертируем в публичный
+          // telegram-shop-admin-4haz -> telegram-shop-admin.onrender.com
+          const serviceName = adminUrlEnv.split('-').slice(0, -1).join('-') || adminUrlEnv
+          finalUrl = `https://${serviceName}.onrender.com`
+        }
+      }
     } else {
       // Для локальной разработки определяем URL на основе текущего хоста
       const currentHost = window.location.hostname
@@ -34,13 +52,19 @@ export default function Home() {
       
       if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
         // Локальная разработка
-        setAdminUrl(`${currentProtocol}//${currentHost}:3001`)
+        finalUrl = `${currentProtocol}//${currentHost}:3001`
       } else {
-        // Продакшен - заменяем miniapp на admin в домене
-        const adminHost = currentHost.replace('miniapp', 'admin').replace('telegram-shop-miniapp', 'telegram-shop-admin')
-        setAdminUrl(`${currentProtocol}//${adminHost}`)
+        // Продакшен - заменяем miniapp на admin в домене Render
+        // Render использует формат: service-name.onrender.com
+        const adminHost = currentHost
+          .replace('telegram-shop-miniapp', 'telegram-shop-admin')
+          .replace('miniapp', 'admin')
+        finalUrl = `https://${adminHost}`
       }
     }
+
+    console.log('Admin URL determined:', finalUrl, 'from env:', adminUrlEnv)
+    setAdminUrl(finalUrl)
 
     // Проверяем, запущено ли в Telegram
     if (window.Telegram?.WebApp) {
@@ -53,11 +77,19 @@ export default function Home() {
   const handleOpenAdmin = () => {
     if (!adminUrl) {
       console.error('Admin URL not set')
+      alert('URL админ-панели не определен')
       return
     }
 
+    console.log('Opening admin panel:', adminUrl)
+    
     // Открываем админ-панель в том же окне (внутри приложения)
-    window.location.href = adminUrl
+    try {
+      window.location.href = adminUrl
+    } catch (error) {
+      console.error('Error opening admin panel:', error)
+      alert(`Ошибка открытия админ-панели: ${error}`)
+    }
   }
 
   return (
