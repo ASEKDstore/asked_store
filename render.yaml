@@ -64,6 +64,11 @@ services:
           name: telegram-shop-api
           type: web
           property: host
+      - key: NEXT_PUBLIC_ADMIN_URL
+        fromService:
+          name: telegram-shop-admin
+          type: web
+          property: host
 
   # Telegram Bot
   # Примечание: На Free плане используем web вместо worker
