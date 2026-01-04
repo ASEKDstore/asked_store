@@ -26,40 +26,53 @@ export default function Home() {
     
     let finalUrl = ''
     
+    const currentHost = window.location.hostname
+    const currentProtocol = window.location.protocol
+    
     if (adminUrlEnv) {
       // Используем URL из переменных окружения (продакшен)
-      // Render возвращает хост в формате: service-name.onrender.com
-      // Нужно убедиться, что это не внутренний хост (без .onrender.com)
+      // Render может вернуть внутренний хост (service-name-xxxxx) или публичный (service-name.onrender.com)
       if (adminUrlEnv.startsWith('http://') || adminUrlEnv.startsWith('https://')) {
         finalUrl = adminUrlEnv
       } else {
         // Проверяем, что это публичный хост Render
-        // Внутренние хосты Render имеют формат: service-name-xxxxx
-        // Публичные хосты: service-name.onrender.com
         if (adminUrlEnv.includes('.onrender.com')) {
           finalUrl = `https://${adminUrlEnv}`
-        } else {
-          // Если это внутренний хост, конвертируем в публичный
-          // telegram-shop-admin-4haz -> telegram-shop-admin.onrender.com
-          const serviceName = adminUrlEnv.split('-').slice(0, -1).join('-') || adminUrlEnv
+        } else if (adminUrlEnv.includes('-') && !adminUrlEnv.includes('.')) {
+          // Внутренний хост Render (telegram-shop-admin-4haz)
+          // Конвертируем в публичный: telegram-shop-admin.onrender.com
+          // Убираем последний сегмент с хешем и добавляем .onrender.com
+          const parts = adminUrlEnv.split('-')
+          // Находим индекс начала хеша (обычно последние части)
+          // Для telegram-shop-admin-4haz -> telegram-shop-admin
+          let serviceName = ''
+          if (parts.length >= 3) {
+            // Берем все части кроме последней (которая обычно хеш)
+            serviceName = parts.slice(0, -1).join('-')
+          } else {
+            serviceName = adminUrlEnv
+          }
           finalUrl = `https://${serviceName}.onrender.com`
+        } else {
+          // Неизвестный формат, пробуем как есть с https
+          finalUrl = `https://${adminUrlEnv}`
         }
       }
     } else {
-      // Для локальной разработки определяем URL на основе текущего хоста
-      const currentHost = window.location.hostname
-      const currentProtocol = window.location.protocol
-      
+      // Fallback: определяем URL на основе текущего хоста
       if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
         // Локальная разработка
         finalUrl = `${currentProtocol}//${currentHost}:3001`
-      } else {
-        // Продакшен - заменяем miniapp на admin в домене Render
-        // Render использует формат: service-name.onrender.com
+      } else if (currentHost.includes('.onrender.com')) {
+        // Продакшен Render - заменяем miniapp на admin в домене
         const adminHost = currentHost
           .replace('telegram-shop-miniapp', 'telegram-shop-admin')
           .replace('miniapp', 'admin')
         finalUrl = `https://${adminHost}`
+      } else {
+        // Другой хостинг - пробуем заменить miniapp на admin
+        const adminHost = currentHost.replace('miniapp', 'admin')
+        finalUrl = `${currentProtocol}//${adminHost}`
       }
     }
 
